@@ -260,6 +260,9 @@
         letter-spacing: 2.8px;
         background-color: var(--button_bg, transparent);
         border-radius: 5px !important;
+        transition: none !important;
+        -webkit-transition: none !important;
+        -moz-transition: none !important;
         &:hover {
             background-color: var(--button_hover_bg, transparent);
         }
