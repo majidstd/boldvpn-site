@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div id="vanta-background"></div>
     <header class="site-header">
       <div class="container nav">
         <a class="brand" href="./index.html"><img class="logo" src="./assets/logo.svg?v=cp1" alt="BoldVPN" /> <span>BoldVPN</span></a>
@@ -44,7 +45,19 @@
             </ul>
           </div>
           <div class="hero-visual">
-            <div id="vanta-hero" class="globe"></div>
+            <div class="globe">
+              <svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                  <radialGradient id="g" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.1"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="160" cy="160" r="140" fill="url(#g)"/>
+                <circle cx="160" cy="160" r="140" fill="none" stroke="white" stroke-opacity="0.15" stroke-width="2"/>
+                <path d="M20 160h280M160 20v280M50 90c70 50 150 50 220 0" stroke="white" stroke-opacity="0.2" stroke-width="2"/>
+              </svg>
+            </div>
           </div>
         </div>
       </section>
@@ -135,22 +148,22 @@
     <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
     <script src="./script.js"></script>
     <script>
-      // Initialize Vanta.js animation
-      if (document.getElementById('vanta-hero')) {
+      // Initialize Vanta.js animation as full background
+      if (document.getElementById('vanta-background')) {
         VANTA.NET({
-          el: "#vanta-hero",
+          el: "#vanta-background",
           mouseControls: true,
           touchControls: true,
           gyroControls: false,
-          minHeight: 400.00,
-          minWidth: 300.00,
+          minHeight: 200.00,
+          minWidth: 200.00,
           scale: 1.00,
           scaleMobile: 1.00,
           color: 0x0ea5e9,
-          backgroundColor: 0x0f172a,
-          points: 12.00,
-          maxDistance: 22.00,
-          spacing: 16.00,
+          backgroundColor: 0x0b1120,
+          points: 10.00,
+          maxDistance: 20.00,
+          spacing: 15.00,
           showDots: true
         });
       }
