@@ -346,7 +346,7 @@
         line-height: 16px;
     }
     .field-type-text {
-        background-color: #fff;
+        background-color: var(--input_field_bg);
         position: relative;
         margin-top: 15px;
         padding-left: 15px;
@@ -372,7 +372,7 @@
                 border-bottom-left-radius: 5px;
             }
             label {
-                background-color: #fff;
+                background-color: var(--input_field_bg);
             }
         }
     }
