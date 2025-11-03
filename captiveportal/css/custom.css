@@ -1,10 +1,49 @@
-/* Custom overrides for BoldVPN portal - Match root login.html styling */
+/* Custom overrides for BoldVPN portal - Match root login.html styling EXACTLY */
 
 /* Import root site font if not already loaded */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 body {
     font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    background: radial-gradient(700px 300px at 50% -10%, rgba(14,165,233,0.25), rgba(14,165,233,0) 60%), linear-gradient(180deg, #05080f 0%, #0b1120 100%) !important;
+}
+
+/* Remove old portal decorative elements and frames */
+.field-type-text:before,
+.left-side,
+.right-side {
+    background-image: none !important;
+    background: none !important;
+    box-shadow: none !important;
+}
+
+/* Hide the left side completely for single-column layout like root */
+.left-side {
+    display: none !important;
+}
+
+.right-side {
+    max-width: 420px !important;
+    margin: 40px auto !important;
+    width: 100% !important;
+}
+
+/* Remove white frames and borders from field containers */
+.field-type-text,
+.field-group {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 14px 0 !important;
+}
+
+.form-fields-wrapper {
+    background: #0b1226 !important;
+    border: 1px solid #1f2a44 !important;
+    border-radius: 12px !important;
+    padding: 18px !important;
 }
 
 /* Nuclear override: force all inputs to dark with root site styling */
@@ -19,6 +58,16 @@ body {
     font-family: Inter, sans-serif !important;
 }
 
+/* Labels styled like root site */
+label {
+    display: block !important;
+    margin-bottom: 6px !important;
+    color: #e2e8f0 !important;
+    font-weight: 500 !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
 /* Fix input field backgrounds - remove white, use dark theme */
 .field-text,
 input[type="text"],
@@ -28,20 +77,24 @@ input.field,
 .field-type-text .field,
 #inputUsername,
 #inputPassword {
-    background: var(--input_field_bg) !important;
-    background-color: var(--input_field_bg) !important;
-    color: var(--input_field_color) !important;
-    border: 1px solid var(--input_field_border) !important;
+    width: 100% !important;
+    background: #0f172a !important;
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #1f2a44 !important;
+    border-radius: 10px !important;
+    padding: 12px !important;
 }
 
 /* Override any focus states that might add white */
 input:focus,
 input[type="text"]:focus,
 input[type="password"]:focus {
-    background: var(--input_field_bg) !important;
-    background-color: var(--input_field_bg) !important;
+    background: #0f172a !important;
+    background-color: #0f172a !important;
     outline: none !important;
-    box-shadow: 0 0 0 2px var(--button_bg) !important;
+    border-color: #0ea5e9 !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25) !important;
 }
 
 /* Fix checkbox visibility - make checkmark visible */
