@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoldVPN — Fast, Secure, Private VPN</title>
+    <meta name="description" content="BoldVPN keeps you private and secure online with fast speeds, strong encryption, and a strict no-logs policy." />
+    <link rel="icon" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a class="brand" href="./index.html"><img class="logo" src="./assets/logo.svg" alt="BoldVPN" /> <span>BoldVPN</span></a>
+        <nav class="nav-links" id="nav-links">
+          <a href="#features">Features</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#faq">FAQ</a>
+          <a class="btn btn-sm btn-outline" href="./login.html">Portal Login</a>
+        </nav>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <h1>Take back your privacy with BoldVPN</h1>
+            <p>Browse securely on any network. Unlock content worldwide. Stay private with audited no-logs and modern encryption.</p>
+            <div class="hero-ctas">
+              <a class="btn btn-primary" href="#pricing">Start Free Trial</a>
+              <a class="btn btn-quiet" href="./login.html">Portal Login</a>
+            </div>
+            <ul class="hero-bullets">
+              <li>Ultra-fast network</li>
+              <li>Audited no-logs policy</li>
+              <li>Apps for all major platforms</li>
+            </ul>
+          </div>
+          <div class="hero-visual">
+            <div class="globe">
+              <svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                  <radialGradient id="g" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#38bdf8"/>
+                    <stop offset="100%" stop-color="#0ea5e9"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="160" cy="160" r="140" fill="url(#g)"/>
+                <circle cx="160" cy="160" r="140" fill="none" stroke="white" stroke-opacity="0.25" stroke-width="2"/>
+                <path d="M20 160h280M160 20v280M50 90c70 50 150 50 220 0" stroke="white" stroke-opacity="0.35" stroke-width="2"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="section">
+        <div class="container">
+          <h2 class="section-title">Everything you need to stay private</h2>
+          <div class="features-grid">
+            <div class="card"><div class="icon">🔒</div><h3>Modern Encryption</h3><p>Strong ciphers and PFS to protect your traffic end‑to‑end.</p></div>
+            <div class="card"><div class="icon">⚡</div><h3>Fast Network</h3><p>Smart routing and optimized servers for low latency and speed.</p></div>
+            <div class="card"><div class="icon">🕵️‍♂️</div><h3>No Logs</h3><p>Audited, strict no‑logs policy. Your activity stays yours.</p></div>
+            <div class="card"><div class="icon">🌍</div><h3>Global Access</h3><p>Servers in many regions to access what you love anywhere.</p></div>
+            <div class="card"><div class="icon">🧰</div><h3>Pro Tools</h3><p>Kill Switch, Split Tunneling, Private DNS, Multi‑Hop.</p></div>
+            <div class="card"><div class="icon">💻</div><h3>All Devices</h3><p>Beautiful apps for iOS, Android, macOS, Windows, Linux.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" class="section alt">
+        <div class="container">
+          <h2 class="section-title">Simple, transparent pricing</h2>
+          <div class="pricing-grid">
+            <div class="pricing-card"><h3>Monthly</h3><p class="price"><span>$</span>11.99<span class="term">/mo</span></p><ul><li>Unlimited bandwidth</li><li>5 devices</li></ul><a class="btn btn-primary" href="#">Choose Monthly</a></div>
+            <div class="pricing-card featured"><div class="badge">Best Value</div><h3>Yearly</h3><p class="price"><span>$</span>69.99<span class="term">/yr</span></p><ul><li>Unlimited bandwidth</li><li>10 devices</li><li>Priority support</li></ul><a class="btn btn-contrast" href="#">Choose Yearly</a></div>
+            <div class="pricing-card"><h3>Family</h3><p class="price"><span>$</span>99.99<span class="term">/yr</span></p><ul><li>Unlimited bandwidth</li><li>20 devices</li></ul><a class="btn btn-primary" href="#">Choose Family</a></div>
+          </div>
+          <p class="fine-print">30‑day money‑back guarantee. Taxes may apply.</p>
+        </div>
+      </section>
+
+      <section id="faq" class="section">
+        <div class="container">
+          <h2 class="section-title">Frequently asked questions</h2>
+          <div class="accordion">
+            <details><summary>Do you keep logs?</summary><div class="content">No. We operate an independently audited no‑logs policy.</div></details>
+            <details><summary>How many devices can I use?</summary><div class="content">Up to 10 on yearly, 20 on family plans.</div></details>
+            <details><summary>Can I cancel anytime?</summary><div class="content">Yes. Yearly plans include a 30‑day money‑back guarantee.</div></details>
+          </div>
+        </div>
+      </section>
+
+      <section class="section cta">
+        <div class="container cta-grid">
+          <div>
+            <h2>Ready to get started?</h2>
+            <p>Try BoldVPN free. No commitment. Instant setup.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-contrast" href="./login.html">Go to Portal Login</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <a class="brand" href="./index.html"><img class="logo" src="./assets/logo.svg" alt="BoldVPN" /> <span>BoldVPN</span></a>
+          <p class="muted">Fast, secure, and private internet for everyone.</p>
+        </div>
+        <div class="footer-links">
+          <div>
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#faq">FAQ</a>
+          </div>
+          <div>
+            <h4>Company</h4>
+            <a href="#">About</a>
+            <a href="#">Security</a>
+            <a href="#">Careers</a>
+          </div>
+          <div>
+            <h4>Legal</h4>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">DMCA</a>
+          </div>
+        </div>
+      </div>
+      <div class="container footnote">
+        <small>© <span id="year"></span> BoldVPN. All rights reserved.</small>
+      </div>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+  </html>
+
+
