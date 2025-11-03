@@ -1,3 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="grad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0b1120"/>
+  <g transform="translate(16,16)">
+    <path d="M48 0C27 13 16 22 0 28c0 34 19 56 48 64c29-8 48-30 48-64C80 22 69 13 48 0z" fill="url(#grad)"/>
+    <circle cx="48" cy="48" r="14" fill="#0b1120"/>
+    <path d="M40 48h16" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <text x="64" y="120" text-anchor="middle" fill="#e2e8f0" font-family="Inter, Arial" font-size="12">BoldVPN</text>
+  
+</svg>
+
 <?xml version="1.0" encoding="utf-8"?>
 <svg width="100%" height="100%" viewBox="0 0 1200 359" version="1.1" xmlns="http://www.w3.org/2000/svg" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
   <path class="primary" d="M 313.439 57.11 C 312.416 63.105 312.416 133.001 312.416 133.001 L 312.416 202.895 C 312.555 215.468 310.593 227.392 306.725 238.818 C 302.852 250.246 297.083 261.18 289.618 271.774 C 282.146 282.368 273.374 291.997 263.197 300.614 C 253.022 309.226 241.442 316.827 228.361 323.381 L 193.91 340.896 L 159.464 358.412 C 158.924 358.834 158.741 358.971 158.495 358.995 C 158.247 359.02 157.939 358.941 157.177 358.941 C 156.388 358.941 156.05 359.012 155.747 358.971 C 155.436 358.933 155.168 358.774 154.524 358.33 L 120.155 340.855 L 85.783 323.381 C 72.697 316.827 61.119 309.226 50.95 300.614 C 40.776 291.997 32.004 282.368 24.523 271.774 C 17.059 261.18 11.292 250.246 7.427 238.818 C 3.554 227.392 1.592 215.468 1.728 202.895 L 1.649 132.279 L 0.001 57.11 C -0.005 57.108 0.009 57.11 0.001 57.11 L 78.949 28.971 L 156.099 0 C 177.027 7.475 215.413 21.665 248.56 33.984 C 281.712 46.312 313.439 57.11 313.439 57.11" style="fill: rgb(27, 53, 80); stroke-width: 1; transform-origin: 600.972px 181.726px;"/>
