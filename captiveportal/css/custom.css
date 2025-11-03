@@ -28,8 +28,16 @@ input.field {
 /* Ensure login button is disabled until checkbox is checked */
 button:disabled,
 button[disabled] {
-    opacity: 0.4 !important;
+    opacity: 0.5 !important;
     cursor: not-allowed !important;
     background: var(--bg_alternate) !important;
+    transition: none !important;
+}
+
+/* Remove any animations or transitions from buttons */
+button,
+.btn {
+    transition: none !important;
+    animation: none !important;
 }
 
