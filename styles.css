@@ -24,7 +24,7 @@
 .hero-ctas{display:flex;gap:12px;margin:12px 0 12px}
 .hero-bullets{margin:10px 0 0;padding-left:18px;color:var(--muted)}
 .hero-bullets li{margin:6px 0}
-#vanta-background{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#vanta-background{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.3!important}
 body>*:not(#vanta-background){position:relative;z-index:1}
 .globe{display:grid;place-items:center}
 .section{padding:56px 0}
