@@ -24,9 +24,7 @@
 .hero-ctas{display:flex;gap:12px;margin:12px 0 12px}
 .hero-bullets{margin:10px 0 0;padding-left:18px;color:var(--muted)}
 .hero-bullets li{margin:6px 0}
-.globe{display:grid;place-items:center}
-.globe svg{animation:pulse 3s ease-in-out infinite}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:0.9}50%{transform:scale(1.05);opacity:1}}
+.globe{display:grid;place-items:center;min-height:320px;width:100%}
 .section{padding:56px 0}
 .section.alt{background:linear-gradient(180deg,rgba(20,31,60,.35) 0%,rgba(12,18,32,0) 100%);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .section-title{font-size:28px;margin:0 0 22px}

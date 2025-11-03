@@ -44,19 +44,7 @@
             </ul>
           </div>
           <div class="hero-visual">
-            <div class="globe">
-              <svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <defs>
-                  <radialGradient id="g" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stop-color="#38bdf8"/>
-                    <stop offset="100%" stop-color="#0ea5e9"/>
-                  </radialGradient>
-                </defs>
-                <circle cx="160" cy="160" r="140" fill="url(#g)"/>
-                <circle cx="160" cy="160" r="140" fill="none" stroke="white" stroke-opacity="0.25" stroke-width="2"/>
-                <path d="M20 160h280M160 20v280M50 90c70 50 150 50 220 0" stroke="white" stroke-opacity="0.35" stroke-width="2"/>
-              </svg>
-            </div>
+            <div id="vanta-hero" class="globe"></div>
           </div>
         </div>
       </section>
@@ -143,7 +131,29 @@
       </div>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
     <script src="./script.js"></script>
+    <script>
+      // Initialize Vanta.js animation
+      if (document.getElementById('vanta-hero')) {
+        VANTA.NET({
+          el: "#vanta-hero",
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 320.00,
+          minWidth: 320.00,
+          scale: 1.00,
+          scaleMobile: 1.00,
+          color: 0x0ea5e9,
+          backgroundColor: 0x0b1120,
+          points: 10.00,
+          maxDistance: 20.00,
+          spacing: 15.00
+        });
+      }
+    </script>
   </body>
   </html>
 
