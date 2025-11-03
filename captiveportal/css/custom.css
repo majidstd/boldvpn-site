@@ -1,77 +1,86 @@
-/* Custom overrides for BoldVPN portal - Match root login.html styling EXACTLY */
+/* BoldVPN Captive Portal - Match root login.html styling EXACTLY */
 
-/* Import root site font if not already loaded */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* Import root site CSS variables and auth styles */
+/* Root site CSS variables */
 :root {
-  --bg: #0b1120;
-  --panel: #0f172a;
-  --muted: #94a3b8;
-  --text: #e2e8f0;
-  --primary: #0ea5e9;
-  --primary-strong: #0284c7;
-  --contrast: #111827;
-  --card: #0b1226;
-  --border: #1f2a44;
+    --bg: #0b1120;
+    --panel: #0f172a;
+    --muted: #94a3b8;
+    --text: #e2e8f0;
+    --primary: #0ea5e9;
+    --primary-strong: #0284c7;
+    --contrast: #111827;
+    --card: #0b1226;
+    --border: #1f2a44;
 }
 
-.auth {
-    background: radial-gradient(700px 300px at 50% -10%, rgba(14,165,233,0.25), rgba(14,165,233,0) 60%), linear-gradient(180deg, #05080f 0%, #0b1120 100%) !important;
+/* Base styles matching root site */
+* {
+    box-sizing: border-box !important;
 }
 
-.auth-container {
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    color: var(--text) !important;
+    background: radial-gradient(700px 300px at 50% -10%, rgba(14, 165, 233, 0.25), rgba(14, 165, 233, 0) 60%), linear-gradient(180deg, #05080f 0%, var(--bg) 100%) !important;
+}
+
+body.auth {
+    background: radial-gradient(700px 300px at 50% -10%, rgba(14, 165, 233, 0.25), rgba(14, 165, 233, 0) 60%) !important;
+}
+
+/* Auth container - match root */
+.auth-container,
+main.auth-container {
     width: 100% !important;
     max-width: 420px !important;
     margin: 40px auto !important;
     padding: 0 16px !important;
 }
 
-.card {
-    background: var(--card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
-    padding: 18px !important;
-}
-
-.form {
-    display: grid !important;
-    gap: 14px !important;
-}
-
-.form-row {
-    display: grid !important;
-    gap: 6px !important;
-}
-
-.btn {
+/* Brand/Logo styling */
+.brand {
     display: inline-flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    padding: 12px 16px !important;
-    border-radius: 10px !important;
-    border: 1px solid transparent !important;
-    font-weight: 600 !important;
-    color: white !important;
-    cursor: pointer !important;
-    transition: none !important;
+    gap: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.2px !important;
+    text-decoration: none !important;
 }
 
-.btn-primary {
-    background: var(--primary) !important;
+.brand .logo,
+.logo img,
+.logo .brand-logo {
+    width: 28px !important;
+    height: 28px !important;
+    display: block !important;
 }
 
-.btn-primary:hover:not(:disabled) {
-    background: var(--primary-strong) !important;
-}
-
-.full {
-    width: 100% !important;
-}
-
-.center {
+.logo {
     text-align: center !important;
+    margin-bottom: 16px !important;
+}
+
+/* Typography - match root */
+h1 {
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    margin: 16px 0 !important;
+    color: var(--text) !important;
+}
+
+h2 {
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    margin: 12px 0 !important;
+    color: var(--text) !important;
+}
+
+p {
+    margin: 8px 0 !important;
 }
 
 .muted {
@@ -88,7 +97,187 @@
     color: var(--muted) !important;
 }
 
-/* Fix modal/error popups - dark background to match theme */
+.center {
+    text-align: center !important;
+}
+
+/* Card styling - exact match to root */
+.card {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    padding: 18px !important;
+}
+
+/* Form styling - exact match */
+.form {
+    display: grid !important;
+    gap: 14px !important;
+}
+
+.form-row {
+    display: grid !important;
+    gap: 6px !important;
+}
+
+.form-row label {
+    color: var(--text) !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    display: block !important;
+}
+
+.form-row input,
+.form-row input[type="text"],
+.form-row input[type="password"],
+input.field,
+#inputUsername,
+#inputPassword {
+    padding: 12px 12px !important;
+    background: var(--panel) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    color: var(--text) !important;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    font-size: 15px !important;
+    width: 100% !important;
+}
+
+.form-row input:focus,
+.form-row input[type="text"]:focus,
+.form-row input[type="password"]:focus,
+input.field:focus,
+#inputUsername:focus,
+#inputPassword:focus {
+    outline: none !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25) !important;
+}
+
+/* Button styling - exact match to root */
+.btn,
+button,
+#signin,
+#signin_anon,
+#logoff {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    font-weight: 600 !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: 150ms ease !important;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    font-size: 15px !important;
+    background: var(--primary) !important;
+}
+
+.btn-primary,
+.btn.btn-primary,
+button.btn-primary,
+#signin,
+#signin_anon {
+    background: var(--primary) !important;
+}
+
+.btn-primary:hover:not(:disabled),
+.btn.btn-primary:hover:not(:disabled),
+button.btn-primary:hover:not(:disabled),
+#signin:hover:not(:disabled),
+#signin_anon:hover:not(:disabled) {
+    background: var(--primary-strong) !important;
+}
+
+.full,
+.btn.full {
+    width: 100% !important;
+}
+
+button:disabled,
+button[disabled],
+#signin[disabled],
+#signin_anon[disabled] {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    background: var(--primary) !important;
+}
+
+/* Checkbox styling - clean and visible */
+.rules-checkbox {
+    margin: 8px 0 !important;
+}
+
+.rules-checkbox label {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    font-size: 13px !important;
+    color: var(--muted) !important;
+}
+
+.rules-checkbox input[type="checkbox"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    border: 2px solid var(--primary) !important;
+    border-radius: 4px !important;
+    background: var(--panel) !important;
+    cursor: pointer !important;
+    position: relative !important;
+    margin: 2px 0 0 0 !important;
+}
+
+.rules-checkbox input[type="checkbox"]:checked {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+.rules-checkbox input[type="checkbox"]:checked::after {
+    content: '' !important;
+    position: absolute !important;
+    left: 6px !important;
+    top: 2px !important;
+    width: 5px !important;
+    height: 10px !important;
+    border: solid white !important;
+    border-width: 0 2px 2px 0 !important;
+    transform: rotate(45deg) !important;
+    display: block !important;
+}
+
+.rules-checkbox .text {
+    flex: 1 !important;
+    line-height: 1.4 !important;
+}
+
+.rules-checkbox .link {
+    color: var(--primary) !important;
+    cursor: pointer !important;
+    text-decoration: underline !important;
+}
+
+/* Hide inactive sections */
+#login_normal.d-none,
+#logout_undefined.d-none,
+#login_none.d-none {
+    display: none !important;
+}
+
+/* Ensure only active section shows */
+#login_normal:not(.d-none),
+#logout_undefined:not(.d-none),
+#login_none:not(.d-none) {
+    display: grid !important;
+}
+
+/* Modal styling - dark theme */
 .cpmodal,
 .cpmodal-body,
 .cpmodal-content,
@@ -96,220 +285,89 @@
 .modal,
 .modal-content,
 .modal-body {
-    background: #0b1226 !important;
-    background-color: #0b1226 !important;
-    color: #e2e8f0 !important;
-    border: 1px solid #1f2a44 !important;
+    background: var(--card) !important;
+    background-color: var(--card) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
 }
 
 .cpmodal-header,
 .modal-header {
-    background: #0f172a !important;
-    color: #e2e8f0 !important;
-    border-bottom: 1px solid #1f2a44 !important;
+    background: var(--panel) !important;
+    color: var(--text) !important;
+    border-bottom: 1px solid var(--border) !important;
 }
 
 .cpmodal-title,
 .modal-title {
-    color: #e2e8f0 !important;
+    color: var(--text) !important;
 }
 
-/* Modal overlay */
 .cpmodal-overlay,
 .modal-backdrop {
     background: rgba(0, 0, 0, 0.7) !important;
 }
 
-body {
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
-    background: radial-gradient(700px 300px at 50% -10%, rgba(14,165,233,0.25), rgba(14,165,233,0) 60%), linear-gradient(180deg, #05080f 0%, #0b1120 100%) !important;
-}
-
-/* Logo styling to match root */
-.logo img,
-.logo .brand-logo {
-    max-width: 80px !important;
-    height: auto !important;
-    margin: 0 auto 16px !important;
-    display: block !important;
-}
-
-/* Title styling to match root */
-h1, h2,
-.heading-title,
-#cp_portal_head_title {
-    color: #e2e8f0 !important;
-    font-weight: 700 !important;
-}
-
-/* Ensure only active section shows - hide all by default, JS will show the correct one */
-#login_normal,
-#logout_undefined,
-#login_none {
+/* Remove old decorative elements */
+.left-side,
+.right-side::before,
+.right-side::after,
+.field-type-text::before,
+.field-type-text::after {
     display: none !important;
 }
 
-/* When JS removes d-none class, override to show as grid */
-#login_normal:not(.d-none),
-#logout_undefined:not(.d-none),
-#login_none:not(.d-none) {
-    display: grid !important;
+/* Status/info text */
+.pretext {
+    margin: 8px 0 !important;
+    color: var(--muted) !important;
+    font-size: 14px !important;
 }
 
-/* Nuclear override: force all inputs to dark with root site styling */
-* input[type="text"],
-* input[type="password"] {
-    background: #0f172a !important;
-    background-color: #0f172a !important;
-    color: #e2e8f0 !important;
-    border: 1px solid #1f2a44 !important;
-    border-radius: 10px !important;
-    padding: 12px !important;
-    font-family: Inter, sans-serif !important;
+.interface-config {
+    margin-top: 12px !important;
 }
 
-/* Labels styled like root site */
-label {
-    display: block !important;
-    margin-bottom: 6px !important;
-    color: #e2e8f0 !important;
-    font-weight: 500 !important;
+#cp_portal_ifconfig_event_normal,
+#cp_portal_ifconfig_event_undefined,
+#cp_portal_ifconfig_event_none {
+    color: var(--muted) !important;
+    font-size: 13px !important;
+}
+
+/* Links */
+a {
+    color: var(--primary) !important;
+    text-decoration: none !important;
+}
+
+a:hover {
+    text-decoration: underline !important;
+}
+
+/* Override any conflicting styles */
+.captiveportal {
     background: transparent !important;
-    padding: 0 !important;
 }
 
-/* Fix input field backgrounds - remove white, use dark theme */
-.field-text,
-input[type="text"],
-input[type="password"],
-input.field,
-.field-type-text input,
-.field-type-text .field,
-#inputUsername,
-#inputPassword {
-    width: 100% !important;
-    background: #0f172a !important;
-    background-color: #0f172a !important;
-    color: #e2e8f0 !important;
-    border: 1px solid #1f2a44 !important;
-    border-radius: 10px !important;
-    padding: 12px !important;
+#animate-js {
+    background: transparent !important;
 }
 
-/* Override any focus states that might add white */
-input:focus,
-input[type="text"]:focus,
-input[type="password"]:focus {
-    background: #0f172a !important;
-    background-color: #0f172a !important;
-    outline: none !important;
-    border-color: #0ea5e9 !important;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25) !important;
+/* Ensure proper spacing */
+#signin-box {
+    margin-top: 0 !important;
 }
 
-/* Fix checkbox visibility - make checkmark visible and clear */
-.field-type-checkbox input[type="checkbox"] + span:before {
-    background: #0f172a !important;
-    border: 2px solid #38bdf8 !important;
-    width: 20px !important;
-    height: 20px !important;
-    border-radius: 4px !important;
-}
-
-.field-type-checkbox input[type="checkbox"]:checked + span:before {
-    background: #0ea5e9 !important;
-    border-color: #0ea5e9 !important;
-}
-
-.field-type-checkbox input[type="checkbox"]:checked + span:after {
-    border-color: #ffffff !important;
-    border-width: 0 3px 3px 0 !important;
-    display: block !important;
-    opacity: 1 !important;
-    width: 6px !important;
-    height: 12px !important;
-    transform: rotate(45deg) !important;
-    left: 7px !important;
-    top: 3px !important;
-}
-
-.field-type-checkbox input[type="checkbox"] + span:after {
-    content: '' !important;
-    position: absolute !important;
-    border: solid #ffffff !important;
-    border-width: 0 3px 3px 0 !important;
+/* Remove any animations or transitions on disabled state */
+button:disabled::before,
+button:disabled::after,
+button[disabled]::before,
+button[disabled]::after,
+#signin[disabled]::before,
+#signin[disabled]::after,
+#signin_anon[disabled]::before,
+#signin_anon[disabled]::after {
     display: none !important;
 }
-
-.field-type-checkbox label {
-    color: #e2e8f0 !important;
-    display: flex !important;
-    align-items: center !important;
-}
-
-/* Match root site button styling */
-button,
-#signin,
-#signin_anon {
-    padding: 12px 16px !important;
-    border-radius: 10px !important;
-    border: 1px solid transparent !important;
-    font-weight: 600 !important;
-    color: white !important;
-    background: #0ea5e9 !important;
-    font-family: Inter, sans-serif !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-}
-
-button:hover,
-#signin:hover:not([disabled]),
-#signin_anon:hover:not([disabled]) {
-    background: #0284c7 !important;
-}
-
-/* Ensure login button is disabled until checkbox is checked */
-button:disabled,
-button[disabled],
-#signin[disabled],
-#signin_anon[disabled] {
-    opacity: 0.4 !important;
-    cursor: not-allowed !important;
-    background: #111827 !important;
-    transition: none !important;
-    animation: none !important;
-    position: static !important;
-    overflow: visible !important;
-}
-
-/* Remove the rotating X animation on disabled buttons */
-#signin[disabled]:before,
-#signin_anon[disabled]:before,
-#signin[disabled]:after,
-#signin_anon[disabled]:after {
-    display: none !important;
-    content: none !important;
-    animation: none !important;
-}
-
-/* Remove ALL animations and transitions from buttons */
-button,
-.btn,
-#signin,
-#signin_anon,
-button[type="button"],
-.field-type-submit button {
-    transition: none !important;
-    animation: none !important;
-    transform: none !important;
-}
-
-/* Force immediate state changes - no transitions */
-button:hover,
-button:active,
-button:focus {
-    transition: none !important;
-    animation: none !important;
-    transform: none !important;
-}
-
