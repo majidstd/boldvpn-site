@@ -266,9 +266,17 @@ const setupAuthHandlers = () => {
 
 const handleSignIn = (event) => {
     event.preventDefault();
+    const user = $('#inputUsername').val();
+    const password = $('#inputPassword').val();
+    
+    if (!user || !password) {
+        alert('Please enter both username and password.');
+        return;
+    }
+    
     authenticateUser({
-        user: $('#inputUsername').val(),
-        password: $('#inputPassword').val(),
+        user: user,
+        password: password,
     });
 };
 
