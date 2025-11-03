@@ -207,12 +207,13 @@ input[type="password"]:focus {
     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25) !important;
 }
 
-/* Fix checkbox visibility - make checkmark visible */
+/* Fix checkbox visibility - make checkmark visible and clear */
 .field-type-checkbox input[type="checkbox"] + span:before {
     background: #0f172a !important;
-    border: 2px solid #1f2a44 !important;
+    border: 2px solid #38bdf8 !important;
     width: 20px !important;
     height: 20px !important;
+    border-radius: 4px !important;
 }
 
 .field-type-checkbox input[type="checkbox"]:checked + span:before {
@@ -222,8 +223,22 @@ input[type="password"]:focus {
 
 .field-type-checkbox input[type="checkbox"]:checked + span:after {
     border-color: #ffffff !important;
+    border-width: 0 3px 3px 0 !important;
     display: block !important;
     opacity: 1 !important;
+    width: 6px !important;
+    height: 12px !important;
+    transform: rotate(45deg) !important;
+    left: 7px !important;
+    top: 3px !important;
+}
+
+.field-type-checkbox input[type="checkbox"] + span:after {
+    content: '' !important;
+    position: absolute !important;
+    border: solid #ffffff !important;
+    border-width: 0 3px 3px 0 !important;
+    display: none !important;
 }
 
 .field-type-checkbox label {
