@@ -1,12 +1,22 @@
-/* Custom overrides for BoldVPN portal */
+/* Custom overrides for BoldVPN portal - Match root login.html styling */
 
-/* Nuclear override: force all inputs to dark */
+/* Import root site font if not already loaded */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+body {
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+}
+
+/* Nuclear override: force all inputs to dark with root site styling */
 * input[type="text"],
 * input[type="password"] {
     background: #0f172a !important;
     background-color: #0f172a !important;
     color: #e2e8f0 !important;
     border: 1px solid #1f2a44 !important;
+    border-radius: 10px !important;
+    padding: 12px !important;
+    font-family: Inter, sans-serif !important;
 }
 
 /* Fix input field backgrounds - remove white, use dark theme */
@@ -49,12 +59,35 @@ input[type="password"]:focus {
     border-color: #ffffff !important;
 }
 
+/* Match root site button styling */
+button,
+#signin,
+#signin_anon {
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    font-weight: 600 !important;
+    color: white !important;
+    background: #0ea5e9 !important;
+    font-family: Inter, sans-serif !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+
+button:hover,
+#signin:hover:not([disabled]),
+#signin_anon:hover:not([disabled]) {
+    background: #0284c7 !important;
+}
+
 /* Ensure login button is disabled until checkbox is checked */
 button:disabled,
-button[disabled] {
-    opacity: 0.5 !important;
+button[disabled],
+#signin[disabled],
+#signin_anon[disabled] {
+    opacity: 0.4 !important;
     cursor: not-allowed !important;
-    background: var(--bg_alternate) !important;
+    background: #111827 !important;
     transition: none !important;
 }
 
