@@ -102,6 +102,14 @@ body {
     display: block !important;
 }
 
+/* Title styling to match root */
+h1, h2,
+.heading-title,
+#cp_portal_head_title {
+    color: #e2e8f0 !important;
+    font-weight: 700 !important;
+}
+
 /* Ensure only active section shows - hide all by default, JS will show the correct one */
 #login_normal,
 #logout_undefined,
@@ -169,17 +177,27 @@ input[type="password"]:focus {
 
 /* Fix checkbox visibility - make checkmark visible */
 .field-type-checkbox input[type="checkbox"] + span:before {
-    background: var(--input_field_bg) !important;
-    border: 2px solid var(--input_field_border) !important;
+    background: #0f172a !important;
+    border: 2px solid #1f2a44 !important;
+    width: 20px !important;
+    height: 20px !important;
 }
 
 .field-type-checkbox input[type="checkbox"]:checked + span:before {
-    background: var(--button_bg) !important;
-    border-color: var(--button_bg) !important;
+    background: #0ea5e9 !important;
+    border-color: #0ea5e9 !important;
 }
 
 .field-type-checkbox input[type="checkbox"]:checked + span:after {
     border-color: #ffffff !important;
+    display: block !important;
+    opacity: 1 !important;
+}
+
+.field-type-checkbox label {
+    color: #e2e8f0 !important;
+    display: flex !important;
+    align-items: center !important;
 }
 
 /* Match root site button styling */
@@ -212,6 +230,19 @@ button[disabled],
     cursor: not-allowed !important;
     background: #111827 !important;
     transition: none !important;
+    animation: none !important;
+    position: static !important;
+    overflow: visible !important;
+}
+
+/* Remove the rotating X animation on disabled buttons */
+#signin[disabled]:before,
+#signin_anon[disabled]:before,
+#signin[disabled]:after,
+#signin_anon[disabled]:after {
+    display: none !important;
+    content: none !important;
+    animation: none !important;
 }
 
 /* Remove ALL animations and transitions from buttons */
