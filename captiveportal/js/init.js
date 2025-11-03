@@ -269,10 +269,25 @@ const handleSignIn = (event) => {
     const user = $('#inputUsername').val();
     const password = $('#inputPassword').val();
     
-    if (!user || !password) {
-        alert('Please enter both username and password.');
+    // Let HTML5 validation handle empty fields
+    const usernameInput = document.getElementById('inputUsername');
+    const passwordInput = document.getElementById('inputPassword');
+    
+    if (!user) {
+        usernameInput.setCustomValidity('Please enter your username');
+        usernameInput.reportValidity();
         return;
     }
+    
+    if (!password) {
+        passwordInput.setCustomValidity('Please enter your password');
+        passwordInput.reportValidity();
+        return;
+    }
+    
+    // Clear any previous validation messages
+    usernameInput.setCustomValidity('');
+    passwordInput.setCustomValidity('');
     
     authenticateUser({
         user: user,
