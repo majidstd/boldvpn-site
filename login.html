@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BoldVPN Portal Login</title>
-    <meta name="description" content="Login to BoldVPN captive portal." />
+    <title>BoldVPN Account Login</title>
+    <meta name="description" content="Login to your BoldVPN account." />
     <link rel="icon" href="./assets/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,8 +14,8 @@
   <body class="auth">
     <main class="auth-container">
       <a class="brand center" href="./index.html"><img class="logo" src="./assets/logo.svg" alt="BoldVPN" /> <span>BoldVPN</span></a>
-      <h1 class="center">Portal Login</h1>
-      <p class="muted center">Enter your credentials to connect.</p>
+      <h1 class="center">Account Login</h1>
+      <p class="muted center">Manage your BoldVPN account and preferences.</p>
 
       <form id="portal-login-form" method="post" class="card form">
         <div class="form-row">
@@ -26,26 +26,21 @@
           <label for="password">Password</label>
           <input id="password" name="password" type="password" autocomplete="current-password" required />
         </div>
-        <input id="redirurl" name="redirurl" type="hidden" value="./status.html" />
         <button class="btn btn-primary full" type="submit">Login</button>
-        <p id="form-hint" class="muted small center">You will be redirected after login.</p>
+        <p class="muted small center">Account management coming soon.</p>
       </form>
+
+      <div class="card" style="margin-top: 16px; padding: 16px; border: 1px solid var(--primary); background: rgba(14, 165, 233, 0.05);">
+        <p class="center" style="margin: 0; font-size: 14px; line-height: 1.6;">
+          <strong>🌐 Connecting to BoldVPN Network?</strong><br />
+          When you connect to BoldVPN, you'll be automatically redirected to the captive portal for network authentication.
+        </p>
+      </div>
 
       <p class="tiny center"><a href="./index.html">← Back to home</a></p>
     </main>
 
     <script src="./script.js"></script>
-    <script>
-      (function () {
-        var form = document.getElementById('portal-login-form');
-        var url = (window.BOLDVPN_CONFIG && window.BOLDVPN_CONFIG.captivePortalLoginUrl) || '';
-        if (url) {
-          form.setAttribute('action', url);
-        } else {
-          document.getElementById('form-hint').textContent = 'Set captivePortalLoginUrl in script.js to enable login.';
-        }
-      })();
-    </script>
   </body>
   </html>
 

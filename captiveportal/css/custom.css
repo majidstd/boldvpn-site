@@ -340,25 +340,6 @@ button[disabled],
     font-size: 13px !important;
 }
 
-/* IP/Location info sections - add blue border for visibility */
-#isp_info,
-#cp_portal_event_normal,
-#cp_portal_event_undefined,
-#cp_portal_event_none {
-    padding: 16px !important;
-    margin-top: 12px !important;
-    border: 1px solid var(--primary) !important;
-    border-radius: 12px !important;
-    background: rgba(14, 165, 233, 0.05) !important;
-}
-
-#isp_info:empty,
-#cp_portal_event_normal:empty,
-#cp_portal_event_undefined:empty,
-#cp_portal_event_none:empty {
-    display: none !important;
-}
-
 /* Links */
 a {
     color: var(--primary) !important;
