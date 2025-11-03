@@ -102,6 +102,20 @@ body {
     display: block !important;
 }
 
+/* Ensure only active section shows - hide all by default, JS will show the correct one */
+#login_normal,
+#logout_undefined,
+#login_none {
+    display: none !important;
+}
+
+/* When JS removes d-none class, override to show as grid */
+#login_normal:not(.d-none),
+#logout_undefined:not(.d-none),
+#login_none:not(.d-none) {
+    display: grid !important;
+}
+
 /* Nuclear override: force all inputs to dark with root site styling */
 * input[type="text"],
 * input[type="password"] {
