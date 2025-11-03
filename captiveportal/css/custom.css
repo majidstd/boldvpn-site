@@ -4,10 +4,25 @@
 .field-text,
 input[type="text"],
 input[type="password"],
-input.field {
+input.field,
+.field-type-text input,
+.field-type-text .field,
+#inputUsername,
+#inputPassword {
     background: var(--input_field_bg) !important;
+    background-color: var(--input_field_bg) !important;
     color: var(--input_field_color) !important;
     border: 1px solid var(--input_field_border) !important;
+}
+
+/* Override any focus states that might add white */
+input:focus,
+input[type="text"]:focus,
+input[type="password"]:focus {
+    background: var(--input_field_bg) !important;
+    background-color: var(--input_field_bg) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px var(--button_bg) !important;
 }
 
 /* Fix checkbox visibility - make checkmark visible */
@@ -34,10 +49,24 @@ button[disabled] {
     transition: none !important;
 }
 
-/* Remove any animations or transitions from buttons */
+/* Remove ALL animations and transitions from buttons */
 button,
-.btn {
+.btn,
+#signin,
+#signin_anon,
+button[type="button"],
+.field-type-submit button {
     transition: none !important;
     animation: none !important;
+    transform: none !important;
+}
+
+/* Force immediate state changes - no transitions */
+button:hover,
+button:active,
+button:focus {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
 }
 
