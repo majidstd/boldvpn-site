@@ -1,5 +1,14 @@
 /* Custom overrides for BoldVPN portal */
 
+/* Nuclear override: force all inputs to dark */
+* input[type="text"],
+* input[type="password"] {
+    background: #0f172a !important;
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #1f2a44 !important;
+}
+
 /* Fix input field backgrounds - remove white, use dark theme */
 .field-text,
 input[type="text"],
