@@ -129,11 +129,12 @@
                 "zoom": 1.0
             },
             "globe": {
-                "scaleMobile": "1.00",
-                "size": "1.00",
-                "backgroundColor": "#0b1120",
-                "color": "#0ea5e9",
-                "color2": "#38bdf8"
+                "scale": 1.0,
+                "scaleMobile": 1.0,
+                "size": 1.2,
+                "backgroundColor": 0x0b1120,
+                "color": 0x38bdf8,
+                "color2": 0x0ea5e9
             },
             "halo": {
                 "baseColor": "#0ea5e9",
