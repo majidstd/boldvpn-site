@@ -331,6 +331,19 @@ const setupRulesLink = () => {
 };
 
 const checkConnectionStatus = () => {
+    // Check if running locally (for testing)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Simulate OPNsense response for local testing
+        const mockData = {
+            clientState: 'NOT_AUTHORIZED',
+            ipAddress: '192.168.1.100',
+            macAddress: '00:00:00:00:00:00'
+        };
+        $.clientInfo(mockData);
+        $.connectionStatus(mockData);
+        return;
+    }
+    
     $.ajax({
         type: 'POST',
         url: '/api/captiveportal/access/status/',
