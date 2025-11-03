@@ -88,6 +88,38 @@
     color: var(--muted) !important;
 }
 
+/* Fix modal/error popups - dark background to match theme */
+.cpmodal,
+.cpmodal-body,
+.cpmodal-content,
+#MSG,
+.modal,
+.modal-content,
+.modal-body {
+    background: #0b1226 !important;
+    background-color: #0b1226 !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #1f2a44 !important;
+}
+
+.cpmodal-header,
+.modal-header {
+    background: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-bottom: 1px solid #1f2a44 !important;
+}
+
+.cpmodal-title,
+.modal-title {
+    color: #e2e8f0 !important;
+}
+
+/* Modal overlay */
+.cpmodal-overlay,
+.modal-backdrop {
+    background: rgba(0, 0, 0, 0.7) !important;
+}
+
 body {
     font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
     background: radial-gradient(700px 300px at 50% -10%, rgba(14,165,233,0.25), rgba(14,165,233,0) 60%), linear-gradient(180deg, #05080f 0%, #0b1120 100%) !important;
