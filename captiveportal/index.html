@@ -9,7 +9,7 @@
         <meta name="copyright" content="Mirosław Majka, mix@proask.pl" />
         <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
-        <title>User login system | Secure VPN</title>
+        <title>BoldVPN Portal Login</title>
         <link rel="apple-touch-icon" sizes="57x57" href="/images/icons/favicon-57x57.png">
         <link rel="apple-touch-icon" sizes="60x60" href="/images/icons/favicon-60x60.png">
         <link rel="apple-touch-icon" sizes="72x72" href="/images/icons/favicon-72x72.png">
@@ -40,104 +40,73 @@
         <script src="js/init.js"></script>
         <script src="js/bootstrap533.min.js"></script>
     </head>
-    <body class="no-sidebar using-mouse">
+    <body class="no-sidebar using-mouse auth">
         <div class="captiveportal">
             <section id="animate-js">
-                <div class="container d-block d-xl-flex align-items-center">
-                    <div class="row">
-                        <div class="col-12 col-xl-6 left-side">
-                            <div class="wrapper">
-                                <div class="header pb-5">
-                                    <div id="logo" class="logo"></div>
-                                    <div class="heading">
-                                        <h1 id="cp_portal_head_title" class="heading-title"></h1>
-                                    </div>
-                                </div>
-                                <div class="clearfix">
-                                    <p id="cp_portal_info"></p>
-                                </div>
-                                <div id="cp_portal_cookies_note" class="spacer-inner"></div>
-                            </div>
+                <main class="auth-container">
+                    <div id="logo" class="logo center"></div>
+                    <h1 id="cp_portal_head_title" class="center"></h1>
+                    <p id="cp_portal_info" class="muted center"></p>
+                    
+                    <div id="login_normal" class="card form d-none">
+                        <div id="fieldUsername" class="form-row">
+                            <label id="username" for="inputUsername"></label>
+                            <input type="text" id="inputUsername" class="field" required autocomplete="off" autocapitalize="none" readonly>
                         </div>
-                        <div class="col-12 col-xl-6 right-side">
-                            <div class="wrapper">
-                                <div class="form-fields-wrapper">
-                                    <div id="polyglotLanguageSwitcher" role="group"></div>
-                                </div>
-                                <div id="login_normal" class="form-fields-wrapper d-none">
-                                    <form class="login form">
-                                        <div id="fieldUsername" class="field-type-text field-group w-100 field-required">
-                                            <label id="username" for="inputUsername"></label>
-                                            <input type="text" id="inputUsername" class="field field-text size-sm" required autocomplete="off" autocapitalize="none" readonly>
-                                        </div>
-                                        <div id="fieldPassword" class="field-type-text field-group w-100 field-required">
-                                            <label id="userpass" for="inputPassword"></label>
-                                            <input type="password" id="inputPassword" class="field field-text size-sm" required readonly>
-                                        </div>
-                                        <div class="field-type-checkbox field-group w-100 rules-checkbox">
-                                            <label for="login-rules">
-                                                <input type="checkbox" id="login-rules" name="rules" aria-describedby="rules-text"><span></span>
-                                                <span id="rules-text" class="text"><span id="termcondition1"></span> <span id="rules" class="link" role="button"></span> <span id="termcondition2"></span></span>
-                                            </label>
-                                        </div>
-                                        <div id="signin-box" class="field-group field-type-submit w-100">
-                                            <button class="size-md w-100" id="signin" type="button"></button>
-                                        </div>
-                                        <div id="cp_portal_event_normal" class="interface-config">
-                                            <p class="flex-100"><span id="cp_portal_ifconfig_event_normal"></span></p>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div id="logout_undefined" class="form-fields-wrapper field-group d-none">
-                                    <div id="status_info" class="widget-wrap" role="status">
-                                        <div class="widget-heading">
-                                            <h2 id="status" class="heading-title"></h2>
-                                        </div>
-                                        <div id="cp_portal_event_undefined" class="interface-config">
-                                            <p class="flex-100"><span id="cp_portal_ifconfig_event_undefined"></span></p>
-                                        </div>
-                                        <p id="status_pretext1" class="pretext">
-                                        <p id="status_pretext2" class="pretext">
-                                    </div>
-                                    <div class="widget-wrap">
-                                        <form class="w-100">
-                                            <div class="field-group field-type-submit w-100">
-                                                <button class="size-md w-100" id="logoff" type="button"></button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                                <div id="login_none" class="form-fields-wrapper field-group d-none">
-                                    <div id="anon_info" class="widget-wrap">
-                                        <div class="widget-heading">
-                                            <h2 id="anon_title" class="heading-title"></h2>
-                                        </div>
-                                        <p id="anon_pretext1" class="pretext">
-                                        <p id="anon_pretext2" class="pretext">
-                                    </div>
-                                    <div class="field-type-checkbox field-group w-100 rules-checkbox">
-                                        <label for="login-rules-anon">
-                                            <input type="checkbox" id="login-rules-anon" name="rules" aria-describedby="rules-text-anon"><span></span>
-                                            <span id="rules-text-anon" class="text"><span id="termcondition_anon1"></span> <span id="rules_anon" class="link" role="button"></span> <span id="termcondition_anon2"></span></span>
-                                        </label>
-                                    </div>
-                                    <form class="w-100">
-                                        <div class="field-group field-type-submit w-100">
-                                            <button class="size-md w-100" id="signin_anon" type="button"></button>
-                                        </div>
-                                    </form>
-                                    <div class="field-group w-100"></div>
-                                    <div id="cp_portal_event_none" class="interface-config">
-                                        <p class="flex-100"><span id="cp_portal_ifconfig_event_none"></span></p>
-                                    </div>
-                                </div>
-                                <div id="isp_info" class="isp-info" role="region"></div>
-                            </div>
+                        <div id="fieldPassword" class="form-row">
+                            <label id="userpass" for="inputPassword"></label>
+                            <input type="password" id="inputPassword" class="field" required readonly>
+                        </div>
+                        <div class="rules-checkbox">
+                            <label for="login-rules">
+                                <input type="checkbox" id="login-rules" name="rules" aria-describedby="rules-text"><span></span>
+                                <span id="rules-text" class="text"><span id="termcondition1"></span> <span id="rules" class="link" role="button"></span> <span id="termcondition2"></span></span>
+                            </label>
+                        </div>
+                        <div id="signin-box">
+                            <button class="btn btn-primary full" id="signin" type="button"></button>
+                        </div>
+                        <div id="cp_portal_event_normal" class="interface-config">
+                            <p><span id="cp_portal_ifconfig_event_normal"></span></p>
                         </div>
                     </div>
-                    <div id="footer_isp_info" class="footer-isp-info"></div>
+                    
+                    <div id="logout_undefined" class="card form d-none">
+                        <div id="status_info">
+                            <h2 id="status" class="center"></h2>
+                            <div id="cp_portal_event_undefined">
+                                <p><span id="cp_portal_ifconfig_event_undefined"></span></p>
+                            </div>
+                            <p id="status_pretext1" class="pretext muted"></p>
+                            <p id="status_pretext2" class="pretext muted"></p>
+                        </div>
+                        <button class="btn btn-primary full" id="logoff" type="button"></button>
+                    </div>
+                    
+                    <div id="login_none" class="card form d-none">
+                        <div id="anon_info">
+                            <h2 id="anon_title" class="center"></h2>
+                            <p id="anon_pretext1" class="pretext muted"></p>
+                            <p id="anon_pretext2" class="pretext muted"></p>
+                        </div>
+                        <div class="rules-checkbox">
+                            <label for="login-rules-anon">
+                                <input type="checkbox" id="login-rules-anon" name="rules" aria-describedby="rules-text-anon"><span></span>
+                                <span id="rules-text-anon" class="text"><span id="termcondition_anon1"></span> <span id="rules_anon" class="link" role="button"></span> <span id="termcondition_anon2"></span></span>
+                            </label>
+                        </div>
+                        <button class="btn btn-primary full" id="signin_anon" type="button"></button>
+                        <div id="cp_portal_event_none">
+                            <p><span id="cp_portal_ifconfig_event_none"></span></p>
+                        </div>
+                    </div>
+                    
+                    <div id="isp_info" class="isp-info muted small center"></div>
+                    <div id="cp_portal_cookies_note" class="tiny center"></div>
+                    <div id="polyglotLanguageSwitcher" role="group" style="display:none"></div>
                     <div id="MSG"></div>
-                </div>
+                    <div id="footer_isp_info" class="footer-isp-info"></div>
+                </main>
             </section>
         </div>
     </body>

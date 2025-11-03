@@ -3,47 +3,103 @@
 /* Import root site font if not already loaded */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* Import root site CSS variables and auth styles */
+:root {
+  --bg: #0b1120;
+  --panel: #0f172a;
+  --muted: #94a3b8;
+  --text: #e2e8f0;
+  --primary: #0ea5e9;
+  --primary-strong: #0284c7;
+  --contrast: #111827;
+  --card: #0b1226;
+  --border: #1f2a44;
+}
+
+.auth {
+    background: radial-gradient(700px 300px at 50% -10%, rgba(14,165,233,0.25), rgba(14,165,233,0) 60%), linear-gradient(180deg, #05080f 0%, #0b1120 100%) !important;
+}
+
+.auth-container {
+    width: 100% !important;
+    max-width: 420px !important;
+    margin: 40px auto !important;
+    padding: 0 16px !important;
+}
+
+.card {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    padding: 18px !important;
+}
+
+.form {
+    display: grid !important;
+    gap: 14px !important;
+}
+
+.form-row {
+    display: grid !important;
+    gap: 6px !important;
+}
+
+.btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    font-weight: 600 !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: none !important;
+}
+
+.btn-primary {
+    background: var(--primary) !important;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-strong) !important;
+}
+
+.full {
+    width: 100% !important;
+}
+
+.center {
+    text-align: center !important;
+}
+
+.muted {
+    color: var(--muted) !important;
+}
+
+.tiny {
+    font-size: 12px !important;
+    color: var(--muted) !important;
+}
+
+.small {
+    font-size: 13px !important;
+    color: var(--muted) !important;
+}
+
 body {
     font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
     background: radial-gradient(700px 300px at 50% -10%, rgba(14,165,233,0.25), rgba(14,165,233,0) 60%), linear-gradient(180deg, #05080f 0%, #0b1120 100%) !important;
 }
 
-/* Remove old portal decorative elements and frames */
-.field-type-text:before,
-.left-side,
-.right-side {
-    background-image: none !important;
-    background: none !important;
-    box-shadow: none !important;
-}
-
-/* Hide the left side completely for single-column layout like root */
-.left-side {
-    display: none !important;
-}
-
-.right-side {
-    max-width: 420px !important;
-    margin: 40px auto !important;
-    width: 100% !important;
-}
-
-/* Remove white frames and borders from field containers */
-.field-type-text,
-.field-group {
-    background: transparent !important;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 14px 0 !important;
-}
-
-.form-fields-wrapper {
-    background: #0b1226 !important;
-    border: 1px solid #1f2a44 !important;
-    border-radius: 12px !important;
-    padding: 18px !important;
+/* Logo styling to match root */
+.logo img,
+.logo .brand-logo {
+    max-width: 80px !important;
+    height: auto !important;
+    margin: 0 auto 16px !important;
+    display: block !important;
 }
 
 /* Nuclear override: force all inputs to dark with root site styling */
