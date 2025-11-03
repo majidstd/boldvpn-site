@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoldVPN Portal Login</title>
+    <meta name="description" content="Login to BoldVPN captive portal." />
+    <link rel="icon" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="auth">
+    <main class="auth-container">
+      <a class="brand center" href="./index.html"><img class="logo" src="./assets/logo.svg" alt="BoldVPN" /> <span>BoldVPN</span></a>
+      <h1 class="center">Portal Login</h1>
+      <p class="muted center">Enter your credentials to connect.</p>
+
+      <form id="portal-login-form" method="post" class="card form">
+        <div class="form-row">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" required />
+        </div>
+        <div class="form-row">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </div>
+        <input id="redirurl" name="redirurl" type="hidden" value="./status.html" />
+        <button class="btn btn-primary full" type="submit">Login</button>
+        <p id="form-hint" class="muted small center">You will be redirected after login.</p>
+      </form>
+
+      <p class="tiny center"><a href="./index.html">← Back to home</a></p>
+    </main>
+
+    <script src="./script.js"></script>
+    <script>
+      (function () {
+        var form = document.getElementById('portal-login-form');
+        var url = (window.BOLDVPN_CONFIG && window.BOLDVPN_CONFIG.captivePortalLoginUrl) || '';
+        if (url) {
+          form.setAttribute('action', url);
+        } else {
+          document.getElementById('form-hint').textContent = 'Set captivePortalLoginUrl in script.js to enable login.';
+        }
+      })();
+    </script>
+  </body>
+  </html>
+
+

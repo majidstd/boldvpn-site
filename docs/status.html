@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoldVPN Status</title>
+    <meta name="description" content="Connection status for BoldVPN captive portal." />
+    <link rel="icon" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="auth">
+    <main class="auth-container">
+      <a class="brand center" href="./index.html"><img class="logo" src="./assets/logo.svg" alt="BoldVPN" /> <span>BoldVPN</span></a>
+      <h1 class="center">Connection Status</h1>
+      <p class="muted center" id="status-text">Checking...</p>
+      <div class="center">
+        <a class="btn btn-outline" href="./login.html">Return to Login</a>
+        <a class="btn btn-primary" href="./index.html">Go to Homepage</a>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var success = params.get('success');
+        var message = params.get('message');
+        var el = document.getElementById('status-text');
+        if (success === '1') {
+          el.textContent = 'You are now connected to BoldVPN.';
+        } else if (success === '0') {
+          el.textContent = 'Login failed' + (message ? ': ' + message : '.');
+        } else {
+          el.textContent = 'If you have just logged in, you should be online. You may close this tab.';
+        }
+      })();
+    </script>
+  </body>
+  </html>
+
+
