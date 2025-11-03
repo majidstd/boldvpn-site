@@ -12,21 +12,4 @@
     <path d="M40 48h16" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
   </g>
   <text x="64" y="120" text-anchor="middle" fill="#e2e8f0" font-family="Inter, Arial" font-size="12">BoldVPN</text>
-  
-</svg>
-
-<?xml version="1.0" encoding="utf-8"?>
-<svg width="100%" height="100%" viewBox="0 0 1200 359" version="1.1" xmlns="http://www.w3.org/2000/svg" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
-  <path class="primary" d="M 313.439 57.11 C 312.416 63.105 312.416 133.001 312.416 133.001 L 312.416 202.895 C 312.555 215.468 310.593 227.392 306.725 238.818 C 302.852 250.246 297.083 261.18 289.618 271.774 C 282.146 282.368 273.374 291.997 263.197 300.614 C 253.022 309.226 241.442 316.827 228.361 323.381 L 193.91 340.896 L 159.464 358.412 C 158.924 358.834 158.741 358.971 158.495 358.995 C 158.247 359.02 157.939 358.941 157.177 358.941 C 156.388 358.941 156.05 359.012 155.747 358.971 C 155.436 358.933 155.168 358.774 154.524 358.33 L 120.155 340.855 L 85.783 323.381 C 72.697 316.827 61.119 309.226 50.95 300.614 C 40.776 291.997 32.004 282.368 24.523 271.774 C 17.059 261.18 11.292 250.246 7.427 238.818 C 3.554 227.392 1.592 215.468 1.728 202.895 L 1.649 132.279 L 0.001 57.11 C -0.005 57.108 0.009 57.11 0.001 57.11 L 78.949 28.971 L 156.099 0 C 177.027 7.475 215.413 21.665 248.56 33.984 C 281.712 46.312 313.439 57.11 313.439 57.11" style="fill: rgb(27, 53, 80); stroke-width: 1; transform-origin: 600.972px 181.726px;"/>
-  <path class="accent" d="M 156.716 38.472 L 41.242 80.414 L 41.242 201.565 C 41.242 245.829 68.739 285.441 115.48 308.741 L 156.716 329.705 L 197.957 308.741 C 244.701 285.441 272.195 245.829 272.195 201.565 L 272.195 80.414 L 156.716 38.472 Z" style="fill: rgb(231, 84, 35); stroke-width: 1; transform-origin: 600.972px 181.726px;"/>
-  <rect class="white" style="fill: rgb(255, 255, 255); stroke-width: 1; transform-origin: 600.972px 181.726px;" x="93.482" y="131.668" width="126.478" height="88.535" rx="6"/>
-  <path class="white" d="M 131.978 131.668 L 131.978 115.36 C 131.978 99.219 152.6 89.127 169.096 97.199 C 176.748 100.942 181.465 107.866 181.465 115.36 L 181.465 131.668 L 197.957 131.668 L 197.957 115.36 C 197.957 96.719 178.713 80.414 156.716 80.414 C 134.721 80.414 115.48 96.719 115.48 115.36 L 115.48 131.668 L 131.978 131.668 Z" style="fill: rgb(255, 255, 255); stroke-width: 1; transform-origin: 600.972px 181.726px;"/>
-  <circle class="primary" cx="57" cy="74.514" r="5" style="fill: rgb(27, 53, 80); stroke-width: 1; transform-origin: 218.578px 78px;" transform="matrix(2.749453, 0, 0, 2.329869, 380.494659, 105.022789)"/>
-  <rect class="primary" style="fill: rgb(27, 53, 80); stroke-width: 1; transform-origin: 600.972px 181.726px;" x="151.222" y="182.926" width="10.996" height="18.639" rx="1"/>
-  <text class="primary" style="fill: rgb(27, 53, 80); font-family: &quot;Segoe UI&quot;, &quot;Helvetica Neue&quot;, Arial, sans-serif; font-size: 54px; font-weight: 700; white-space: pre; transform-origin: 218.578px 78px;" transform="matrix(2.749453, 0, 0, 2.329869, 380.494659, 105.022789)"><tspan style="font-size: 64.3813px; line-height: 88.5887px;" x="132" y="76.514">B</tspan><tspan>old VPN</tspan></text>
-  <text class="primary" style="fill: rgb(27, 53, 80); font-family: &quot;Segoe UI&quot;, &quot;Helvetica Neue&quot;, Arial, sans-serif; font-size: 36px; font-weight: 700; white-space: pre; transform-origin: 218.578px 78px;" x="132" y="116.514" transform="matrix(2.749453, 0, 0, 2.329869, 380.494659, 105.022789)">PORTAL</text>
-  <g style="" transform="matrix(0.201303, 0, 0, 0.200174, 281.387238, 68.315933)">
-    <path class="white" d="M 439.183 74.901 L 439.183 58.593 C 439.183 42.452 459.805 32.36 476.301 40.432 C 483.953 44.175 488.67 51.099 488.67 58.593 L 488.67 74.901 L 505.162 74.901 L 505.162 58.593 C 505.162 39.952 485.918 23.647 463.921 23.647 C 441.926 23.647 422.685 39.952 422.685 58.593 L 422.685 74.901 L 439.183 74.901 Z" style="stroke-width: 1; transform-origin: 908.177px 124.959px; fill: rgb(255, 255, 255); stroke: rgb(255, 255, 255);"/>
-    <rect class="white" style="stroke-width: 1; transform-origin: 908.174px 125.39px; fill: rgb(255, 255, 255); stroke: rgb(255, 255, 255);" x="400.684" y="75.332" width="126.478" height="88.535" rx="6"/>
-  </g>
 </svg>
