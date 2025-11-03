@@ -1,0 +1,35 @@
+/* Custom overrides for BoldVPN portal */
+
+/* Fix input field backgrounds - remove white, use dark theme */
+.field-text,
+input[type="text"],
+input[type="password"],
+input.field {
+    background: var(--input_field_bg) !important;
+    color: var(--input_field_color) !important;
+    border: 1px solid var(--input_field_border) !important;
+}
+
+/* Fix checkbox visibility - make checkmark visible */
+.field-type-checkbox input[type="checkbox"] + span:before {
+    background: var(--input_field_bg) !important;
+    border: 2px solid var(--input_field_border) !important;
+}
+
+.field-type-checkbox input[type="checkbox"]:checked + span:before {
+    background: var(--button_bg) !important;
+    border-color: var(--button_bg) !important;
+}
+
+.field-type-checkbox input[type="checkbox"]:checked + span:after {
+    border-color: #ffffff !important;
+}
+
+/* Ensure login button is disabled until checkbox is checked */
+button:disabled,
+button[disabled] {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    background: var(--bg_alternate) !important;
+}
+
