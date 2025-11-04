@@ -136,11 +136,6 @@
     <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script>
     <script src="./script.js"></script>
     <script>
-      // Redirect login subdomain to login page
-      if (window.location.hostname === 'login.boldvpn.net') {
-        window.location.replace('/login.html');
-      }
-
       // Initialize Vanta.js GLOBE animation as full background
       if (document.getElementById('vanta-background')) {
         VANTA.GLOBE({
