@@ -1,429 +1,229 @@
 /**
- * @version 2.3.2
- * @package Multilanguage Captive Portal Template for OPNsense
- * @author Mirosław Majka (mix@proask.pl)
- * @copyright (C) 2025 Mirosław Majka <mix@proask.pl>
- * @license GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
+ * BoldVPN Captive Portal - Clean build matching login.html
  */
 
+let settings = {};
+let langText = {};
+
+// Load settings and initialize
 $(document).ready(() => {
-    $.when($.loadSettings()).done(() => {
-        applyCssSettings();
-        setupLanguage();
-        initializeVantaEffect();
-        useWCAG();
+    $.loadSettings().done(() => {
+        initializeVanta();
         updateLogo();
-        setupRulesSection();
-        configureInputFocusBehavior();
-        setupAuthHandlers();
-        setupRulesLink();
+        setupAuth();
         checkConnectionStatus();
         fetchUserIPAndLocation();
     });
 });
 
-const applyCssSettings = () => {
-    if (settings.css_params) {
-        Object.entries(settings.css_params).forEach(([key, value]) => {
-            if (settings.layout.a11y && settings.layout.a11y_contrast) {
-                value = $.adjustContrast(
-                    value,
-                    {
-                        factor: settings.layout.a11y_factor,
-                        treshhold: settings.layout.a11y_treshhold
-                    }
-                );
-            }
-
-            _root.style.setProperty(`--${key}`, value);
-        });
-    }
-
-    const flagsDir = settings.layout.lang_flags_dir || '4x3';
-    const langLayout = settings.layout.lang_layout;
-
-    if (langLayout === 'flags-only-select' || langLayout === 'flags-select') {
-        let styleEl = document.getElementById('flags');
-
-        if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = 'flags';
-            document.head.appendChild(styleEl);
-        }
-
-        styleEl.innerHTML = '';
-
-        Object.keys(settings.langs).forEach(lang => {
-            const flag = langsFlags[lang] || lang;
-            const url  = `/images/flags/${flagsDir}/${flag}.svg`;
-
-            styleEl.innerHTML += `#${lang}::before {background-image: url("${url}");}`;
-        });
-    }
-};
-
-const useWCAG = () => {
-    if (!settings.layout.a11y) {
-        return;
-    }
-
-    $('body').addClass('a11y');
-
-    if (settings.layout.a11y_contrast) {
-        $('body').addClass('a11y-contrast');
-    }
-
-    if (settings.layout.a11y_highlight) {
-        $('body').addClass('a11y-highlight');
-    }
-
-    if (settings.layout.a11y_mono) {
-        $('body').addClass('a11y-mono');
-    }
-
-    if (settings.layout.a11y_keyboard) {
-        $('body').addClass('a11y-keyboard');
-        $.initKeyboardAccessibility();
-
-        if (settings.layout.a11y_helper) {
-            $('body').addClass('a11y-helper');
-
-            const resources = [
-                'tour.min.css',
-                'tour-rtl.min.css',
-                'tour.min.js'
-            ];
-
-            $.getMultiResources(resources, 'tourguide').then(() => {
-                if (typeof $.initTour === 'function') {
-                    const tour = $.initTour();
-                    if (tour) {
-                        const launchBtn = document.getElementById("launchTour");
-                        if (launchBtn) {
-                            launchBtn.addEventListener("click", () => {
-                                tour.start();
-                            });
-                        }
-                    }
-                } else {
-                    console.warn("Bootstrap Tour does not exist after loading resources!");
-                }
-            })
-            .catch(err => {
-                console.error("Error loading Bootstrap Tour resources:", err);
-            });
-        }
-    }
-}
-
-const initializeVantaEffect = () => {
-    if (!settings.animate?.effect) {
-        return;
-    }
-
-    const effect = settings.animate.effect.toLowerCase();
-    const preset = settings.animate.preset[effect];
-
-    const vantaResources = [
-        'vanta.css',
-        'three.r134.min.js',
-        `vanta.${effect}.min.js`
-    ];
-
-    $.getMultiResources(vantaResources, 'vanta')
-    .then(() => {
-        window['VANTA'][effect.toUpperCase()]({
-            ...settings.animate.params,
-            ...preset
-        });
-
-        if (settings.layout.a11y) {
-            document.querySelectorAll('.vanta-canvas').forEach(canvas => {
-                canvas.setAttribute('role', 'presentation');
-                canvas.setAttribute('aria-hidden', 'true');
-            });
-        }
+// Load settings from config
+$.loadSettings = () => {
+    return $.ajax({
+        url: 'config/settings.json',
+        dataType: 'json'
+    }).done((data) => {
+        settings = data;
+        loadLanguage();
     });
 };
 
-const updateLogo = async () => {
-    const logoContainer = $('#logo');
-    const fallback      = '/images/default-logo.svg';
-    const extensions    = ['svg', 'png', 'jpg'];
-    const basePath      = '/images/logo';
-
-    if (settings.logo && settings.logo.startsWith('data:image/')) {
-        logoContainer.html(
-            `<img class="brand-logo" src="${settings.logo}" height="150" width="150" alt="Logo">`
-        );
-
-        return;
-    }
-
-    if (settings.logo && typeof settings.logo === 'string') {
-        try {
-            const res = await fetch(settings.logo, { method: 'HEAD' });
-
-            if (res.ok) {
-                logoContainer.html(
-                    `<img class="brand-logo" src="${settings.logo}" height="150" width="150" alt="Logo">`
-                );
-
-                return;
-            }
-        } catch (e) {
-
-        }
-    }
-
-    const urls = extensions.map(ext => `${basePath}.${ext}`);
-
-    for (const url of urls) {
-        try {
-            const res = await fetch(url, { method: 'HEAD' });
-
-            if (res.ok) {
-                logoContainer.html(
-                    `<img class="brand-logo" src="${url}" height="150" width="150" alt="Logo">`
-                );
-
-                return;
-            }
-        } catch (e) {
-
-        }
-    }
-
-    logoContainer.html(
-        `<img class="brand-logo" src="${fallback}" height="150" width="150" alt="Logo">`
-    );
-};
-
-const setupLanguage = () => {
-    const browserLang = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
-    let lang = $.getCookie('lang') || browserLang;
-
-    if (!(lang in settings.langs)) {
-        lang = settings.default_lang;
-    }
-
-    $('html').attr({
-        lang,
-        dir: langsRTL.includes(lang) ? 'rtl' : 'ltr',
-    });
-
-    if (!$.getCookie('lang')) {
-        $.createCookie('lang', lang, 31);
-    }
-
-    $.when($.loadLangs(lang)).done(() => {
-        if (Object.keys(settings.langs).length > 1) {
-            $('.captiveportal').hasClass('single-lang')
-                ? $('.captiveportal').removeClass('single-lang').addClass('multiple-langs')
-                : $('.captiveportal').addClass('multiple-langs');
-            $.setLangLayout(settings.langs, lang, '#polyglotLanguageSwitcher');
-        } else {
-            $('.captiveportal').hasClass('multiple-langs')
-                ? $('.captiveportal').removeClass('multiple-langs').addClass('single-lang')
-                : $('.captiveportal').addClass('single-lang');
-        }
-    });
-};
-
-const setupRulesSection = () => {
-    if (settings.layout.enable_rules) {
-        toggleSignInButtons('#login-rules', '#signin');
-        toggleSignInButtons('#login-rules-anon', '#signin_anon');
-    } else {
-        $('.rules-checkbox').html('<br />');
-    }
-};
-
-const toggleSignInButtons = (checkboxSelector, buttonSelector) => {
-    $(checkboxSelector).prop('checked', false);
-    $(buttonSelector).prop('disabled', true);
-
-    $(checkboxSelector).on('change', function () {
-        $(buttonSelector).prop('disabled', !$(this).prop('checked'));
-    });
-};
-
-const configureInputFocusBehavior = () => {
-    $('input[readonly]').on('focus', function () {
-        $(this).prop('readonly', false);
-    });
-
-    $('input:not([readonly])').on('blur', function () {
-        $(this).prop('readonly', true);
-    });
-};
-
-const setupAuthHandlers = () => {
-    $('#signin').on('click', handleSignIn);
-    $('#signin_anon').on('click', handleAnonymousSignIn);
-    $('#logoff').on('click', handleLogoff);
-};
-
-const handleSignIn = (event) => {
-    event.preventDefault();
-    const user = $('#inputUsername').val();
-    const password = $('#inputPassword').val();
-    
-    // Let HTML5 validation handle empty fields
-    const usernameInput = document.getElementById('inputUsername');
-    const passwordInput = document.getElementById('inputPassword');
-    
-    if (!user) {
-        usernameInput.setCustomValidity('Please enter your username');
-        usernameInput.reportValidity();
-        return;
-    }
-    
-    if (!password) {
-        passwordInput.setCustomValidity('Please enter your password');
-        passwordInput.reportValidity();
-        return;
-    }
-    
-    // Clear any previous validation messages
-    usernameInput.setCustomValidity('');
-    passwordInput.setCustomValidity('');
-    
-    authenticateUser({
-        user: user,
-        password: password,
-    });
-};
-
-const handleAnonymousSignIn = (event) => {
-    event.preventDefault();
-    authenticateUser({ user: '', password: '' });
-};
-
-const handleLogoff = (event) => {
-    event.preventDefault();
+// Load language
+const loadLanguage = () => {
+    const lang = settings.default_lang || 'en';
     $.ajax({
-        type: 'POST',
-        url: '/api/captiveportal/access/logoff/',
-        dataType: 'json',
-        data: { user: '', password: '' },
-    })
-    .done(() => window.location.reload())
-    .fail($.connectionFailed);
+        url: `langs/${lang}.json`,
+        dataType: 'json'
+    }).done((data) => {
+        langText = data;
+        updateUI();
+    });
 };
 
-const authenticateUser = (credentials) => {
-    $.ajax({
-        type: 'POST',
-        url: '/api/captiveportal/access/logon/',
-        dataType: 'json',
-        data: credentials,
-    })
-    .done((data) => {
-        $.clientInfo(data);
-        $.connectionLogon(data);
-    })
-    .fail($.connectionFailed);
+// Update UI with language text
+const updateUI = () => {
+    $('#cp_portal_head_title').text(langText.cp_portal_head_title || 'Portal Login');
+    $('#cp_portal_info').text(langText.cp_portal_info || 'Enter your credentials to access the BoldVPN network.');
+    $('#username').text(langText.username || 'Username');
+    $('#userpass').text(langText.userpass || 'Password');
+    $('#signin').text(langText.signin || 'Log in');
+    $('#signin_anon').text(langText.signin_anon || 'Sign in');
+    $('#logoff').text(langText.logoff || 'Log out');
+    $('#status').text(langText.status || 'Device connected');
+    $('#anon_title').text(langText.anon_title || 'Sign in');
+    $('#termcondition1').text(langText.termcondition1 || 'I accept ');
+    $('#termcondition2').text(langText.termcondition2 || ' of the provision of internet access services.');
+    $('#termcondition_anon1').text(langText.termcondition_anon1 || 'I accept ');
+    $('#termcondition_anon2').text(langText.termcondition_anon2 || ' of the provision of internet access services.');
+    $('#rules').text(langText.rules || 'terms');
+    $('#rules_anon').text(langText.rules_anon || 'terms');
+    $('#status_pretext1').text(langText.status_pretext1 || '');
+    $('#status_pretext2').text(langText.status_pretext2 || '');
+    $('#anon_pretext1').text(langText.anon_pretext1 || '');
+    $('#cp_portal_cookies_note').text(langText.cp_portal_cookies_note || '');
+    $('title').text(langText.pagetitle || 'BoldVPN Portal Login');
 };
 
-const setupRulesLink = () => {
-    $('[id^="rules"].link').on('click', $.showRules);
+// Initialize Vanta globe background
+const initializeVanta = () => {
+    const script1 = document.createElement('script');
+    script1.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js';
+    document.head.appendChild(script1);
+    
+    script1.onload = () => {
+        const script2 = document.createElement('script');
+        script2.src = 'https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js';
+        document.head.appendChild(script2);
+        
+        script2.onload = () => {
+            if (window.VANTA) {
+                VANTA.GLOBE({
+                    el: "#vanta-background",
+                    mouseControls: true,
+                    touchControls: true,
+                    gyroControls: false,
+                    minHeight: 200.00,
+                    minWidth: 200.00,
+                    scale: 1.00,
+                    scaleMobile: 1.00,
+                    color: 0x38bdf8,
+                    color2: 0x0ea5e9,
+                    backgroundColor: 0x0b1120,
+                    size: 1.2
+                });
+            }
+        };
+    };
 };
 
+// Update logo with cache-busting
+const updateLogo = () => {
+    const timestamp = new Date().getTime();
+    const logoHtml = `<img class="logo" src="/images/logo.svg?v=${timestamp}" alt="BoldVPN" /> <span>BoldVPN</span>`;
+    $('#logo').html(logoHtml);
+};
+
+// Fetch IP and location
+const fetchUserIPAndLocation = () => {
+    fetch('https://ipapi.co/json/')
+        .then(response => response.json())
+        .then(data => {
+            const ipLocation = `IP: ${data.ip || 'N/A'} | ${data.city || ''} ${data.country_name || ''}`;
+            const ipInfo = `<p class="tiny center muted" style="margin-top: 16px;">${ipLocation}</p>`;
+            $('#cp_portal_cookies_note').after(ipInfo);
+        })
+        .catch(() => {
+            // Silently fail if IP lookup doesn't work
+        });
+};
+
+// Setup authentication handlers
+const setupAuth = () => {
+    // Remove readonly after page loads
+    setTimeout(() => {
+        $('#inputUsername, #inputPassword').removeAttr('readonly');
+    }, 100);
+    
+    // Update button state based on checkbox
+    const updateButtonState = () => {
+        const rulesChecked = $('#login-rules, #login-rules-anon').is(':checked');
+        $('#signin, #signin_anon').prop('disabled', !rulesChecked);
+    };
+    
+    $('#login-rules, #login-rules-anon').on('change', updateButtonState);
+    updateButtonState();
+    
+    // Login button handler
+    $('#signin, #signin_anon').on('click', function() {
+        const username = $('#inputUsername').val().trim();
+        const password = $('#inputPassword').val().trim();
+        const rulesChecked = $('#login-rules, #login-rules-anon').is(':checked');
+        
+        // Clear previous errors
+        $('.error-message').remove();
+        
+        // Validation like login.html
+        if (!username) {
+            $('#inputUsername').after('<p class="error-message small" style="color: #ef4444; margin: 4px 0 0 0;">Username is required</p>');
+            $('#inputUsername').focus();
+            return;
+        }
+        
+        if (!password) {
+            $('#inputPassword').after('<p class="error-message small" style="color: #ef4444; margin: 4px 0 0 0;">Password is required</p>');
+            $('#inputPassword').focus();
+            return;
+        }
+        
+        if (!rulesChecked) {
+            return;
+        }
+        
+        // Call OPNsense login API
+        $(this).prop('disabled', true).text('Logging in...');
+        
+        $.ajax({
+            type: 'POST',
+            url: '/api/captiveportal/access/logon/',
+            dataType: 'json',
+            data: {
+                user: username,
+                password: password
+            }
+        }).done((data) => {
+            if (data.clientState === 'AUTHORIZED') {
+                checkConnectionStatus();
+            } else {
+                $('.error-message').remove();
+                $(this).before('<p class="error-message small center" style="color: #ef4444; margin: 0 0 12px 0;">Invalid username or password</p>');
+                $(this).prop('disabled', false).text(langText.signin || 'Log in');
+            }
+        }).fail(() => {
+            $('.error-message').remove();
+            $(this).before('<p class="error-message small center" style="color: #ef4444; margin: 0 0 12px 0;">Connection error. Please try again.</p>');
+            $(this).prop('disabled', false).text(langText.signin || 'Log in');
+        });
+    });
+    
+    // Logout button handler
+    $('#logoff').on('click', function() {
+        $(this).prop('disabled', true).text('Logging out...');
+        $.ajax({
+            type: 'POST',
+            url: '/api/captiveportal/access/logoff/',
+            dataType: 'json'
+        }).done(() => {
+            location.reload();
+        }).fail(() => {
+            location.reload();
+        });
+    });
+    
+    // Rules link handler - simple alert instead of modal
+    $('#rules, #rules_anon').on('click', function(e) {
+        e.preventDefault();
+        alert('Please read and accept the terms of service for network access.');
+    });
+};
+
+// Check connection status
 const checkConnectionStatus = () => {
     $.ajax({
         type: 'POST',
         url: '/api/captiveportal/access/status/',
-        dataType: 'json',
-        data: {
-            user: $('#inputUsername').val(),
-            password: $('#inputPassword').val(),
-        },
-    })
-    .done((data) => {
-        $.clientInfo(data);
-        $.connectionStatus(data);
-    })
-    .fail(() => setTimeout($.connectionFailed, 1000));
-};
-
-const fetchUserIPAndLocation = () => {
-    // Wait for DOM elements to be rendered with retry mechanism
-    const waitForElements = (callback, maxAttempts = 10, delay = 500) => {
-        let attempts = 0;
-        
-        const checkElements = () => {
-            const ipElement = document.getElementById('user-ip');
-            const locationElement = document.getElementById('user-location');
-            
-            if (ipElement && locationElement) {
-                callback();
-            } else if (attempts < maxAttempts) {
-                attempts++;
-                setTimeout(checkElements, delay);
-            } else {
-                console.warn('IP/Location elements not found after maximum attempts');
-            }
-        };
-        
-        checkElements();
-    };
-    
-    waitForElements(() => {
-        // Try primary API first
-        fetch('https://ipapi.co/json/')
-            .then(response => response.json())
-            .then(data => {
-                // Check if rate limited or error
-                if (data.error) {
-                    throw new Error('Primary API failed: ' + (data.reason || 'Unknown'));
-                }
-                
-                const ipElement = document.getElementById('user-ip');
-                const locationElement = document.getElementById('user-location');
-                
-                if (ipElement) {
-                    ipElement.textContent = data.ip || 'Unavailable';
-                }
-                
-                if (locationElement) {
-                    const city = data.city || '';
-                    const country = data.country_name || '';
-                    locationElement.textContent = city && country ? `${city}, ${country}` : 'Unavailable';
-                }
-            })
-            .catch(error => {
-                console.warn('Primary IP API failed, trying fallback:', error);
-                
-                // Fallback to ip-api.com (free, no key required, 45 req/min)
-                fetch('http://ip-api.com/json/')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'fail') {
-                            throw new Error('Fallback API failed');
-                        }
-                        
-                        const ipElement = document.getElementById('user-ip');
-                        const locationElement = document.getElementById('user-location');
-                        
-                        if (ipElement) {
-                            ipElement.textContent = data.query || 'Unavailable';
-                        }
-                        
-                        if (locationElement) {
-                            const city = data.city || '';
-                            const country = data.country || '';
-                            locationElement.textContent = city && country ? `${city}, ${country}` : 'Unavailable';
-                        }
-                    })
-                    .catch(fallbackError => {
-                        console.error('All IP APIs failed:', fallbackError);
-                        const ipElement = document.getElementById('user-ip');
-                        const locationElement = document.getElementById('user-location');
-                        
-                        if (ipElement) ipElement.textContent = 'Unavailable';
-                        if (locationElement) locationElement.textContent = 'Unavailable';
-                    });
-            });
+        dataType: 'json'
+    }).done((data) => {
+        if (data.clientState === 'AUTHORIZED') {
+            $('#login_normal, #login_none').addClass('d-none');
+            $('#logout_undefined').removeClass('d-none');
+        } else if (data.authType === 'none') {
+            $('#login_normal').addClass('d-none');
+            $('#login_none').removeClass('d-none');
+        } else {
+            $('#login_normal').removeClass('d-none');
+            $('#login_none, #logout_undefined').addClass('d-none');
+        }
+    }).fail(() => {
+        // Show login form even if API fails (for testing)
+        $('#login_normal').removeClass('d-none');
     });
 };

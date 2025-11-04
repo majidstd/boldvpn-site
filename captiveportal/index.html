@@ -1,113 +1,89 @@
 <!DOCTYPE html>
-<html dir="ltr">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="robots" content="noindex, nofollow, noodp, noydir" />
-        <meta name="keywords" content="" />
-        <meta name="description" content="" />
-        <meta name="copyright" content="Mirosław Majka, mix@proask.pl" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoldVPN Portal Login</title>
+    <link rel="icon" href="/images/icons/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/portal.css" />
+    
+    <!-- OPNsense Required Scripts -->
+    <script src="js/jquery-3.7.1.min.js"></script>
+    <script src="js/sprintf.min.js"></script>
+    <script src="js/cpModal.min.js"></script>
+    <script src="js/functions.js"></script>
+    <script src="js/init.js"></script>
+  </head>
+  <body class="auth">
+    <div id="vanta-background"></div>
+    
+    <main class="auth-container">
+      <div id="logo" class="brand center"></div>
+      <h1 id="cp_portal_head_title" class="center">Portal Login</h1>
+      <p id="cp_portal_info" class="muted center">Enter your credentials to access the BoldVPN network.</p>
 
-        <title>BoldVPN Portal Login</title>
-        <link rel="apple-touch-icon" sizes="57x57" href="/images/icons/favicon-57x57.png">
-        <link rel="apple-touch-icon" sizes="60x60" href="/images/icons/favicon-60x60.png">
-        <link rel="apple-touch-icon" sizes="72x72" href="/images/icons/favicon-72x72.png">
-        <link rel="apple-touch-icon" sizes="76x76" href="/images/icons/favicon-76x76.png">
-        <link rel="apple-touch-icon" sizes="114x114" href="/images/icons/favicon-114x114.png">
-        <link rel="apple-touch-icon" sizes="120x120" href="/images/icons/favicon-120x120.png">
-        <link rel="apple-touch-icon" sizes="144x144" href="/images/icons/favicon-144x144.png">
-        <link rel="apple-touch-icon" sizes="152x152" href="/images/icons/favicon-152x152.png">
-        <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/favicon-180x180.png">
-        <link rel="icon" type="image/svg+xml" href="/images/icons/favicon.svg">
-        <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/favicon-16x16.png">
-        <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="96x96" href="/images/icons/favicon-96x96.png">
-        <link rel="icon" type="image/png" sizes="192x192" href="/images/icons/favicon-192x192.png">
-        <link rel="shortcut icon" type="image/x-icon" href="/images/icons/favicon.ico">
-        <link rel="icon" type="image/x-icon" href="/images/icons/favicon.ico">
-        <meta name="msapplication-TileColor" content="#ffffff">
-        <meta name="msapplication-TileImage" content="/images/icons/favicon-144x144.png">
-        <meta name="msapplication-config" content="/images/icons/browserconfig.xml">
-        <link href="css/master.css" rel="stylesheet">
+      <!-- Normal Login Form -->
+      <div id="login_normal" class="d-none">
+        <form class="card form">
+          <div class="form-row">
+            <label id="username" for="inputUsername">Username</label>
+            <input id="inputUsername" type="text" autocomplete="off" required />
+          </div>
+          <div class="form-row">
+            <label id="userpass" for="inputPassword">Password</label>
+            <input id="inputPassword" type="password" required />
+          </div>
+          <div class="checkbox-row">
+            <label for="login-rules">
+              <input type="checkbox" id="login-rules" name="rules" />
+              <span class="checkbox-custom"></span>
+              <span class="text">
+                <span id="termcondition1">I accept </span>
+                <span id="rules" class="link">terms</span>
+                <span id="termcondition2"> of the provision of internet access services.</span>
+              </span>
+            </label>
+          </div>
+          <button class="btn btn-primary full" id="signin" type="button">Log in</button>
+        </form>
+      </div>
 
-        <script src="js/jquery-3.7.1.min.js"></script>
-        <script src="js/sprintf.min.js"></script>
-        <script src="js/css_browser_selector.js"></script>
-        <script src="js/cpModal.min.js"></script>
-        <script src="js/jquery.polyglot.language.switcher.js"></script>
-        <script src="js/functions.js"></script>
-        <script src="js/init.js"></script>
-        <script src="js/bootstrap533.min.js"></script>
-    </head>
-    <body class="no-sidebar using-mouse auth">
-        <div class="captiveportal">
-            <section id="animate-js">
-                <main class="auth-container">
-                    <div id="logo" class="logo center"></div>
-                    <h1 id="cp_portal_head_title" class="center"></h1>
-                    <p id="cp_portal_info" class="muted center"></p>
-                    
-                    <div id="login_normal" class="card form d-none">
-                        <div id="fieldUsername" class="form-row">
-                            <label id="username" for="inputUsername"></label>
-                            <input type="text" id="inputUsername" class="field" required autocomplete="off" autocapitalize="none" readonly>
-                        </div>
-                        <div id="fieldPassword" class="form-row">
-                            <label id="userpass" for="inputPassword"></label>
-                            <input type="password" id="inputPassword" class="field" required readonly>
-                        </div>
-                        <div class="rules-checkbox">
-                            <label for="login-rules">
-                                <input type="checkbox" id="login-rules" name="rules" aria-describedby="rules-text"><span></span>
-                                <span id="rules-text" class="text"><span id="termcondition1"></span> <span id="rules" class="link" role="button"></span> <span id="termcondition2"></span></span>
-                            </label>
-                        </div>
-                        <div id="signin-box">
-                            <button class="btn btn-primary full" id="signin" type="button"></button>
-                        </div>
-                        <div id="cp_portal_event_normal" class="interface-config">
-                            <p><span id="cp_portal_ifconfig_event_normal"></span></p>
-                        </div>
-                    </div>
-                    
-                    <div id="logout_undefined" class="card form d-none">
-                        <div id="status_info">
-                            <h2 id="status" class="center"></h2>
-                            <div id="cp_portal_event_undefined">
-                                <p><span id="cp_portal_ifconfig_event_undefined"></span></p>
-                            </div>
-                            <p id="status_pretext1" class="pretext muted"></p>
-                            <p id="status_pretext2" class="pretext muted"></p>
-                        </div>
-                        <button class="btn btn-primary full" id="logoff" type="button"></button>
-                    </div>
-                    
-                    <div id="login_none" class="card form d-none">
-                        <div id="anon_info">
-                            <h2 id="anon_title" class="center"></h2>
-                            <p id="anon_pretext1" class="pretext muted"></p>
-                            <p id="anon_pretext2" class="pretext muted"></p>
-                        </div>
-                        <div class="rules-checkbox">
-                            <label for="login-rules-anon">
-                                <input type="checkbox" id="login-rules-anon" name="rules" aria-describedby="rules-text-anon"><span></span>
-                                <span id="rules-text-anon" class="text"><span id="termcondition_anon1"></span> <span id="rules_anon" class="link" role="button"></span> <span id="termcondition_anon2"></span></span>
-                            </label>
-                        </div>
-                        <button class="btn btn-primary full" id="signin_anon" type="button"></button>
-                        <div id="cp_portal_event_none">
-                            <p><span id="cp_portal_ifconfig_event_none"></span></p>
-                        </div>
-                    </div>
-                    
-                    <div id="isp_info" class="isp-info muted small center"></div>
-                    <div id="cp_portal_cookies_note" class="tiny center"></div>
-                    <div id="polyglotLanguageSwitcher" role="group" style="display:none"></div>
-                    <div id="MSG"></div>
-                    <div id="footer_isp_info" class="footer-isp-info"></div>
-                </main>
-            </section>
+      <!-- Logout/Status -->
+      <div id="logout_undefined" class="d-none">
+        <div class="card form">
+          <h2 id="status" class="center">Device connected</h2>
+          <p id="status_pretext1" class="muted small center"></p>
+          <p id="status_pretext2" class="muted small center"></p>
+          <button class="btn btn-primary full" id="logoff" type="button">Log out</button>
         </div>
-    </body>
+      </div>
+
+      <!-- Anonymous Login -->
+      <div id="login_none" class="d-none">
+        <div class="card form">
+          <h2 id="anon_title" class="center">Sign in</h2>
+          <p id="anon_pretext1" class="muted small center"></p>
+          <div class="checkbox-row">
+            <label for="login-rules-anon">
+              <input type="checkbox" id="login-rules-anon" name="rules" />
+              <span class="checkbox-custom"></span>
+              <span class="text">
+                <span id="termcondition_anon1">I accept </span>
+                <span id="rules_anon" class="link">terms</span>
+                <span id="termcondition_anon2"> of the provision of internet access services.</span>
+              </span>
+            </label>
+          </div>
+          <button class="btn btn-primary full" id="signin_anon" type="button">Sign in</button>
+        </div>
+      </div>
+
+      <p id="cp_portal_cookies_note" class="tiny center muted"></p>
+      <div id="polyglotLanguageSwitcher" style="display:none"></div>
+      <div id="MSG"></div>
+    </main>
+  </body>
 </html>
