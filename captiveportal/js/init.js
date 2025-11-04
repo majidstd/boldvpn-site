@@ -108,7 +108,7 @@ const fetchUserIPAndLocation = () => {
         .then(response => response.json())
         .then(data => {
             const ipLocation = `IP: ${data.ip || 'N/A'} | ${data.city || ''} ${data.country_name || ''}`;
-            const ipInfo = `<p class="tiny center muted" style="margin-top: 16px;">${ipLocation}</p>`;
+            const ipInfo = `<div style="margin-top: 16px; padding: 12px; border: 1px solid var(--primary); border-radius: 8px; background: rgba(14, 165, 233, 0.05);"><p class="tiny center muted" style="margin: 0;">${ipLocation}</p></div>`;
             $('#cp_portal_cookies_note').after(ipInfo);
         })
         .catch(() => {
