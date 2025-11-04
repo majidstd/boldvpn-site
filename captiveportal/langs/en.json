@@ -1,6 +1,6 @@
 {
-    "pagetitle": "BoldVPN Portal Login",
-    "cp_portal_head_title": "Portal Login",
+    "pagetitle": "VPN Portal Login",
+    "cp_portal_head_title": "VPN Portal Login",
     "cp_portal_info": "Enter your credentials to access the BoldVPN network. Credentials are case-sensitive.",
     "username": "Username",
     "userpass": "Password",
