@@ -260,6 +260,9 @@
         letter-spacing: 2.8px;
         background-color: var(--button_bg, transparent);
         border-radius: 5px !important;
+        transition: none !important;
+        -webkit-transition: none !important;
+        -moz-transition: none !important;
         &:hover {
             background-color: var(--button_hover_bg, transparent);
         }
@@ -286,9 +289,9 @@
     #signin_anon[disabled] {
         position: relative;
         overflow: hidden;
-        -webkit-transition: 0.25s;
-        -moz-transition: 0.25s;
-        transition: 0.25s;
+        -webkit-transition: none;
+        -moz-transition: none;
+        transition: none;
         &:before {
             content: "";
             position: absolute;
@@ -330,9 +333,9 @@
             background: rgba(255, 255, 255, .5);
             border-radius: 3px;
             z-index: 100;
-            -webkit-transition: 0.25s;
-            -moz-transition: 0.25s;
-            transition: 0.25s;
+            -webkit-transition: none;
+            -moz-transition: none;
+            transition: none;
         }
         &:hover {
             &:after {
@@ -346,7 +349,7 @@
         line-height: 16px;
     }
     .field-type-text {
-        background-color: #fff;
+        background-color: var(--input_field_bg);
         position: relative;
         margin-top: 15px;
         padding-left: 15px;
@@ -372,7 +375,7 @@
                 border-bottom-left-radius: 5px;
             }
             label {
-                background-color: #fff;
+                background-color: var(--input_field_bg);
             }
         }
     }
