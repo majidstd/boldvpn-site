@@ -1,32 +1,216 @@
-# BoldVPN Deployment Scripts
+# BoldVPN Scripts
 
-Helper scripts for deploying and managing BoldVPN on FreeBSD.
+All deployment and management scripts for BoldVPN on FreeBSD, organized in one place.
 
-## 📜 Scripts
+## 📜 Script Index
+
+### 🚀 Main Deployment Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `setup-github.sh` | First-time SSH setup & clone | `./setup-github.sh` |
+| `freebsd-radius-setup.sh` | Install RADIUS + PostgreSQL | `sudo ./scripts/freebsd-radius-setup.sh` |
+| `freebsd-api-setup.sh` | Install Node.js API | `sudo ./scripts/freebsd-api-setup.sh` |
+| `update.sh` | Quick git pull & restart | `./scripts/update.sh` |
+
+### 🧪 Testing Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `test-radius.sh` | Test RADIUS (11 tests) | `./scripts/test-radius.sh` |
+| `test-api.sh` | Test API (6 tests) | `./scripts/test-api.sh` |
+
+### 🔧 RADIUS Management
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `fix-radius-config.sh` | Fix RADIUS config issues | `sudo ./scripts/fix-radius-config.sh` |
+| `reinstall-freeradius.sh` | Reinstall RADIUS only | `sudo ./scripts/reinstall-freeradius.sh` |
+
+### 🔥 Firewall Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `setup-firewall.sh` | Configure firewall safely | `sudo ./scripts/setup-firewall.sh` |
+| `fix-firewall.sh` | Fix broken firewall | `sudo ./scripts/fix-firewall.sh` |
+| `disable-firewall.sh` | Disable firewall quickly | `sudo ./scripts/disable-firewall.sh` |
+| `cleanup-firewall.sh` | Remove all firewall rules | `sudo ./scripts/cleanup-firewall.sh` |
+| `emergency-restore-access.sh` | Emergency SSH restore | `sudo ./scripts/emergency-restore-access.sh` |
+
+### 🔍 Utility Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `check-packages.sh` | Check available packages | `./scripts/check-packages.sh` |
+
+---
+
+## 🎯 Quick Start Workflow
+
+### First Time Setup
+
+```bash
+# 1. Copy setup script from Mac
+scp scripts/setup-github.sh admin@server-ip:~/
+
+# 2. On FreeBSD server
+ssh admin@server-ip
+chmod +x setup-github.sh
+./setup-github.sh
+
+# 3. Deploy RADIUS
+cd /usr/local/boldvpn-site
+sudo ./scripts/freebsd-radius-setup.sh
+
+# 4. Deploy API
+sudo ./scripts/freebsd-api-setup.sh
+
+# 5. Test
+./scripts/test-radius.sh
+./scripts/test-api.sh
+```
+
+### Regular Updates
+
+```bash
+cd /usr/local/boldvpn-site
+./scripts/update.sh
+```
+
+---
+
+## 📖 Script Details
 
 ### `setup-github.sh`
 
-**Purpose:** First-time setup on a new FreeBSD server
+**Purpose:** First-time setup on new FreeBSD server
 
 **What it does:**
-- Generates SSH key for GitHub authentication
-- Tests GitHub connection
-- Clones repository to `/usr/local/boldvpn-site`
-- Sets proper permissions
-
-**Usage:**
-```bash
-# From your Mac
-scp scripts/setup-github.sh admin@server-ip:~/
-
-# On FreeBSD server
-chmod +x setup-github.sh
-./setup-github.sh
-```
+1. Checks/generates SSH key
+2. Shows public key to add to GitHub
+3. Tests GitHub connection
+4. Clones repository to `/usr/local/boldvpn-site`
+5. Sets proper permissions
 
 **Requirements:**
 - Run as admin user (NOT root!)
-- Needs sudo access for moving files to `/usr/local/`
+- Needs internet access
+
+**Example:**
+```bash
+./setup-github.sh
+```
+
+---
+
+### `freebsd-radius-setup.sh`
+
+**Purpose:** Complete FreeRADIUS + PostgreSQL installation
+
+**What it does:**
+1. Installs FreeRADIUS and PostgreSQL
+2. Configures database with RADIUS schemas
+3. Sets up user authentication (radcheck)
+4. Configures quotas (radreply)
+5. Enables accounting (radacct)
+6. Creates test user
+7. Starts services
+
+**Prompts:**
+- OPNsense IP
+- RADIUS shared secret
+- PostgreSQL passwords
+
+**Requirements:**
+- Must run as root (sudo)
+- Internet access for package installation
+
+**Example:**
+```bash
+cd /usr/local/boldvpn-site
+sudo ./scripts/freebsd-radius-setup.sh
+```
+
+---
+
+### `freebsd-api-setup.sh`
+
+**Purpose:** Node.js API installation and service setup
+
+**What it does:**
+1. Installs Node.js 20
+2. Creates `.env` in `api/` directory
+3. Installs npm dependencies
+4. Creates FreeBSD service
+5. Starts API server
+
+**Prompts:**
+- API port (default: 3000)
+- JWT secret
+- PostgreSQL password
+- API domain
+
+**Requirements:**
+- Must run as root (sudo)
+- Must run from `/usr/local/boldvpn-site/`
+- RADIUS should be installed first
+
+**Example:**
+```bash
+cd /usr/local/boldvpn-site
+sudo ./scripts/freebsd-api-setup.sh
+```
+
+---
+
+### `test-radius.sh`
+
+**Purpose:** Comprehensive RADIUS testing (11 tests)
+
+**Tests:**
+1. PostgreSQL service status
+2. FreeRADIUS service status
+3. Database connection
+4. Database tables exist
+5. Test user exists
+6. Quota tables
+7. Accounting tables
+8. RADIUS configuration
+9. RADIUS authentication
+10. RADIUS ports listening
+11. Log files exist
+
+**Requirements:**
+- RADIUS must be installed
+- Can run as admin user (no sudo needed)
+
+**Example:**
+```bash
+./scripts/test-radius.sh
+```
+
+---
+
+### `test-api.sh`
+
+**Purpose:** API endpoint testing (6 tests)
+
+**Tests:**
+1. Health check
+2. Valid login
+3. User profile (authenticated)
+4. Invalid login (401)
+5. Unauthorized access (401)
+6. 404 handling
+
+**Requirements:**
+- API must be running
+- Can run as admin user
+
+**Example:**
+```bash
+./scripts/test-api.sh
+```
 
 ---
 
@@ -35,93 +219,171 @@ chmod +x setup-github.sh
 **Purpose:** Quick update and service restart
 
 **What it does:**
-- Pulls latest changes from GitHub
-- Checks for uncommitted changes
-- Optionally restarts API service
-- Optionally restarts RADIUS service
-- Installs new npm dependencies
-
-**Usage:**
-```bash
-# On FreeBSD server
-cd /usr/local/boldvpn-site
-./scripts/update.sh
-```
+1. Checks for uncommitted changes
+2. Runs git pull
+3. Asks to restart API service
+4. Asks to restart RADIUS service
+5. Installs new npm dependencies
+6. Shows service status
 
 **Requirements:**
-- Must be run from `/usr/local/boldvpn-site/`
+- Must run from `/usr/local/boldvpn-site/`
 - Needs sudo for service restarts
 
----
-
-## 🚀 Typical Workflow
-
-### First Time Setup
-
-1. **Copy setup script to server:**
-   ```bash
-   scp scripts/setup-github.sh admin@server-ip:~/
-   ```
-
-2. **Run setup on server:**
-   ```bash
-   ssh admin@server-ip
-   ./setup-github.sh
-   ```
-
-3. **Deploy services:**
-   ```bash
-   cd /usr/local/boldvpn-site/radius-server
-   sudo ./freebsd-radius-setup.sh
-   
-   cd ../api
-   sudo ./freebsd-api-setup.sh
-   ```
-
-### Regular Updates
-
+**Example:**
 ```bash
-ssh admin@server-ip
 cd /usr/local/boldvpn-site
 ./scripts/update.sh
 ```
 
-Or manual:
+---
+
+### `fix-radius-config.sh`
+
+**Purpose:** Fix common FreeRADIUS configuration issues
+
+**Fixes:**
+- SQL module configuration
+- Log directory permissions
+- Config file permissions
+- Database connection issues
+
+**Example:**
 ```bash
-git pull
-cd api && sudo npm install --production
-sudo service boldvpn_api restart
+sudo ./scripts/fix-radius-config.sh
 ```
 
 ---
 
-## 📂 Other Scripts
+### `reinstall-freeradius.sh`
 
-### RADIUS Scripts (`/radius-server/`)
+**Purpose:** Reinstall FreeRADIUS without touching database
 
-- `freebsd-radius-setup.sh` - Main RADIUS installation
-- `test-radius.sh` - Test RADIUS configuration
-- `fix-radius-config.sh` - Fix common issues
-- `setup-firewall.sh` - Configure firewall
-- `reinstall-freeradius.sh` - Reinstall RADIUS only
+**When to use:**
+- FreeRADIUS corrupted
+- Need to reset config
+- Want to keep user data
 
-### API Scripts (`/api/`)
+**Example:**
+```bash
+sudo ./scripts/reinstall-freeradius.sh
+```
 
-- `freebsd-api-setup.sh` - Main API installation
-- `test-api.sh` - Test API endpoints
+---
+
+### Firewall Scripts
+
+#### `setup-firewall.sh`
+Safe firewall configuration with SSH protection
+
+#### `fix-firewall.sh`
+Fix broken firewall in place
+
+#### `disable-firewall.sh`
+Quickly disable firewall (useful when locked out)
+
+#### `cleanup-firewall.sh`
+Remove all firewall configuration
+
+#### `emergency-restore-access.sh`
+Emergency script to restore SSH access
+
+**Example:**
+```bash
+sudo ./scripts/setup-firewall.sh
+```
 
 ---
 
 ## 🔒 Security Notes
 
-- Always run `setup-github.sh` as admin user, never as root
-- SSH keys stay on the server, never share private keys
-- `.env` files are git-ignored and contain secrets
-- Use sudo only when explicitly needed
+- Always run `setup-github.sh` as **admin** user, never root
+- Setup scripts (`freebsd-*-setup.sh`) need **sudo**
+- Test scripts (`test-*.sh`) can run as **admin** (no sudo)
+- SSH keys stay on server, **never share private keys**
+- `.env` files contain secrets, **never commit to git**
+- All passwords should be **strong** (min 16 characters)
 
 ---
 
-## 📖 Full Documentation
+## 📂 Script Organization Philosophy
 
-See: [FREEBSD-DEPLOYMENT.md](../FREEBSD-DEPLOYMENT.md)
+**Why all scripts in one `scripts/` folder?**
 
+✅ **Easy to find** - All scripts in one place  
+✅ **Easy to deploy** - `scp scripts/*.sh` copies everything  
+✅ **Easy to update** - `git pull` updates all scripts  
+✅ **Clear separation** - Scripts vs application code  
+✅ **Standard practice** - Common in many projects  
+
+---
+
+## 🔄 Development Workflow
+
+### On Your Mac (Development)
+
+```bash
+# Make changes to scripts
+cd /Users/msotoode/Documents/GitHub/boldvpn-site
+
+# Edit a script
+nano scripts/freebsd-api-setup.sh
+
+# Commit and push
+git add scripts/
+git commit -m "Update API setup script"
+git push
+```
+
+### On FreeBSD Server (Production)
+
+```bash
+# Pull updates
+cd /usr/local/boldvpn-site
+git pull
+
+# Script is automatically updated!
+sudo ./scripts/freebsd-api-setup.sh
+```
+
+---
+
+## 📞 Quick Command Reference
+
+```bash
+# Setup (first time)
+./setup-github.sh
+cd /usr/local/boldvpn-site
+sudo ./scripts/freebsd-radius-setup.sh
+sudo ./scripts/freebsd-api-setup.sh
+
+# Test
+./scripts/test-radius.sh
+./scripts/test-api.sh
+
+# Update
+./scripts/update.sh
+
+# Services
+sudo service radiusd status|start|stop|restart
+sudo service boldvpn_api status|start|stop|restart
+
+# Logs
+tail -f /var/log/radius/radius.log
+tail -f /var/log/boldvpn-api.log
+
+# Database
+psql -U radiususer -d radius
+```
+
+---
+
+## 📚 More Documentation
+
+- [FREEBSD-DEPLOYMENT.md](../FREEBSD-DEPLOYMENT.md) - Complete deployment guide
+- [SYSTEM-OVERVIEW.md](../SYSTEM-OVERVIEW.md) - System architecture
+- [api/DEPLOYMENT.md](../api/DEPLOYMENT.md) - API deployment details
+
+---
+
+✅ **All 14 scripts documented and ready to use!**
