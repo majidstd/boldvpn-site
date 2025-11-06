@@ -70,38 +70,53 @@ fi
 
 echo ""
 
-# Step 2: Verify we're in the API directory
+# Step 2: Find and verify API directory
 echo "================================================================"
-echo "[STEP] Step 2/6: Verifying API directory..."
+echo "[STEP] Step 2/6: Locating API directory..."
 echo "================================================================"
 echo ""
 
-# Use current directory (should be /usr/local/boldvpn-site/api/)
-API_DIR="$(pwd)"
+# Detect where we are and find api directory
+if [ -f "package.json" ] && [ -f "server.js" ]; then
+    # Already in api directory
+    API_DIR="$(pwd)"
+    echo "[OK] Running from API directory: $API_DIR"
+elif [ -d "api" ] && [ -f "api/package.json" ]; then
+    # In repo root, api/ subdirectory exists
+    API_DIR="$(pwd)/api"
+    echo "[i] Found API directory: $API_DIR"
+    echo "[i] Changing to API directory..."
+    cd api
+else
+    echo "[X] Error: Cannot find API directory!"
+    echo "    Please run this script from:"
+    echo "    - /usr/local/boldvpn-site/ (repo root), OR"
+    echo "    - /usr/local/boldvpn-site/api/ (api directory)"
+    echo "    Current directory: $(pwd)"
+    exit 1
+fi
 
-echo "[i] API directory: $API_DIR"
+echo "[OK] API directory: $API_DIR"
+echo ""
+
+# Step 3: Verify API files exist
+echo "================================================================"
+echo "[STEP] Step 3/6: Verifying API files..."
+echo "================================================================"
+echo ""
 
 if [ ! -f "package.json" ]; then
-    echo "[X] Error: package.json not found in current directory"
-    echo "    Please run this script from /usr/local/boldvpn-site/api/"
-    echo "    Current directory: $API_DIR"
+    echo "[X] Error: package.json not found!"
     exit 1
 fi
 
 if [ ! -f "server.js" ]; then
-    echo "[X] Error: server.js not found in current directory"
-    echo "    Please run this script from /usr/local/boldvpn-site/api/"
+    echo "[X] Error: server.js not found!"
     exit 1
 fi
 
-echo "[OK] API files verified in: $API_DIR"
-echo ""
-
-# Step 3: Check directory structure
-echo "================================================================"
-echo "[STEP] Step 3/6: Checking directory structure..."
-echo "================================================================"
-echo ""
+echo "[OK] Found package.json"
+echo "[OK] Found server.js"
 
 for dir in routes middleware utils; do
     if [ -d "$dir" ]; then
