@@ -2,21 +2,20 @@
 
 Complete guide for setting up HAProxy reverse proxy on OPNsense to make the BoldVPN API publicly accessible with HTTPS.
 
-**Based on actual OPNsense HAProxy interface - tested and verified!**
+**Based on actual OPNsense HAProxy interface - Clear and simple!**
 
 ## 🎯 What This Does
 
 **Architecture:**
 ```
-Internet (Public) → OPNsense:443 (HAProxy with SSL)
-                  → FreeBSD:3000 (API, plain HTTP)
+Internet → OPNsense:443 (HAProxy + SSL) → FreeBSD:3000 (API, plain HTTP)
 ```
 
 **Result:**
-- Users access: `https://api.boldvpn.net`
-- OPNsense handles SSL encryption/decryption
-- Proxies plain HTTP to FreeBSD API on port 3000
-- No SSL needed on FreeBSD!
+- ✅ Users access: `https://api.boldvpn.net` (from anywhere!)
+- ✅ OPNsense handles SSL encryption/decryption
+- ✅ HTTP automatically redirects to HTTPS
+- ✅ FreeBSD just runs API on port 3000 (no SSL needed!)
 
 ## 📋 Prerequisites
 
@@ -25,16 +24,16 @@ Internet (Public) → OPNsense:443 (HAProxy with SSL)
 - [x] OPNsense with internet access
 - [x] Port 80 accessible from internet (for SSL certificate verification)
 
-## ⚠️ Important Notes
+## ⚠️ Critical Notes
 
-- **No port forwarding/NAT needed!** HAProxy receives traffic, doesn't forward it
-- **No firewall rules needed!** OPNsense LAN → FreeBSD LAN is allowed by default
-- **FreeBSD needs NO SSL!** HAProxy handles all SSL/HTTPS
-- **Click "Apply Changes" after EACH save** (orange button at top of page)
+- ✅ **No port forwarding/NAT needed!** HAProxy receives, not forwards
+- ✅ **No firewall rules needed!** LAN→LAN traffic allowed by default
+- ✅ **No SSL on FreeBSD!** OPNsense handles all SSL
+- 🔴 **MUST click "Apply Changes" after EACH save** (orange button at top!)
 
 ---
 
-## 🚀 Step-by-Step Setup
+## 🚀 Step-by-Step Configuration
 
 ### Step 1: Install HAProxy Plugin
 
@@ -43,418 +42,57 @@ Internet (Public) → OPNsense:443 (HAProxy with SSL)
 1. Search for: `haproxy`
 2. Find: `os-haproxy`
 3. Click: **Install**
-4. Wait for installation to complete (1-2 minutes)
-5. Refresh page
+4. Wait for installation (1-2 minutes)
+5. Refresh browser
 
-**Verify:** Menu should now show "Services → HAProxy"
+**Verify:** "Services → HAProxy" appears in menu
 
 ---
 
-### Step 2: Configure Acme Client for SSL Certificate
+### Step 2: Get SSL Certificate (Acme Client)
 
-#### 2.1: Check/Create Acme Account
+#### 2.1: Check Acme Account
 
 **Location:** Services → ACME Client → Accounts
 
-**If you already have a Let's Encrypt account, skip to 2.2.**
+**If you have an account:** Note the name for step 2.2
 
-If not, click **"+"** to add:
+**If not, create one:** Click **"+"**
 - **Name:** `Let's Encrypt Production`
 - **CA:** `Let's Encrypt Production ACME v2`
-- **Email:** Your email address
+- **Email:** your-email@example.com
 - Click **Save**
 
-#### 2.2: Create Certificate for api.boldvpn.net
+#### 2.2: Create Certificate
 
 **Location:** Services → ACME Client → Certificates
 
-Click **"+"** to add new certificate:
+Click **"+"**:
 
-**General Settings:**
-- **Enabled:** ✓ (checked)
-- **Common Name:** `api.boldvpn.net`
-- **Acme Account:** `Let's Encrypt Production`
-- **Description:** `BoldVPN API Certificate`
-- **Auto Renewal:** ✓ (checked)
-- **Renewal Interval:** `60` (days)
-
-**Challenge Type:**
-- **Challenge Type:** `HTTP-01`
-- **HTTP Service:** `OPNsense Web Service`
-
-**Actions:**
-- Click **Save**
-- Click **Issue/Renew** (button next to the certificate entry)
-- Wait 30-60 seconds
-
-**Verify:** 
-- Status should show "OK" (green checkmark)
-- Expiration date should be ~90 days from now
-- If failed, check DNS is configured correctly
-
----
-
-### Step 3: Configure HAProxy Backend (FreeBSD API Server)
-
-**Location:** Services → HAProxy → Settings → Real Servers
-
-Click **"+"** to add new server:
-
-- **Name:** `freebsd_api`
-- **Description:** `BoldVPN API on FreeBSD`
-- **FQDN or IP:** `192.168.50.2`
-- **Port:** `3000`
-- **Mode:** `active`
-- **SSL:** ❌ (unchecked - FreeBSD uses plain HTTP!)
-- **Verify SSL Certificate:** ❌ (unchecked)
-- **Weight:** `1` (default)
+| Field | Value |
+|-------|-------|
+| Enabled | ✓ Checked |
+| Common Name | `api.boldvpn.net` |
+| Acme Account | `Let's Encrypt Production` |
+| Description | `BoldVPN API Certificate` |
+| Auto Renewal | ✓ Checked |
+| Renewal Interval | `60` |
+| Challenge Type | `HTTP-01` |
+| HTTP Service | `OPNsense Web Service` |
 
 Click **Save**
 
-**Look for orange "Apply Changes" button at top → Click it!**
+Click **Issue/Renew** button (next to the certificate)
+
+**Wait 30-60 seconds**
+
+**Verify:** Status shows "OK" (green) with expiration date
+
+**If failed:** Check DNS points to correct IP
 
 ---
 
-### Step 4: Configure HAProxy Backend Pool
-
-**Location:** Services → HAProxy → Settings → Virtual Services → Backend Pools
-
-Click **"+"** to add new pool:
-
-**Basic Settings:**
-- **Name:** `api_backend_pool`
-- **Description:** `BoldVPN API Backend Pool`
-- **Mode:** `HTTP (Layer 7)` ← Important!
-- **Servers:** Select `freebsd_api` (from dropdown, add it)
-
-**Health Checking:**
-- **Health Check:** `HTTP`
-- **Check Interval:** `2000` (ms)
-- **HTTP Check Method:** `GET`
-- **HTTP Check Path:** `/api/health`
-- **HTTP Check Expected Status:** `200`
-
-**Advanced Settings → Option pass-through:**
-
-Add this line:
-```
-option forwardfor
-```
-
-This automatically adds X-Forwarded-For header with the client's real IP.
-
-Click **Save**
-
-**Look for orange "Apply Changes" button at top → Click it!**
-
----
-
-### Step 5: Configure HAProxy Frontend (Public Service)
-
-**Location:** Services → HAProxy → Settings → Virtual Services → Public Services
-
-Click **"+"** to add new service:
-
-**Basic Settings:**
-- **Enabled:** ✓ (checked)
-- **Name:** `api_frontend`
-- **Description:** `BoldVPN API Public Access`
-
-**Listen Addresses:**
-
-Click **"+"** to add **TWO** addresses:
-
-1. **Address 1:** `0.0.0.0:443` (HTTPS)
-2. **Address 2:** `0.0.0.0:80` (HTTP - for redirect)
-
-**Bind option pass-through:** (leave empty)
-
-**Type:**
-- **Type:** `HTTP / HTTPS (SSL Offloading)` ← Important!
-
-**Default Backend:**
-- **Default Backend Pool:** `api_backend_pool`
-
-**Enable SSL offloading:**
-- **Enable SSL offloading:** ✓ (checked)
-
-**SSL Offloading Settings:**
-
-After checking "Enable SSL offloading", more options appear:
-
-- **Certificates:** Select `api.boldvpn.net` (from Acme dropdown)
-- **SSL Passthrough:** ❌ (DO NOT CHECK - we want offloading!)
-
-**HTTP(S) settings:**
-- **Enable HTTP/2:** ✓ (optional, recommended)
-- **HTTP/2 without TLS:** ❌ (unchecked)
-- **Advertise Protocols (ALPN):** Select both:
-  - `HTTP/2`
-  - `HTTP/1.1`
-- **X-Forwarded-For (DEPRECATED):** ❌ (skip this - we added it to backend)
-
-**Connection Mode:**
-- Leave default or select `http-keep-alive`
-
-**Advanced settings → Option pass-through:**
-
-Add these TWO lines (each on separate line):
-```
-http-request redirect scheme https code 301 if !{ ssl_fc }
-http-request set-header X-Forwarded-Proto https
-```
-
-**Explanation:**
-- **Line 1:** Redirects any HTTP request (port 80) to HTTPS (port 443)
-- **Line 2:** Tells the API that the original request was HTTPS
-
-**Rules:**
-- **Select Rules:** (leave empty)
-
-**Error Messages:**
-- (leave empty)
-
-Click **Save**
-
-**Look for orange "Apply Changes" button at top → Click it!**
-
----
-
-### Step 6: Enable and Start HAProxy
-
-**Location:** Services → HAProxy → Settings → Service
-
-- **Enable HAProxy:** ✓ (checked)
-- Click **Save**
-
-**CRITICAL:** Look for orange notification at TOP of page:
-"The configuration has been changed. Click Apply to activate."
-
-**Click "Apply Changes"** (orange button)
-
-Wait for confirmation that HAProxy is running.
-
----
-
-### Step 7: Verify HAProxy is Running
-
-**Location:** Services → HAProxy → Diagnostics → Stats
-
-You should see:
-
-**Frontend:**
-- Name: `api_frontend`
-- Status: **UP** (green)
-- Sessions: 0 (will increase with use)
-
-**Backend:**
-- Name: `api_backend_pool`
-- Status: **UP** (green)
-- Servers: 1
-
-**Server:**
-- Name: `freebsd_api`
-- Status: **UP** (green circle)
-- Address: 192.168.50.2:3000
-
-**If server shows DOWN (red):**
-- Check FreeBSD API is running: `sudo service boldvpn_api status`
-- Test manually: `curl http://192.168.50.2:3000/api/health`
-- Check IP/port are correct in Real Server config
-
----
-
-## 🧪 Testing
-
-### Test 1: From FreeBSD Server (Local)
-
-```bash
-# API should still work locally
-curl http://localhost:3000/api/health
-```
-
-**Expected:** `{"status":"OK",...}`
-
-### Test 2: From OPNsense Console
-
-```bash
-# Should work from OPNsense to FreeBSD
-curl http://192.168.50.2:3000/api/health
-```
-
-**Expected:** `{"status":"OK",...}`
-
-### Test 3: HTTP Redirect (From Your Mac)
-
-```bash
-# Try HTTP (should redirect to HTTPS)
-curl -I http://api.boldvpn.net/api/health
-```
-
-**Expected:** 
-```
-HTTP/1.1 301 Moved Permanently
-Location: https://api.boldvpn.net/api/health
-```
-
-### Test 4: HTTPS (Main Test!)
-
-```bash
-# From your Mac, phone, or anywhere on internet
-curl https://api.boldvpn.net/api/health
-```
-
-**Expected result:**
-```json
-{
-  "status": "OK",
-  "timestamp": "2025-11-06T...",
-  "uptime": 123.45
-}
-```
-
-**If this works:** ✅ **SUCCESS!** Your API is publicly accessible!
-
----
-
-## 🔧 Configuration Summary
-
-### What You Configured
-
-| Component | Setting | Value |
-|-----------|---------|-------|
-| **Real Server** | Name | freebsd_api |
-| | IP | 192.168.50.2 |
-| | Port | 3000 |
-| | SSL | No |
-| **Backend Pool** | Name | api_backend_pool |
-| | Mode | HTTP (Layer 7) |
-| | Servers | freebsd_api |
-| | Options | option forwardfor |
-| **Frontend** | Name | api_frontend |
-| | Listen | 0.0.0.0:443, 0.0.0.0:80 |
-| | Type | HTTP/HTTPS (SSL Offloading) |
-| | Backend | api_backend_pool |
-| | SSL Enabled | Yes |
-| | Certificate | api.boldvpn.net |
-| | SSL Passthrough | No |
-| | Options | HTTP redirect + X-Forwarded-Proto |
-| **SSL Certificate** | Domain | api.boldvpn.net |
-| | Provider | Let's Encrypt |
-| | Auto Renew | Yes |
-
----
-
-## 📖 Understanding the Configuration
-
-### Why Two Listen Addresses?
-
-```
-Listen Address 1: 0.0.0.0:80  (HTTP)
-Listen Address 2: 0.0.0.0:443 (HTTPS)
-```
-
-**Purpose:**
-- Port 80: Receives HTTP requests
-- Port 443: Receives HTTPS requests
-- Both handled by the SAME frontend
-
-### How HTTP → HTTPS Redirect Works
-
-**The custom option line does this:**
-```
-http-request redirect scheme https code 301 if !{ ssl_fc }
-```
-
-**Translation:**
-- `if !{ ssl_fc }` = If NOT using SSL (i.e., HTTP request on port 80)
-- `redirect scheme https code 301` = Redirect to HTTPS with 301 status
-
-**Flow:**
-1. User visits: `http://api.boldvpn.net/api/health`
-2. HAProxy receives on port 80 (no SSL)
-3. Custom rule checks: "Not SSL? Redirect!"
-4. HAProxy returns: `301 Redirect to https://api.boldvpn.net/api/health`
-5. Browser follows redirect to HTTPS
-6. HAProxy receives on port 443 (with SSL)
-7. Proxies to FreeBSD:3000
-
-**Alternative:** Don't add port 80 listener, only use 443
-- Users must manually type `https://`
-- HTTP won't work at all
-- Simpler but less user-friendly
-
-**Recommendation:** Use both ports with redirect (what we configured)
-
-### SSL Offloading vs Passthrough
-
-**SSL Offloading (what we're using):**
-```
-Internet (HTTPS) → OPNsense (decrypt) → FreeBSD (HTTP)
-```
-- HAProxy decrypts HTTPS
-- Sees actual request content
-- Can modify headers, redirect, etc.
-- Forwards plain HTTP to backend
-- ✅ **This is what you want!**
-
-**SSL Passthrough (NOT using):**
-```
-Internet (HTTPS) → OPNsense (don't decrypt) → FreeBSD (HTTPS)
-```
-- HAProxy doesn't decrypt
-- Just forwards encrypted traffic
-- Can't see or modify content
-- Backend needs SSL certificate
-- ❌ **Don't use this!**
-
-### Option pass-through Explained
-
-**What is "Option pass-through"?**
-
-This is a text field where you add **raw HAProxy configuration directives**.
-
-Think of it as: "Advanced users can add custom HAProxy config here"
-
-**Where it appears:**
-- Frontend → Advanced settings → Option pass-through
-- Backend Pool → Advanced settings → Option pass-through
-
-**What we're adding:**
-
-**Frontend options:**
-```
-http-request redirect scheme https code 301 if !{ ssl_fc }
-http-request set-header X-Forwarded-Proto https
-```
-These are HAProxy directives that:
-- Handle HTTP→HTTPS redirect
-- Add protocol header
-
-**Backend options:**
-```
-option forwardfor
-```
-This is a HAProxy directive that:
-- Adds X-Forwarded-For header automatically
-
----
-
-## 🎯 Simplified Configuration (Step-by-Step)
-
-### Configuration Order (Important!)
-
-**Configure in this order:**
-1. Real Server (backend server definition)
-2. Backend Pool (group of servers)
-3. Frontend (public-facing service)
-4. Enable HAProxy service
-
-**After EACH step:** Save → Click "Apply Changes" at top!
-
----
-
-### Step 1: Real Server
+### Step 3: Configure Real Server (FreeBSD API)
 
 **Location:** Services → HAProxy → Settings → Real Servers
 
@@ -467,14 +105,14 @@ Click **"+"**:
 | FQDN or IP | `192.168.50.2` |
 | Port | `3000` |
 | Mode | `active` |
-| SSL | ❌ Unchecked |
+| SSL | ❌ Unchecked (FreeBSD uses HTTP!) |
 | Verify SSL Certificate | ❌ Unchecked |
 
-Click **Save** → **Apply Changes** (top of page)
+Click **Save** → **Apply Changes** 🔴
 
 ---
 
-### Step 2: Backend Pool
+### Step 4: Configure Backend Pool
 
 **Location:** Services → HAProxy → Settings → Virtual Services → Backend Pools
 
@@ -485,9 +123,9 @@ Click **"+"**:
 | Field | Value |
 |-------|-------|
 | Name | `api_backend_pool` |
-| Description | `BoldVPN API Backend Pool` |
+| Description | `BoldVPN API Backend` |
 | Mode | `HTTP (Layer 7)` |
-| Servers | Select `freebsd_api` and add it |
+| Servers | Select `freebsd_api` |
 
 **Health Checking:**
 
@@ -499,19 +137,54 @@ Click **"+"**:
 | HTTP Check Path | `/api/health` |
 | HTTP Check Expected Status | `200` |
 
-**Advanced Settings:**
+**Advanced Settings → Option pass-through:**
 
-| Field | Value |
-|-------|-------|
-| Option pass-through | `option forwardfor` |
+Add this line:
+```
+option forwardfor
+```
 
-This adds X-Forwarded-For header for client IP logging.
+**📝 What "option forwardfor" does:**
 
-Click **Save** → **Apply Changes** (top of page)
+**WITHOUT this option:**
+- Your API sees all requests from: `192.168.50.1` (OPNsense IP)
+- You can't identify individual users
+- Can't block abusive IPs
+- Can't do geographic analytics
+- All requests look the same
+
+**WITH this option:**
+- Your API sees REAL client IPs in `X-Forwarded-For` header
+- Can identify individual users
+- Can block abusive IPs by their real IP
+- Can analyze user locations
+- Better security and logging
+
+**Example API logs:**
+
+Without forwardfor:
+```
+[2025-11-06] Request from 192.168.50.1 - Login: testuser
+[2025-11-06] Request from 192.168.50.1 - Login: admin
+[2025-11-06] Request from 192.168.50.1 - Failed login attempt
+```
+All from same IP → Can't identify the attacker!
+
+With forwardfor:
+```
+[2025-11-06] Request from 203.45.67.89 - Login: testuser
+[2025-11-06] Request from 104.28.15.32 - Login: admin  
+[2025-11-06] Request from 45.76.201.99 - Failed login attempt (5 times)
+```
+Can identify and block 45.76.201.99 → Better security!
+
+**Recommendation:** ✅ **Always add this for production!**
+
+Click **Save** → **Apply Changes** 🔴
 
 ---
 
-### Step 3: Frontend (Public Service)
+### Step 5: Configure Frontend #1 - HTTP Redirect
 
 **Location:** Services → HAProxy → Settings → Virtual Services → Public Services
 
@@ -522,15 +195,12 @@ Click **"+"**:
 | Field | Value |
 |-------|-------|
 | Enabled | ✓ Checked |
-| Name | `api_frontend` |
-| Description | `BoldVPN API Public Access` |
+| Name | `api_http_redirect` |
+| Description | `Redirect HTTP to HTTPS` |
 
 **Listen Addresses:**
 
-Add **TWO** addresses (click "+" to add each):
-
-1. `0.0.0.0:443` (HTTPS)
-2. `0.0.0.0:80` (HTTP)
+Add one address: `0.0.0.0:80`
 
 **Bind option pass-through:** Leave empty
 
@@ -538,7 +208,68 @@ Add **TWO** addresses (click "+" to add each):
 
 | Field | Value |
 |-------|-------|
-| Type | `HTTP / HTTPS (SSL Offloading)` |
+| Type | `HTTP (Layer 7)` ← Note: HTTP, not SSL! |
+
+**Default Backend Pool:**
+
+Select any backend (won't be used, redirect happens first)
+
+Or leave empty if allowed.
+
+**Advanced settings → Option pass-through:**
+
+Add this line:
+```
+redirect scheme https code 301
+```
+
+**📝 What this does:**
+
+This frontend ONLY handles HTTP requests (port 80).
+
+When a request comes in:
+1. User visits: `http://api.boldvpn.net/api/health`
+2. HAProxy receives on port 80
+3. Custom rule: `redirect scheme https code 301`
+4. HAProxy returns: "301 Moved Permanently → https://api.boldvpn.net/api/health"
+5. Browser automatically follows redirect to HTTPS
+6. Request handled by Frontend #2 (HTTPS)
+
+**Result:** All HTTP traffic forced to HTTPS! Secure by default. ✅
+
+**Rules:** Leave empty
+
+**Error Messages:** Leave empty
+
+Click **Save** → **Apply Changes** 🔴
+
+---
+
+### Step 6: Configure Frontend #2 - HTTPS API
+
+**Location:** Services → HAProxy → Settings → Virtual Services → Public Services
+
+Click **"+"**:
+
+**Basic Settings:**
+
+| Field | Value |
+|-------|-------|
+| Enabled | ✓ Checked |
+| Name | `api_https` |
+| Description | `BoldVPN API HTTPS` |
+
+**Listen Addresses:**
+
+Add one address: `0.0.0.0:443`
+
+**Bind option pass-through:** Leave empty
+
+**Type:**
+
+| Field | Value |
+|-------|-------|
+| Type | `HTTP / HTTPS (SSL Offloading)` ← Important! |
 
 **Default Backend:**
 
@@ -552,49 +283,86 @@ Add **TWO** addresses (click "+" to add each):
 |-------|-------|
 | Enable SSL offloading | ✓ Checked |
 
-**SSL Offloading Settings** (appears after enabling SSL):
+**SSL Offloading Settings** (appears after checking):
 
 | Field | Value |
 |-------|-------|
-| Certificates | Select `api.boldvpn.net` |
-| SSL Passthrough | ❌ Unchecked (important!) |
+| Certificates | Select `api.boldvpn.net` (from dropdown) |
+| SSL Passthrough | ❌ Unchecked (we want offloading!) |
+
+**📝 SSL Offloading vs Passthrough:**
+
+**SSL Offloading (what we're using):**
+```
+Internet (HTTPS) → OPNsense (decrypt) → FreeBSD (HTTP)
+```
+- HAProxy decrypts HTTPS on OPNsense
+- FreeBSD receives plain HTTP
+- FreeBSD needs NO SSL certificate
+- OPNsense does the encryption work
+- ✅ **This is what you want!**
+
+**SSL Passthrough (DON'T use):**
+```
+Internet (HTTPS) → OPNsense (forward encrypted) → FreeBSD (HTTPS)
+```
+- HAProxy doesn't decrypt
+- Just forwards encrypted traffic
+- FreeBSD needs SSL certificate
+- Can't modify requests or add headers
+- ❌ **Don't enable this!**
 
 **HTTP(S) settings:**
 
 | Field | Value |
 |-------|-------|
-| Enable HTTP/2 | ✓ Checked (recommended) |
+| Enable HTTP/2 | ✓ Checked (modern, faster) |
 | HTTP/2 without TLS | ❌ Unchecked |
 | Advertise Protocols (ALPN) | Select both: `HTTP/2` and `HTTP/1.1` |
-| X-Forwarded-For (DEPRECATED) | ❌ Skip (we added it to backend) |
+| X-Forwarded-For (DEPRECATED) | ❌ Skip (we added to backend) |
 
-**Connection Mode:**
-- Leave default
+**Connection Mode:** Leave default
 
 **Advanced settings → Option pass-through:**
 
-Add these **TWO** lines (each on a separate line):
-
+Add this line:
 ```
-http-request redirect scheme https code 301 if !{ ssl_fc }
 http-request set-header X-Forwarded-Proto https
 ```
 
-**What these do:**
-- **Line 1:** If request is HTTP (port 80), redirect to HTTPS
-- **Line 2:** Add header telling API the original protocol was HTTPS
+**📝 What this does:**
 
-**Rules:**
-- Leave empty
+Tells your API: "The original request was HTTPS"
 
-**Error Messages:**
-- Leave empty
+**Why it's needed:**
+- FreeBSD API receives plain HTTP (from HAProxy)
+- API can't tell if original request was HTTP or HTTPS
+- This header informs API: "User connected via HTTPS"
+- Useful for security logs and analytics
 
-Click **Save** → **Apply Changes** (top of page)
+**Example:**
+
+User visits: `https://api.boldvpn.net/api/auth/login`
+
+Without header:
+- API sees: `GET /api/auth/login` (HTTP)
+- API thinks: "This was an insecure connection"
+
+With header:
+- API sees: `GET /api/auth/login` (HTTP) + `X-Forwarded-Proto: https`
+- API knows: "Original request was secure HTTPS"
+
+**Optional but recommended for proper logging!**
+
+**Rules:** Leave empty
+
+**Error Messages:** Leave empty
+
+Click **Save** → **Apply Changes** 🔴
 
 ---
 
-### Step 4: Enable HAProxy Service
+### Step 7: Enable HAProxy
 
 **Location:** Services → HAProxy → Settings → Service
 
@@ -602,57 +370,78 @@ Click **Save** → **Apply Changes** (top of page)
 |-------|-------|
 | Enable HAProxy | ✓ Checked |
 
-Click **Save** → **Apply Changes** (top of page)
+Click **Save** → **Apply Changes** 🔴
 
-**Wait 5-10 seconds for HAProxy to start.**
+**Wait 5-10 seconds** for HAProxy to start.
 
 ---
 
-### Step 5: Verify Configuration
+### Step 8: Verify Everything is UP
 
 **Location:** Services → HAProxy → Diagnostics → Stats
 
 **You should see:**
 
-**Frontend: api_frontend**
+**Frontend: api_http_redirect**
 - Status: **UP** (green)
-- Sessions Current: 0
+- Type: HTTP
+- Port: 80
+
+**Frontend: api_https**
+- Status: **UP** (green)
+- Type: HTTPS
+- Port: 443
 
 **Backend: api_backend_pool**
 - Status: **UP** (green)
-- Active Servers: 1
+- Active: 1 server
 
-**Server: freebsd_api (192.168.50.2:3000)**
-- Status: **UP** (green circle/checkmark)
-- Last Check: Passed
+**Server: freebsd_api**
+- Status: **UP** (green circle)
+- Address: 192.168.50.2:3000
+- Last Check: Passed ✓
 
-**If server shows DOWN (red):**
-1. Check API is running on FreeBSD: `sudo service boldvpn_api status`
-2. Test from OPNsense console: `curl http://192.168.50.2:3000/api/health`
-3. Check Real Server IP/port are correct
-4. Check health check path is correct: `/api/health`
+**If any component shows DOWN:**
+- Review that step's configuration
+- Check you clicked "Apply Changes"
+- Check FreeBSD API is running
+- Check logs: System → Log Files → HAProxy
 
 ---
 
-## 🧪 Complete Testing
+## 🧪 Complete Testing Guide
 
-### Test 1: Local API (FreeBSD)
+### Test 1: API Running Locally (FreeBSD)
 
 ```bash
 # On FreeBSD server
 curl http://localhost:3000/api/health
 ```
 
-**Expected:** `{"status":"OK","timestamp":"...","uptime":...}`
+**Expected:**
+```json
+{"status":"OK","timestamp":"2025-11-06T...","uptime":123.45}
+```
+
+**If fails:** API not running - check `sudo service boldvpn_api status`
+
+---
 
 ### Test 2: From OPNsense to FreeBSD
 
 ```bash
-# On OPNsense console/shell
+# From OPNsense console/shell
 curl http://192.168.50.2:3000/api/health
 ```
 
-**Expected:** `{"status":"OK",...}`
+**Expected:** Same JSON response
+
+**If fails:** 
+- Network issue between OPNsense and FreeBSD
+- API not listening on 3000
+- Firewall blocking (check FreeBSD firewall)
+
+---
 
 ### Test 3: HTTP Request (Should Redirect)
 
@@ -667,10 +456,24 @@ HTTP/1.1 301 Moved Permanently
 Location: https://api.boldvpn.net/api/health
 ```
 
+**If fails:**
+- DNS not configured (api.boldvpn.net doesn't resolve)
+- HAProxy HTTP frontend not running
+- Port 80 blocked by ISP
+
+**What's happening:**
+1. Request goes to port 80
+2. HAProxy frontend `api_http_redirect` receives it
+3. Redirect rule: `redirect scheme https code 301`
+4. Returns 301 redirect to HTTPS URL
+5. Browser follows redirect
+
+---
+
 ### Test 4: HTTPS Request (Main Test!)
 
 ```bash
-# From your Mac, phone, or anywhere
+# From your Mac, phone, or anywhere on internet
 curl https://api.boldvpn.net/api/health
 ```
 
@@ -683,116 +486,285 @@ curl https://api.boldvpn.net/api/health
 }
 ```
 
-**If this works: ✅ SUCCESS!** Your API is publicly accessible with HTTPS!
+**If this works: ✅ COMPLETE SUCCESS!**
+
+**What's happening:**
+1. Request goes to port 443 (HTTPS)
+2. HAProxy frontend `api_https` receives it
+3. SSL certificate validates: ✓
+4. HAProxy decrypts HTTPS → HTTP
+5. Adds headers (X-Forwarded-For, X-Forwarded-Proto)
+6. Proxies to FreeBSD: `http://192.168.50.2:3000/api/health`
+7. FreeBSD API processes request
+8. Returns JSON to HAProxy
+9. HAProxy encrypts JSON → HTTPS
+10. Sends HTTPS response to client
+
+---
+
+### Test 5: Test Login Endpoint
+
+```bash
+# Test actual API login
+curl -X POST https://api.boldvpn.net/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"Test@123!"}'
+```
+
+**Expected:**
+```json
+{
+  "success": true,
+  "token": "eyJhbGci...",
+  "user": {"username":"testuser",...}
+}
+```
+
+**If this works:** Your API authentication is working through HAProxy! ✅
+
+---
+
+## 📖 Complete Configuration Summary
+
+### What You Configured (4 Components)
+
+#### 1. Real Server
+```
+Name: freebsd_api
+IP: 192.168.50.2
+Port: 3000
+SSL: No
+```
+
+#### 2. Backend Pool
+```
+Name: api_backend_pool
+Mode: HTTP (Layer 7)
+Servers: freebsd_api
+Health Check: GET /api/health → expect 200
+Option: option forwardfor
+```
+
+#### 3. Frontend #1 - HTTP Redirect
+```
+Name: api_http_redirect
+Listen: 0.0.0.0:80
+Type: HTTP
+Option: redirect scheme https code 301
+Purpose: Force HTTPS
+```
+
+#### 4. Frontend #2 - HTTPS API
+```
+Name: api_https
+Listen: 0.0.0.0:443
+Type: HTTP/HTTPS (SSL Offloading)
+Backend: api_backend_pool
+SSL: Yes
+Certificate: api.boldvpn.net
+Passthrough: No
+Option: http-request set-header X-Forwarded-Proto https
+Purpose: Handle HTTPS API traffic
+```
+
+---
+
+## 💡 Understanding Key Options
+
+### "option forwardfor" (Backend)
+
+**What it does:** Adds real client IP to requests
+
+**Without it:**
+```
+API log: "Request from 192.168.50.1" (OPNsense IP)
+API log: "Request from 192.168.50.1" (OPNsense IP)
+API log: "Request from 192.168.50.1" (OPNsense IP)
+```
+All requests from same IP → Can't identify users!
+
+**With it:**
+```
+API log: "Request from 203.45.67.89 (France)"
+API log: "Request from 104.28.15.32 (USA)"
+API log: "Request from 142.250.80.46 (Canada)"
+```
+Real IPs → Can identify users, block abusers, analytics!
+
+**When you need it:**
+- ✅ Production (security, logging, analytics)
+- ✅ User identification
+- ✅ IP-based rate limiting
+- ✅ Geographic analytics
+- ❌ Not critical for basic testing
+
+**Recommendation:** ✅ **Add it!** Very useful for production.
+
+---
+
+### HTTP → HTTPS Redirect Explained
+
+**Why two frontends?**
+
+**Frontend #1 (Port 80):**
+- Purpose: Catch HTTP requests
+- Action: Redirect to HTTPS
+- Rule: `redirect scheme https code 301`
+
+**Frontend #2 (Port 443):**
+- Purpose: Handle HTTPS requests
+- Action: Proxy to API
+- Has: SSL certificate
+
+**Flow:**
+
+```
+User types: http://api.boldvpn.net/api/health
+    ↓
+    Port 80 (Frontend #1)
+    ↓
+    Redirect: 301 → https://api.boldvpn.net/api/health
+    ↓
+    Browser follows redirect
+    ↓
+    Port 443 (Frontend #2)
+    ↓
+    SSL decrypt
+    ↓
+    Proxy to FreeBSD:3000
+    ↓
+    Get response
+    ↓
+    SSL encrypt
+    ↓
+    HTTPS response to user
+```
+
+**Alternative (not recommended):**
+- Only listen on 443
+- HTTP won't work at all
+- Users must type `https://` manually
+
+**Our approach:** Handle both, redirect HTTP → HTTPS automatically! ✅
+
+---
+
+### X-Forwarded-Proto Header
+
+**What it does:** Tells API the original protocol
+
+**Added in Frontend #2:**
+```
+http-request set-header X-Forwarded-Proto https
+```
+
+**Why it's needed:**
+
+FreeBSD API receives plain HTTP (after SSL offloading).
+
+Without header:
+- API thinks: "This request was HTTP (insecure)"
+- Logs might show: "Insecure connection from..."
+
+With header:
+- API knows: "Original request was HTTPS (secure)"
+- Logs correctly show: "Secure HTTPS connection from..."
+
+**Use case:**
+- Accurate security logging
+- API can enforce HTTPS-only policies
+- Compliance/audit trails
+
+**Not critical but recommended!** ✅
 
 ---
 
 ## 🔧 Troubleshooting
 
-### "Apply Changes" Button Not Showing
+### Apply Button Not Showing
 
-**Problem:** You clicked Save but no Apply button appears
-
-**Solution:**
-1. Go back to: Services → HAProxy → Settings
-2. The orange notification should appear at top
-3. Click "Apply Changes"
-4. Or try: Services → HAProxy → Diagnostics → Stats (this sometimes triggers it)
-
-### Backend Server Shows DOWN (Red)
-
-**Problem:** HAProxy can't reach FreeBSD API
+**Problem:** Clicked Save, no orange notification
 
 **Solutions:**
-1. Check API is running:
-   ```bash
-   # On FreeBSD
-   sudo service boldvpn_api status
-   curl http://localhost:3000/api/health
-   ```
+1. Refresh the page
+2. Go to: Services → HAProxy → Settings (main page)
+3. Orange banner should appear at top
+4. Click "Apply Changes"
 
-2. Check from OPNsense:
-   ```bash
-   # From OPNsense console
-   curl http://192.168.50.2:3000/api/health
-   ```
+### Backend Server DOWN (Red)
 
-3. Verify Real Server settings:
-   - IP: `192.168.50.2` (correct?)
-   - Port: `3000` (correct?)
-   - SSL: Unchecked (must be unchecked!)
+**Check 1:** API running on FreeBSD?
+```bash
+sudo service boldvpn_api status
+curl http://localhost:3000/api/health
+```
 
-4. Check health check path: `/api/health` (with leading slash!)
+**Check 2:** Reachable from OPNsense?
+```bash
+# From OPNsense console
+curl http://192.168.50.2:3000/api/health
+```
 
-### HTTP Works But HTTPS Doesn't
+**Check 3:** Correct configuration?
+- IP: `192.168.50.2` (not 192.168.50.1 or wrong IP)
+- Port: `3000` (not 443 or wrong port)
+- SSL: Unchecked (must be unchecked!)
 
-**Problem:** Port 80 works, but port 443 fails
+**Check 4:** Health check path correct?
+- Must be: `/api/health` (with leading slash!)
+- Expected status: `200`
 
-**Solutions:**
-1. Check SSL certificate was issued:
-   - Services → ACME Client → Certificates
-   - Status should be "OK"
+### HTTPS Doesn't Work
 
-2. Check Frontend SSL settings:
-   - Enable SSL offloading: Checked
-   - Certificate: api.boldvpn.net selected
-   - SSL Passthrough: UNCHECKED
+**Check 1:** SSL certificate OK?
+- Services → ACME Client → Certificates
+- Status: OK (green)
+- Not expired
 
-3. Check Frontend Type:
-   - Must be: "HTTP / HTTPS (SSL Offloading)"
+**Check 2:** Frontend SSL settings?
+- Enable SSL offloading: Checked
+- Certificate: api.boldvpn.net selected
+- SSL Passthrough: Unchecked
 
-4. Check you clicked Apply after changing Frontend
+**Check 3:** HAProxy running?
+- Services → HAProxy → Diagnostics → Stats
+- Frontend api_https: UP
 
-### Connection Refused / Timeout
+### Connection Timeout
 
-**Problem:** Can't reach api.boldvpn.net at all
+**Check 1:** DNS resolves?
+```bash
+ping api.boldvpn.net
+# Should show your public IP
+```
 
-**Solutions:**
-1. Check DNS:
-   ```bash
-   ping api.boldvpn.net
-   # Should show your public IP
-   ```
+**Check 2:** Port 443 accessible?
+```bash
+# From internet
+telnet api.boldvpn.net 443
+```
 
-2. Check HAProxy is listening:
-   - Services → HAProxy → Diagnostics → Stats
-   - Frontend should show UP
-
-3. Check from OPNsense:
-   ```bash
-   # From OPNsense console
-   curl http://localhost:443
-   # Should get response from HAProxy
-   ```
-
-4. Check ISP doesn't block port 443
-
-### 502 Bad Gateway
-
-**Problem:** HAProxy is working but can't reach backend
-
-**Solutions:**
-- Backend server is DOWN (check Stats page)
-- API not running on FreeBSD
-- Wrong IP or port in Real Server config
-- Network issue between OPNsense and FreeBSD
+**Check 3:** HAProxy listening?
+- Stats page should show frontend UP
+- Check listen address: 0.0.0.0:443 (not 127.0.0.1)
 
 ---
 
-## 📊 Monitoring HAProxy
+## 📊 Monitoring
 
-### Real-Time Statistics
+### HAProxy Statistics
 
 **Location:** Services → HAProxy → Diagnostics → Stats
 
-Shows:
-- Request rate
-- Active connections
-- Backend server health
+**What you see:**
+- Request rate (requests/second)
+- Current sessions
+- Total sessions
+- Backend server health (UP/DOWN)
 - Response times
 - Errors
 
-**Refresh to see live data**
+**Refresh page** to see live updates!
 
 ### Logs
 
@@ -801,149 +773,153 @@ Shows:
 Shows:
 - All requests
 - Backend selections
-- Errors
 - SSL handshakes
+- Errors and warnings
+
+**Useful for debugging!**
 
 ---
 
-## 🔄 HTTP to HTTPS Redirect - Clarification
+## 🎯 After HAProxy is Working
 
-**You have TWO ways to handle HTTP→HTTPS redirect:**
+### 1. Update Customer Portal
 
-### Method 1: Using Frontend Custom Option (Recommended)
+**On your Mac:**
 
-**What we configured:**
-- Listen on BOTH ports: 80 and 443
-- Add custom option: `http-request redirect scheme https code 301 if !{ ssl_fc }`
+```bash
+cd /Users/msotoode/Documents/GitHub/boldvpn-site
+nano portal/config.js
+```
 
-**How it works:**
-- Single frontend handles both HTTP and HTTPS
-- If request comes on port 80 (HTTP), redirect rule triggers
-- If request comes on port 443 (HTTPS), redirect rule doesn't trigger
-- Simple and efficient!
-
-### Method 2: Separate HTTP Frontend (Alternative)
-
-**Create TWO frontends:**
-
-Frontend 1: api_http (port 80 only)
-- Only for redirect
-- Custom option: `redirect scheme https code 301`
-
-Frontend 2: api_https (port 443 only)
-- For actual API traffic
-- SSL enabled
-
-**When to use:**
-- If you want clearer separation
-- If single frontend method doesn't work
-
-**For your setup:** Method 1 (single frontend) is simpler! ✓
-
----
-
-## 🎯 Next Steps After HAProxy Setup
-
-### 1. Update Customer Portal Config
-
-Edit `portal/config.js` on your Mac:
-
+**Change:**
 ```javascript
 const Config = {
-    API_URL: 'https://api.boldvpn.net/api',  // Update this!
+    API_URL: 'https://api.boldvpn.net/api',  // Update this line!
     // ... rest stays the same
 };
 ```
 
-### 2. Commit and Push
-
+**Commit and push:**
 ```bash
-cd /Users/msotoode/Documents/GitHub/boldvpn-site
 git add portal/config.js
-git commit -m "Update API URL to use HAProxy reverse proxy with HTTPS"
+git commit -m "Update API URL to use HAProxy reverse proxy"
 git push
 ```
 
-GitHub Pages will auto-deploy in 1-2 minutes.
+Wait 1-2 minutes for GitHub Pages to deploy.
+
+---
+
+### 2. Update API CORS (if needed)
+
+**On FreeBSD:**
+
+```bash
+sudo nano /usr/local/boldvpn-site/api/.env
+```
+
+**Ensure this line exists:**
+```
+CORS_ORIGIN=https://boldvpn.net,https://www.boldvpn.net
+```
+
+**Restart API:**
+```bash
+sudo service boldvpn_api restart
+```
+
+---
 
 ### 3. Test End-to-End
 
-From any device:
+**From any device (Mac, phone, public WiFi):**
 
-1. Visit: `https://boldvpn.net/portal/`
-2. You should see the login page
-3. Login: `testuser` / `Test@123!`
-4. Should see dashboard with usage data!
+1. Open browser
+2. Visit: `https://boldvpn.net/portal/`
+3. You should see login page
+4. Login: `testuser` / `Test@123!`
+5. Should see dashboard with:
+   - Data usage
+   - Connection speed
+   - Connected devices
+   - Current session
 
-**If all works:** 🎉 **COMPLETE SUCCESS!**
+**If this works: 🎉 EVERYTHING IS COMPLETE!**
 
-Users can now access the portal from anywhere in the world!
+Users can now:
+- ✅ Access portal from anywhere
+- ✅ Login with their credentials
+- ✅ View real-time usage data
+- ✅ Manage their account
+- ✅ All secure with HTTPS!
 
 ---
 
-## ✅ Final Checklist
+## ✅ Complete Setup Checklist
 
-- [ ] HAProxy plugin installed on OPNsense
+**OPNsense HAProxy:**
+- [ ] HAProxy plugin installed
 - [ ] Acme account configured
-- [ ] SSL certificate obtained for api.boldvpn.net (Status: OK)
-- [ ] Real Server configured (192.168.50.2:3000, SSL: No)
-- [ ] Backend Pool configured (HTTP mode, option forwardfor)
-- [ ] Frontend configured (ports 80 & 443, SSL offloading enabled)
-- [ ] Custom options added (HTTP redirect + X-Forwarded-Proto)
+- [ ] SSL certificate for api.boldvpn.net (Status: OK)
+- [ ] Real Server: 192.168.50.2:3000, SSL: No
+- [ ] Backend Pool: HTTP mode, freebsd_api, option forwardfor
+- [ ] Frontend #1: Port 80, HTTP redirect
+- [ ] Frontend #2: Port 443, SSL offloading, api.boldvpn.net cert
 - [ ] HAProxy enabled and running
-- [ ] Backend server status: UP (green)
-- [ ] HTTP test: Redirects to HTTPS ✓
-- [ ] HTTPS test: Returns JSON ✓
-- [ ] Portal config.js updated with HTTPS URL
-- [ ] End-to-end test: Portal login works ✓
+- [ ] Stats show all components UP (green)
+
+**Testing:**
+- [ ] HTTP redirects to HTTPS (301)
+- [ ] HTTPS returns JSON from API
+- [ ] Can access from internet (not just LAN)
+
+**Portal:**
+- [ ] portal/config.js updated with HTTPS URL
+- [ ] Pushed to GitHub
+- [ ] Can login from https://boldvpn.net/portal/
+- [ ] Dashboard shows real data
 
 ---
 
-## 🔒 Security Features
+## 🚀 What You Achieved
 
-✅ **SSL/TLS Encryption** - All public traffic encrypted  
-✅ **HTTP → HTTPS Redirect** - Forces secure connections  
-✅ **SSL Offloading** - Reduces load on FreeBSD  
-✅ **Health Checks** - Auto-detects API failures  
-✅ **Auto SSL Renewal** - Certificate renews automatically  
-✅ **Rate Limiting** - Built into API (100 req/15min)  
-✅ **Client IP Logging** - Via X-Forwarded-For header  
+With this setup, you now have:
 
----
+✅ **Enterprise-Grade Reverse Proxy**
+- HAProxy handles all public traffic
+- SSL termination at the edge
+- Health monitoring
+- Auto failover (if you add more backends)
 
-## 📝 Quick Reference Card
+✅ **Secure Public API**
+- HTTPS only (HTTP auto-redirects)
+- Free SSL certificate (auto-renewing)
+- Real client IP logging
+- Industry-standard security headers
 
-**Configuration Summary:**
+✅ **Simple FreeBSD Backend**
+- Just runs API on port 3000
+- No SSL complexity
+- Easy to update and maintain
 
-```
-Real Server: freebsd_api
-  ├─ IP: 192.168.50.2:3000
-  └─ SSL: No
+✅ **Professional Customer Portal**
+- Accessible from anywhere
+- Secure HTTPS connection
+- Real-time usage data
+- Modern user interface
 
-Backend Pool: api_backend_pool
-  ├─ Mode: HTTP
-  ├─ Server: freebsd_api
-  └─ Options: option forwardfor
-
-Frontend: api_frontend
-  ├─ Listen: 0.0.0.0:80, 0.0.0.0:443
-  ├─ Type: HTTP/HTTPS (SSL Offloading)
-  ├─ Backend: api_backend_pool
-  ├─ SSL: Yes, Certificate: api.boldvpn.net, Passthrough: No
-  └─ Options:
-      ├─ http-request redirect scheme https code 301 if !{ ssl_fc }
-      └─ http-request set-header X-Forwarded-Proto https
-
-Service: Enable HAProxy
-```
-
-**Test Command:**
-```bash
-curl https://api.boldvpn.net/api/health
-```
-
-**Expected:** `{"status":"OK",...}`
+**BoldVPN is now a production-ready VPN service!** 🎉
 
 ---
 
-**That's it!** HAProxy provides enterprise-grade reverse proxy and SSL termination for your API! 🚀
+## 📚 Additional Resources
+
+- **System Architecture:** [SYSTEM-OVERVIEW.md](SYSTEM-OVERVIEW.md)
+- **FreeBSD Deployment:** [FREEBSD-DEPLOYMENT.md](FREEBSD-DEPLOYMENT.md)
+- **API Documentation:** [api/README.md](api/README.md)
+- **Portal Guide:** [portal/HOW-IT-WORKS.md](portal/HOW-IT-WORKS.md)
+- **All Scripts:** [scripts/README.md](scripts/README.md)
+
+---
+
+**🎯 This is the complete, production-ready setup!** All traffic is encrypted, monitored, and secure. Your users can access the service from anywhere in the world!
