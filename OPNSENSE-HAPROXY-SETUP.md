@@ -362,7 +362,80 @@ Click **Save** → **Apply Changes** 🔴
 
 ---
 
-### Step 7: Enable HAProxy
+### Step 7: Configure WAN Firewall Rules (CRITICAL!)
+
+**⚠️ This step is REQUIRED for HAProxy to work from the internet!**
+
+HAProxy listens on OPNsense WAN interface, but OPNsense blocks WAN→self traffic by default. You must add firewall rules to allow internet traffic to reach HAProxy.
+
+**Location:** Firewall → Rules → **WAN**
+
+#### Rule 1: Allow HTTPS (Port 443)
+
+Click **"+"** to add rule:
+
+| Field | Value |
+|-------|-------|
+| Action | `Pass` |
+| Interface | `WAN` |
+| Direction | `in` |
+| TCP/IP Version | `IPv4` |
+| Protocol | `TCP` |
+| Source | `any` |
+| Destination | **`This Firewall (self)`** ← Critical! |
+| Destination port range | From: `443` To: `443` |
+| Description | `HAProxy HTTPS API` |
+
+Click **Save**
+
+#### Rule 2: Allow HTTP (Port 80) - For Redirect
+
+Click **"+"** to add second rule:
+
+| Field | Value |
+|-------|-------|
+| Action | `Pass` |
+| Interface | `WAN` |
+| Direction | `in` |
+| TCP/IP Version | `IPv4` |
+| Protocol | `TCP` |
+| Source | `any` |
+| Destination | **`This Firewall (self)`** ← Critical! |
+| Destination port range | From: `80` To: `80` |
+| Description | `HAProxy HTTP redirect` |
+
+Click **Save**
+
+**After adding both rules:** Click **Apply Changes** (top right)
+
+**📝 Why these rules are needed:**
+
+**Without these rules:**
+```
+Internet → OPNsense WAN:443 ✗ BLOCKED by firewall
+         → HAProxy never receives traffic
+         → Connection timeout
+```
+
+**With these rules:**
+```
+Internet → OPNsense WAN:443 ✓ ALLOWED by firewall rule
+         → HAProxy receives traffic
+         → Proxies to FreeBSD:3000
+         → Returns response
+```
+
+**Key point:** Destination must be **"This Firewall (self)"** because HAProxy runs ON OPNsense, not behind it!
+
+**This is different from:**
+- Port forwarding (WAN → LAN device)
+- NAT rules (not needed here)
+
+**This is traffic TO OPNsense itself!**
+
+---
+
+### Step 8: Enable HAProxy
 
 **Location:** Services → HAProxy → Settings → Service
 
@@ -376,27 +449,9 @@ Click **Save** → **Apply Changes** 🔴
 
 ---
 
-### Step 8: Enable Statistics Page
+### Step 9: Verify Everything is UP
 
-**Location:** Services → HAProxy → Settings → Statistics
-
-Configure statistics to monitor HAProxy:
-
-| Field | Value |
-|-------|-------|
-| Enabled | ✓ Checked |
-| Enable remote access | ✓ Checked (optional, for external access) |
-| Remote listen addresses | `127.0.0.1:8080` (or leave empty for localhost only) |
-| Enable authentication | ✓ Checked (recommended if enabling remote) |
-| Allowed Users | Select admin users (if auth enabled) |
-
-Click **Save** → **Apply Changes** 🔴
-
----
-
-### Step 9: View Statistics
-
-**Location:** Services → HAProxy → Statistics
+**Location:** Services → HAProxy → Diagnostics → Stats
 
 **You should see:**
 
@@ -745,7 +800,7 @@ curl http://192.168.50.2:3000/api/health
 - SSL Passthrough: Unchecked
 
 **Check 3:** HAProxy running?
-- Services → HAProxy → Statistics
+- Services → HAProxy → Diagnostics → Stats
 - Frontend api_https: UP
 
 ### Connection Timeout
@@ -772,9 +827,7 @@ telnet api.boldvpn.net 443
 
 ### HAProxy Statistics
 
-**Location:** Services → HAProxy → Statistics
-
-**Note:** First enable statistics in Settings → Statistics (Step 8 above)
+**Location:** Services → HAProxy → Diagnostics → Stats
 
 **What you see:**
 - Request rate (requests/second)
