@@ -222,10 +222,18 @@ sudo chmod 600 /usr/local/boldvpn-site/api/.env
 
 ```
 /usr/local/boldvpn-site/          # Main repository
+├── scripts/                      # Deployment helper scripts
+│   ├── setup-github.sh           # First-time setup
+│   └── update.sh                 # Quick update script
 ├── api/                          # Running API
 │   ├── .env                      # API config (secrets)
-│   └── node_modules/             # Dependencies
-├── radius-server/                # RADIUS scripts
+│   ├── node_modules/             # Dependencies
+│   ├── freebsd-api-setup.sh      # API deployment script
+│   └── test-api.sh               # API test script
+├── radius-server/                # RADIUS setup scripts
+│   ├── freebsd-radius-setup.sh   # RADIUS deployment
+│   ├── test-radius.sh            # RADIUS test script
+│   └── *.sh                      # Various helper scripts
 ├── portal/                       # Customer portal
 └── captiveportal/                # OPNsense templates
 
@@ -256,14 +264,14 @@ sudo chmod 600 /usr/local/boldvpn-site/api/.env
 
 **First time setup:**
 ```bash
-./setup-github.sh
+./setup-github.sh  # Run from ~/ after scp from scripts/
 cd /usr/local/boldvpn-site/radius-server && sudo ./freebsd-radius-setup.sh
 cd /usr/local/boldvpn-site/api && sudo ./freebsd-api-setup.sh
 ```
 
 **Update:**
 ```bash
-cd /usr/local/boldvpn-site && ./update.sh
+cd /usr/local/boldvpn-site && ./scripts/update.sh
 ```
 
 **Check status:**
