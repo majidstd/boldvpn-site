@@ -4,6 +4,60 @@ Complete guide for setting up HAProxy reverse proxy on OPNsense to make the Bold
 
 **Based on actual OPNsense HAProxy interface - Clear and simple!**
 
+---
+
+## 📑 Table of Contents
+
+### Getting Started
+- [What This Does](#-what-this-does)
+- [Prerequisites](#-prerequisites)
+- [Important Notes](#️-critical-notes)
+
+### Step-by-Step Setup
+- [Step 1: Install HAProxy Plugin](#step-1-install-haproxy-plugin)
+- [Step 2: Get SSL Certificate (Acme Client)](#step-2-get-ssl-certificate-acme-client)
+- [Step 3: Configure Real Server (FreeBSD API)](#step-3-configure-real-server-freebsd-api)
+- [Step 4: Configure Backend Pool](#step-4-configure-backend-pool)
+- [Step 5: Configure Frontend #1 - HTTP Redirect](#step-5-configure-frontend-1---http-redirect)
+- [Step 6: Configure Frontend #2 - HTTPS API](#step-6-configure-frontend-2---https-api)
+- [Step 7: Configure WAN Firewall Rules (CRITICAL!)](#step-7-configure-wan-firewall-rules-critical)
+- [Step 8: Enable HAProxy](#step-8-enable-haproxy)
+- [Step 9: Verify Everything is UP](#step-9-verify-everything-is-up)
+
+### Testing
+- [Complete Testing Guide](#-complete-testing-guide)
+  - [Test 1: API Running Locally](#test-1-api-running-locally-freebsd)
+  - [Test 2: From OPNsense to FreeBSD](#test-2-from-opnsense-to-freebsd)
+  - [Test 3: HTTP Request (Should Redirect)](#test-3-http-request-should-redirect)
+  - [Test 4: HTTPS Request (Main Test!)](#test-4-https-request-main-test)
+  - [Test 5: Test Login Endpoint](#test-5-test-login-endpoint)
+
+### Understanding the Configuration
+- [Configuration Summary](#-complete-configuration-summary)
+- [Understanding Key Options](#-understanding-key-options)
+  - [option forwardfor](#option-forwardfor-backend)
+  - [HTTP → HTTPS Redirect](#http--https-redirect-explained)
+  - [X-Forwarded-Proto Header](#x-forwarded-proto-header)
+
+### Troubleshooting
+- [Troubleshooting Guide](#-troubleshooting)
+  - [Apply Button Not Showing](#apply-button-not-showing)
+  - [Backend Server DOWN](#backend-server-down-red)
+  - [HTTPS Doesn't Work](#https-doesnt-work)
+  - [Connection Timeout](#connection-timeout)
+
+### Advanced Topics
+- [Monitoring HAProxy](#-monitoring-haproxy)
+- [TLS Security Hardening](#-optional-tls-security-hardening)
+- [Testing with curl TLS Issues](#-testing-with-curl-tls-issues)
+
+### Final Steps
+- [After HAProxy is Working](#-after-haproxy-is-working)
+- [Complete Setup Checklist](#-complete-setup-checklist)
+- [What You Achieved](#-what-you-achieved)
+
+---
+
 ## 🎯 What This Does
 
 **Architecture:**
