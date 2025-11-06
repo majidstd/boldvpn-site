@@ -376,9 +376,27 @@ Click **Save** → **Apply Changes** 🔴
 
 ---
 
-### Step 8: Verify Everything is UP
+### Step 8: Enable Statistics Page
 
-**Location:** Services → HAProxy → Diagnostics → Stats
+**Location:** Services → HAProxy → Settings → Statistics
+
+Configure statistics to monitor HAProxy:
+
+| Field | Value |
+|-------|-------|
+| Enabled | ✓ Checked |
+| Enable remote access | ✓ Checked (optional, for external access) |
+| Remote listen addresses | `127.0.0.1:8080` (or leave empty for localhost only) |
+| Enable authentication | ✓ Checked (recommended if enabling remote) |
+| Allowed Users | Select admin users (if auth enabled) |
+
+Click **Save** → **Apply Changes** 🔴
+
+---
+
+### Step 9: View Statistics
+
+**Location:** Services → HAProxy → Statistics
 
 **You should see:**
 
@@ -727,7 +745,7 @@ curl http://192.168.50.2:3000/api/health
 - SSL Passthrough: Unchecked
 
 **Check 3:** HAProxy running?
-- Services → HAProxy → Diagnostics → Stats
+- Services → HAProxy → Statistics
 - Frontend api_https: UP
 
 ### Connection Timeout
@@ -754,7 +772,9 @@ telnet api.boldvpn.net 443
 
 ### HAProxy Statistics
 
-**Location:** Services → HAProxy → Diagnostics → Stats
+**Location:** Services → HAProxy → Statistics
+
+**Note:** First enable statistics in Settings → Statistics (Step 8 above)
 
 **What you see:**
 - Request rate (requests/second)
