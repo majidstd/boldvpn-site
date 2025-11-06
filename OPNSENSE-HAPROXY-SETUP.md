@@ -559,6 +559,31 @@ curl https://api.boldvpn.net/api/health
 }
 ```
 
+**If you get TLS/SSL protocol error:**
+```
+curl: (35) LibreSSL/3.3.6: error:1404B42E:SSL routines:ST_CONNECT:tlsv1 alert protocol version
+```
+
+**This is a curl/LibreSSL version issue on your Mac, NOT your API!**
+
+**Solutions:**
+
+```bash
+# Option 1: Force TLS 1.2 (works with old curl)
+curl --tlsv1.2 https://api.boldvpn.net/api/health
+
+# Option 2: Force TLS 1.3 (if supported)
+curl --tlsv1.3 https://api.boldvpn.net/api/health
+
+# Option 3: Test in browser (recommended!)
+# Open: https://api.boldvpn.net/api/health
+# Browsers have modern TLS support - will work fine!
+
+# Option 4: Update curl via Homebrew
+brew install curl
+/opt/homebrew/bin/curl https://api.boldvpn.net/api/health
+```
+
 **If this works: ✅ COMPLETE SUCCESS!**
 
 **What's happening:**
@@ -996,3 +1021,51 @@ With this setup, you now have:
 ---
 
 **🎯 This is the complete, production-ready setup!** All traffic is encrypted, monitored, and secure. Your users can access the service from anywhere in the world!
+
+---
+
+## 🔒 Optional: TLS Security Hardening
+
+For maximum security in production, you can harden the TLS configuration.
+
+**See:** [HAPROXY-SECURITY-HARDENING.md](HAPROXY-SECURITY-HARDENING.md)
+
+**Quick version:** Add to `api_https` frontend option pass-through:
+
+```
+ssl-min-ver TLSv1.2
+```
+
+This blocks insecure TLS 1.0 and 1.1, allowing only TLS 1.2 and 1.3.
+
+**Result:** A or A+ grade on SSL Labs test!
+
+---
+
+## 🧪 Testing with curl TLS Issues
+
+If you get this error:
+```
+curl: (35) LibreSSL/3.3.6: error:1404B42E:SSL routines:ST_CONNECT:tlsv1 alert protocol version
+```
+
+**This is your Mac's old curl, not your API!**
+
+**Quick fixes:**
+
+```bash
+# Option 1: Force TLS 1.2
+curl --tlsv1.2 https://api.boldvpn.net/api/health
+
+# Option 2: Test in browser (always works!)
+# Open: https://api.boldvpn.net/api/health
+
+# Option 3: Update curl
+brew install curl
+/opt/homebrew/bin/curl https://api.boldvpn.net/api/health
+```
+
+**Browsers and modern clients will work fine!** This curl error doesn't affect real users.
+
+---
+
