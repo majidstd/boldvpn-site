@@ -70,44 +70,46 @@ fi
 
 echo ""
 
-# Step 2: Create API directory structure
+# Step 2: Verify we're in the API directory
 echo "================================================================"
-echo "[STEP] Step 2/6: Setting up API directory..."
+echo "[STEP] Step 2/6: Verifying API directory..."
 echo "================================================================"
 echo ""
 
-API_DIR="/usr/local/boldvpn-api"
+# Use current directory (should be /usr/local/boldvpn-site/api/)
+API_DIR="$(pwd)"
 
-if [ -d "$API_DIR" ]; then
-    echo "[OK] API directory exists: $API_DIR"
-else
-    echo "Creating API directory..."
-    run_cmd mkdir -p "$API_DIR"
-    run_cmd chown root:wheel "$API_DIR"
+echo "[i] API directory: $API_DIR"
+
+if [ ! -f "package.json" ]; then
+    echo "[X] Error: package.json not found in current directory"
+    echo "    Please run this script from /usr/local/boldvpn-site/api/"
+    echo "    Current directory: $API_DIR"
+    exit 1
 fi
 
-echo ""
-
-# Step 3: Copy API files (assumes they're in current directory)
-echo "================================================================"
-echo "[STEP] Step 3/6: Copying API files..."
-echo "================================================================"
-echo ""
-
-if [ -f "package.json" ]; then
-    echo "Copying API files to $API_DIR..."
-    run_cmd cp -r ./* "$API_DIR/"
-    echo "[OK] API files copied"
-else
-    echo "[!] Warning: package.json not found in current directory"
-    echo "    Please copy your API files to $API_DIR manually"
-    echo "    Expected structure:"
-    echo "      $API_DIR/server.js"
-    echo "      $API_DIR/package.json"
-    echo "      $API_DIR/routes/"
-    echo "      $API_DIR/middleware/"
-    echo "      $API_DIR/utils/"
+if [ ! -f "server.js" ]; then
+    echo "[X] Error: server.js not found in current directory"
+    echo "    Please run this script from /usr/local/boldvpn-site/api/"
+    exit 1
 fi
+
+echo "[OK] API files verified in: $API_DIR"
+echo ""
+
+# Step 3: Check directory structure
+echo "================================================================"
+echo "[STEP] Step 3/6: Checking directory structure..."
+echo "================================================================"
+echo ""
+
+for dir in routes middleware utils; do
+    if [ -d "$dir" ]; then
+        echo "[OK] Found: $dir/"
+    else
+        echo "[!] Warning: $dir/ not found"
+    fi
+done
 
 echo ""
 
@@ -117,7 +119,8 @@ echo "[STEP] Step 4/6: Creating .env configuration..."
 echo "================================================================"
 echo ""
 
-cat > "$API_DIR/.env" << EOF
+# Create .env in current directory
+cat > ".env" << EOF
 # BoldVPN API Configuration
 NODE_ENV=production
 PORT=$API_PORT
@@ -144,7 +147,7 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 API_DOMAIN=$API_DOMAIN
 EOF
 
-run_cmd chmod 600 "$API_DIR/.env"
+run_cmd chmod 600 ".env"
 echo "[OK] .env file created"
 
 echo ""
@@ -155,15 +158,9 @@ echo "[STEP] Step 5/6: Installing Node.js dependencies..."
 echo "================================================================"
 echo ""
 
-cd "$API_DIR"
-
-if [ -f "package.json" ]; then
-    echo "Installing npm packages..."
-    run_cmd npm install --production
-    echo "[OK] Dependencies installed"
-else
-    echo "[!] Warning: package.json not found, skipping npm install"
-fi
+echo "Installing npm packages in: $API_DIR"
+run_cmd npm install --production
+echo "[OK] Dependencies installed"
 
 echo ""
 
@@ -189,7 +186,7 @@ load_rc_config $name
 
 : ${boldvpn_api_enable:="NO"}
 : ${boldvpn_api_user:="root"}
-: ${boldvpn_api_dir:="/usr/local/boldvpn-api"}
+: ${boldvpn_api_dir:="/usr/local/boldvpn-site/api"}
 : ${boldvpn_api_log:="/var/log/boldvpn-api.log"}
 
 command="/usr/local/bin/node"
@@ -292,7 +289,7 @@ echo ""
 echo "[STEP] Configuration Summary:"
 echo ""
 echo "  API Server:"
-echo "    Directory: $API_DIR"
+echo "    Directory: /usr/local/boldvpn-site/api/"
 echo "    Port: $API_PORT"
 echo "    Domain: $API_DOMAIN"
 echo "    Log: /var/log/boldvpn-api.log"
