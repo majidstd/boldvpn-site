@@ -1,0 +1,80 @@
+╔═══════════════════════════════════════════════════════════╗
+║                                                           ║
+║  ⚠️  IMPORTANT: FreeBSD Commands Are LOWERCASE!          ║
+║                                                           ║
+╚═══════════════════════════════════════════════════════════╝
+
+FreeBSD is case-sensitive. Package names are ALL LOWERCASE.
+
+═══════════════════════════════════════════════════════════
+
+✅ CORRECT (lowercase):
+
+  pkg search freeradius
+  pkg search postgresql  
+  pkg install freeradius3
+  pkg install postgresql15-server
+
+═══════════════════════════════════════════════════════════
+
+❌ WRONG (will not work):
+
+  pkg search FreeRadius    ← NO!
+  pkg search PostgreSQL    ← NO!
+  pkg install FreeRadius3  ← NO!
+  pkg install PostgreSQL15 ← NO!
+
+═══════════════════════════════════════════════════════════
+
+📋 COMMON PACKAGE NAMES (all lowercase):
+
+  freeradius3
+  freeradius3-pgsql          ← PostgreSQL driver (not -postgresql!)
+  freeradius3-mysql
+  freeradius3-ldap
+  postgresql15-server
+  postgresql15-client
+  postgresql15-contrib
+  postgresql16-server
+  postgresql16-client
+  postgresql16-contrib
+  node
+  npm
+  nginx
+  git
+
+═══════════════════════════════════════════════════════════
+
+🔍 HOW TO SEARCH:
+
+  # Search for freeradius3 (be specific!)
+  pkg search freeradius3
+  
+  Output:
+    freeradius3-3.2.8              Free RADIUS server implementation
+    freeradius3-ldap-3.2.8         Free RADIUS server implementation
+    freeradius3-mysql-3.2.8        Free RADIUS server implementation
+    freeradius3-pgsql-3.2.8        Free RADIUS server implementation
+    freeradius3-sqlite3-3.2.8      Free RADIUS server implementation
+  
+  # Search for postgresql (lowercase!)
+  pkg search postgresql | grep server
+  
+  # Install the PostgreSQL driver for FreeRADIUS
+  pkg install freeradius3-pgsql
+  
+  Note: It's "freeradius3-pgsql" NOT "freeradius3-postgresql"!
+
+═══════════════════════════════════════════════════════════
+
+✅ THE SETUP SCRIPT NOW HANDLES THIS!
+
+The freebsd-radius-setup.sh script:
+  - Searches for: freeradius3 (exact name)
+  - Installs: freeradius3-pgsql (correct PostgreSQL driver)
+  - Auto-detects PostgreSQL version
+  - All lowercase, proper parsing
+  
+You don't need to worry about package names! 🎯
+
+═══════════════════════════════════════════════════════════

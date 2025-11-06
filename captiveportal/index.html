@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+    <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BoldVPN Portal Login</title>
@@ -11,12 +11,12 @@
     <link rel="stylesheet" href="css/portal.css" />
     
     <!-- OPNsense Required Scripts -->
-    <script src="js/jquery-3.7.1.min.js"></script>
-    <script src="js/sprintf.min.js"></script>
-    <script src="js/cpModal.min.js"></script>
-    <script src="js/functions.js"></script>
-    <script src="js/init.js"></script>
-  </head>
+        <script src="js/jquery-3.7.1.min.js"></script>
+        <script src="js/sprintf.min.js"></script>
+        <script src="js/cpModal.min.js"></script>
+        <script src="js/functions.js"></script>
+        <script src="js/init.js"></script>
+    </head>
   <body class="auth">
     <div id="vanta-background"></div>
     
@@ -31,13 +31,13 @@
           <div class="form-row">
             <label id="username" for="inputUsername">Username</label>
             <input id="inputUsername" type="text" autocomplete="off" required />
-          </div>
+                                    </div>
           <div class="form-row">
             <label id="userpass" for="inputPassword">Password</label>
             <input id="inputPassword" type="password" required />
-          </div>
+                                </div>
           <div class="checkbox-row">
-            <label for="login-rules">
+                                            <label for="login-rules">
               <input type="checkbox" id="login-rules" name="rules" />
               <span class="checkbox-custom"></span>
               <span class="text">
@@ -45,11 +45,11 @@
                 <span id="rules" class="link">terms</span>
                 <span id="termcondition2"> of the provision of internet access services.</span>
               </span>
-            </label>
-          </div>
+                                            </label>
+                                        </div>
           <button class="btn btn-primary full" id="signin" type="button">Log in</button>
-        </form>
-      </div>
+                                    </form>
+                                </div>
 
       <!-- Logout/Status -->
       <div id="logout_undefined" class="d-none">
@@ -58,8 +58,8 @@
           <p id="status_pretext1" class="muted small center"></p>
           <p id="status_pretext2" class="muted small center"></p>
           <button class="btn btn-primary full" id="logoff" type="button">Log out</button>
-        </div>
-      </div>
+                                    </div>
+                                </div>
 
       <!-- Anonymous Login -->
       <div id="login_none" class="d-none">
@@ -67,7 +67,7 @@
           <h2 id="anon_title" class="center">Sign in</h2>
           <p id="anon_pretext1" class="muted small center"></p>
           <div class="checkbox-row">
-            <label for="login-rules-anon">
+                                        <label for="login-rules-anon">
               <input type="checkbox" id="login-rules-anon" name="rules" />
               <span class="checkbox-custom"></span>
               <span class="text">
@@ -75,15 +75,15 @@
                 <span id="rules_anon" class="link">terms</span>
                 <span id="termcondition_anon2"> of the provision of internet access services.</span>
               </span>
-            </label>
-          </div>
+                                        </label>
+                                    </div>
           <button class="btn btn-primary full" id="signin_anon" type="button">Sign in</button>
-        </div>
-      </div>
+                                    </div>
+                                </div>
 
       <p id="cp_portal_cookies_note" class="tiny center muted"></p>
       <div id="polyglotLanguageSwitcher" style="display:none"></div>
-      <div id="MSG"></div>
+                    <div id="MSG"></div>
     </main>
-  </body>
+    </body>
 </html>

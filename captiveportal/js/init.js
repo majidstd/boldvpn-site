@@ -36,7 +36,7 @@ const loadLanguage = () => {
     }).done((data) => {
         langText = data;
         updateUI();
-    });
+        });
 };
 
 // Update UI with language text
@@ -89,8 +89,8 @@ const initializeVanta = () => {
                     color2: 0x0ea5e9,
                     backgroundColor: 0x0b1120,
                     size: 1.2
-                });
-            }
+            });
+        }
         };
     };
 };
@@ -113,7 +113,7 @@ const fetchUserIPAndLocation = () => {
         })
         .catch(() => {
             // Silently fail if IP lookup doesn't work
-        });
+    });
 };
 
 // Setup authentication handlers
@@ -145,14 +145,14 @@ const setupAuth = () => {
         if (!username) {
             $('#inputUsername').after('<p class="error-message small" style="color: #ef4444; margin: 4px 0 0 0;">Username is required</p>');
             $('#inputUsername').focus();
-            return;
-        }
-        
+        return;
+    }
+
         if (!password) {
             $('#inputPassword').after('<p class="error-message small" style="color: #ef4444; margin: 4px 0 0 0;">Password is required</p>');
             $('#inputPassword').focus();
-            return;
-        }
+                return;
+            }
         
         if (!rulesChecked) {
             return;
@@ -183,7 +183,7 @@ const setupAuth = () => {
             $(this).prop('disabled', false).text(langText.signin || 'Log in');
         });
     });
-    
+
     // Logout button handler
     $('#logoff').on('click', function() {
         $(this).prop('disabled', true).text('Logging out...');
@@ -195,7 +195,7 @@ const setupAuth = () => {
             location.reload();
         }).fail(() => {
             location.reload();
-        });
+    });
     });
     
     // Rules link handler - simple alert instead of modal
@@ -218,10 +218,10 @@ const checkConnectionStatus = () => {
         } else if (data.authType === 'none') {
             $('#login_normal').addClass('d-none');
             $('#login_none').removeClass('d-none');
-        } else {
+            } else {
             $('#login_normal').removeClass('d-none');
             $('#login_none, #logout_undefined').addClass('d-none');
-        }
+                }
     }).fail(() => {
         // Show login form even if API fails (for testing)
         $('#login_normal').removeClass('d-none');

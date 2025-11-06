@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Login - BoldVPN</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-container">
+                <img src="../assets/logo.svg" alt="BoldVPN" class="logo">
+                <h1>BoldVPN</h1>
+            </div>
+            <nav class="nav">
+                <a href="../index.html">Home</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#support">Support</a>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Login Form -->
+            <div id="login-section" class="auth-section">
+                <div class="auth-card">
+                    <h2>Account Login</h2>
+                    <p class="auth-subtitle">Access your BoldVPN account</p>
+
+                    <form id="login-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" required>
+                            <div class="error-message" id="username-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required>
+                            <div class="error-message" id="password-error"></div>
+                        </div>
+
+                        <div class="form-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="remember-me">
+                                Remember me
+                            </label>
+                            <a href="#" id="forgot-password-link">Forgot password?</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="login-btn">
+                            <span class="btn-text">Sign In</span>
+                            <div class="btn-spinner" style="display: none;"></div>
+                        </button>
+                    </form>
+
+                    <div class="auth-links">
+                        <p>Don't have an account? <a href="#" id="register-link">Sign up</a></p>
+                    </div>
+
+                    <div id="login-error" class="alert alert-error" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-section" class="auth-section" style="display: none;">
+                <div class="auth-card">
+                    <h2>Create Account</h2>
+                    <p class="auth-subtitle">Join BoldVPN today</p>
+
+                    <form id="register-form" class="auth-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reg-username">Username</label>
+                                <input type="text" id="reg-username" name="username" required>
+                                <div class="error-message" id="reg-username-error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-email">Email</label>
+                                <input type="email" id="reg-email" name="email" required>
+                                <div class="error-message" id="reg-email-error"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reg-password">Password</label>
+                                <input type="password" id="reg-password" name="password" required>
+                                <div class="error-message" id="reg-password-error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-confirm-password">Confirm Password</label>
+                                <input type="password" id="reg-confirm-password" name="confirmPassword" required>
+                                <div class="error-message" id="reg-confirm-password-error"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reg-plan">Select Plan</label>
+                            <select id="reg-plan" name="plan" required>
+                                <option value="">Choose a plan</option>
+                                <option value="basic">Basic - $9.99/month</option>
+                                <option value="premium">Premium - $19.99/month</option>
+                                <option value="family">Family - $29.99/month</option>
+                            </select>
+                            <div class="error-message" id="reg-plan-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="reg-terms" required>
+                                I agree to the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a>
+                            </label>
+                            <div class="error-message" id="reg-terms-error"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="register-btn">
+                            <span class="btn-text">Create Account</span>
+                            <div class="btn-spinner" style="display: none;"></div>
+                        </button>
+                    </form>
+
+                    <div class="auth-links">
+                        <p>Already have an account? <a href="#" id="login-link">Sign in</a></p>
+                    </div>
+
+                    <div id="register-error" class="alert alert-error" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Dashboard -->
+            <div id="dashboard-section" class="dashboard-section" style="display: none;">
+                <div class="dashboard-header">
+                    <h2>Welcome back, <span id="user-greeting"></span>!</h2>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+
+                <!-- Overview Cards -->
+                <div class="dashboard-grid">
+                    <!-- Usage Stats -->
+                    <div class="dashboard-card">
+                        <h3>Data Usage</h3>
+                        <div class="usage-stats">
+                            <div class="usage-item">
+                                <span class="usage-label">Used:</span>
+                                <span class="usage-value" id="data-used">0 MB</span>
+                            </div>
+                            <div class="usage-item">
+                                <span class="usage-label">Limit:</span>
+                                <span class="usage-value" id="data-limit">50 GB</span>
+                            </div>
+                            <div class="usage-progress">
+                                <div class="progress-bar" id="data-progress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Speed Stats -->
+                    <div class="dashboard-card">
+                        <h3>Connection Speed</h3>
+                        <div class="speed-stats">
+                            <div class="speed-item">
+                                <span class="speed-label">Download:</span>
+                                <span class="speed-value" id="speed-down">0 Mbps</span>
+                            </div>
+                            <div class="speed-item">
+                                <span class="speed-label">Upload:</span>
+                                <span class="speed-value" id="speed-up">0 Mbps</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connected Devices -->
+                    <div class="dashboard-card">
+                        <h3>Connected Devices</h3>
+                        <div class="devices-stats">
+                            <div class="devices-count">
+                                <span class="devices-number" id="devices-count">0</span>
+                                <span class="devices-label">Devices</span>
+                            </div>
+                            <div class="devices-limit">
+                                <span>of <span id="devices-limit">2</span> allowed</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Session -->
+                    <div class="dashboard-card">
+                        <h3>Current Session</h3>
+                        <div class="session-info" id="session-info">
+                            <p>Not connected</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="dashboard-actions">
+                    <button id="change-password-btn" class="btn btn-secondary">Change Password</button>
+                    <button id="view-usage-btn" class="btn btn-secondary">View Usage History</button>
+                    <button id="manage-devices-btn" class="btn btn-secondary">Manage Devices</button>
+                    <button id="billing-btn" class="btn btn-primary">Billing & Plans</button>
+                </div>
+
+                <!-- Usage History (Hidden by default) -->
+                <div id="usage-history" class="usage-history" style="display: none;">
+                    <h3>Usage History (Last 30 Days)</h3>
+                    <div id="usage-chart" class="usage-chart">
+                        <!-- Chart will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Devices List (Hidden by default) -->
+                <div id="devices-list" class="devices-list" style="display: none;">
+                    <h3>Connected Devices</h3>
+                    <div id="devices-container" class="devices-container">
+                        <!-- Devices will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change Modal -->
+            <div id="password-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Change Password</h3>
+                        <span class="modal-close" id="password-modal-close">&times;</span>
+                    </div>
+                    <form id="password-form" class="modal-form">
+                        <div class="form-group">
+                            <label for="current-password">Current Password</label>
+                            <input type="password" id="current-password" name="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">New Password</label>
+                            <input type="password" id="new-password" name="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-new-password">Confirm New Password</label>
+                            <input type="password" id="confirm-new-password" name="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 BoldVPN. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

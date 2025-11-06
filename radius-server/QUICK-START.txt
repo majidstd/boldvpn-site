@@ -1,0 +1,92 @@
+╔══════════════════════════════════════════════════════════════╗
+║  BoldVPN FreeBSD RADIUS Server - QUICK START                ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 STEP 1: Install FreeBSD 14.0
+   - 2 GB RAM, 20 GB disk
+   - Static IP: 192.168.1.100 (or your choice)
+   - Enable SSH during installation
+
+📋 STEP 2: Copy Setup Script to FreeBSD
+   
+   From your Mac:
+   scp freebsd-radius-setup.sh admin@192.168.1.100:~
+
+📋 STEP 3: Run Setup Script
+   
+   SSH into FreeBSD:
+   ssh admin@192.168.1.100
+   
+   Run script:
+   chmod +x freebsd-radius-setup.sh
+   sudo ./freebsd-radius-setup.sh
+   
+   Enter when prompted:
+   - OPNsense IP: 192.168.1.1
+   - RADIUS secret: (create strong password)
+   - Database passwords: (create strong passwords)
+   
+   ⏱️  Wait 10-15 minutes for installation
+
+📋 STEP 4: Test RADIUS
+   
+   On FreeBSD:
+   radtest testuser Test@123! localhost 0 testing123
+   
+   Should see: "Access-Accept" ✅
+
+📋 STEP 5: Configure OPNsense
+   
+   Services → Captive Portal → BoldVPN Zone
+   
+   Authentication: RADIUS
+     Server: 192.168.1.100
+     Port: 1812
+     Secret: [your RADIUS secret]
+   
+   Accounting: Enable
+     Server: 192.168.1.100
+     Port: 1813
+     Secret: [same secret]
+   
+   Save and enable zone
+
+📋 STEP 6: Test VPN Connection
+   
+   From WireGuard client:
+   1. Connect to VPN
+   2. See captive portal (v1.0G)
+   3. Login: testuser / Test@123!
+   4. Get internet access ✅
+
+📋 STEP 7: Verify Accounting
+   
+   On FreeBSD:
+   su - postgres
+   psql -U radiususer -d radius
+   SELECT * FROM radacct ORDER BY acctstarttime DESC LIMIT 5;
+   
+   Should see your session data ✅
+
+═══════════════════════════════════════════════════════════════
+
+✅ SUCCESS!
+
+You now have:
+- FreeRADIUS AAA server (authentication, authorization, accounting)
+- PostgreSQL database (user data, quotas, usage tracking)
+- Test users with different plans
+- Full integration with OPNsense captive portal
+
+═══════════════════════════════════════════════════════════════
+
+📁 Files in this directory:
+   freebsd-radius-setup.sh    - Automated installer
+   README.md                  - Complete documentation
+   create-sample-users.sql    - Sample users and plans
+   opnsense-config-guide.md   - OPNsense setup instructions
+   QUICK-START.txt            - This file
+
+🎯 Next: Build Node.js API + Customer Portal (coming soon)
+
+═══════════════════════════════════════════════════════════════

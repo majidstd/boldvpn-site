@@ -1,0 +1,72 @@
+═══════════════════════════════════════════════════════════════
+  TEST: Package Detection Logic
+═══════════════════════════════════════════════════════════════
+
+To verify the script will work on your FreeBSD server, run these
+commands manually to see what will be detected:
+
+1️⃣  TEST FREERADIUS DETECTION:
+
+    pkg search freeradius3 | head -5
+    
+    Expected output:
+      freeradius3-3.2.8              Free RADIUS server implementation
+      freeradius3-ldap-3.2.8         Free RADIUS server implementation
+      freeradius3-mysql-3.2.8        Free RADIUS server implementation
+      freeradius3-pgsql-3.2.8        Free RADIUS server implementation
+      freeradius3-sqlite3-3.2.8      Free RADIUS server implementation
+
+2️⃣  TEST FREERADIUS PGSQL DETECTION:
+
+    pkg search -q freeradius3-pgsql | head -1
+    
+    Expected output:
+      freeradius3-pgsql-3.2.8
+      
+    Script will extract: freeradius3-pgsql
+
+3️⃣  TEST POSTGRESQL DETECTION:
+
+    pkg search -q postgresql | grep -E "^postgresql[0-9]+-server-[0-9]"
+    
+    Expected output:
+      postgresql15-server-15.9
+      postgresql16-server-16.5
+      
+    Script will use: postgresql15-server or postgresql16-server
+
+═══════════════════════════════════════════════════════════════
+
+✅ WHAT THE SCRIPT DOES:
+
+Step 1: Search for freeradius3
+  FREERADIUS_PKG="freeradius3"
+
+Step 2: Search for freeradius3-pgsql (PostgreSQL driver)
+  FREERADIUS_PGSQL="freeradius3-pgsql"
+
+Step 3: Find latest PostgreSQL server version
+  PGSQL_SERVER="postgresql15-server" or "postgresql16-server"
+
+Step 4: Install all packages
+  pkg install -y \
+    freeradius3 \
+    freeradius3-pgsql \
+    postgresql15-server \
+    postgresql15-client \
+    postgresql15-contrib
+
+═══════════════════════════════════════════════════════════════
+
+🧪 MANUAL TEST ON FREEBSD:
+
+SSH into your FreeBSD server and run:
+
+  pkg update
+  pkg search freeradius3
+  pkg search freeradius3-pgsql
+  pkg search postgresql | grep server
+
+If you see the packages listed, the script will work! ✅
+
+═══════════════════════════════════════════════════════════════
