@@ -3,6 +3,10 @@
 # Nginx + SSL Setup for BoldVPN API
 # Configures reverse proxy and Let's Encrypt SSL certificate
 #
+# NOTE: This is only needed if FreeBSD has a public IP!
+#       If FreeBSD is behind OPNsense (private IP), use OPNsense
+#       HAProxy or nginx plugin instead! See: OPNSENSE-HAPROXY-SETUP.md
+#
 # Usage: Run as root on FreeBSD server after API is installed
 #   chmod +x setup-nginx-ssl.sh
 #   sudo ./setup-nginx-ssl.sh
@@ -102,7 +106,7 @@ if command -v certbot >/dev/null 2>&1; then
     echo "[OK] Certbot already installed: $(certbot --version 2>&1 | head -1)"
 else
     echo "Installing Certbot..."
-    pkg install -y certbot py311-certbot-nginx
+    pkg install -y py311-certbot py311-certbot-nginx
     echo "[OK] Certbot installed"
 fi
 
