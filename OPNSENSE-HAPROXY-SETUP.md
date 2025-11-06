@@ -18,10 +18,17 @@ Internet (Public) → OPNsense:443 (HAProxy with SSL)
 
 ## 📋 Prerequisites
 
-- [x] FreeBSD API running on port 3000
+- [x] FreeBSD API running on port 3000 (`sudo service boldvpn_api status`)
 - [x] DNS: `api.boldvpn.net` → Your public IP (OPNsense WAN)
-- [ ] OPNsense with internet access
-- [ ] Acme account configured (if not, we'll set it up)
+- [x] OPNsense with internet access
+- [x] Port 80 accessible from internet (for SSL certificate verification)
+
+## ⚠️ Important Notes
+
+- **No port forwarding needed!** HAProxy receives traffic, doesn't forward it
+- **No firewall rules needed!** OPNsense LAN → FreeBSD LAN is allowed by default
+- **FreeBSD needs NO SSL!** HAProxy handles all SSL/HTTPS
+- **Click "Apply" after each major change** in HAProxy settings (orange button at top)
 
 ---
 
@@ -141,9 +148,7 @@ Click **"+"** to add new service:
 - **Default Backend Pool:** `api_backend_pool`
 
 **SSL Offloading:**
-- **Certificate:** Select `api.boldvpn.net` (from Acme)
-- **Add ACL for certificate:** ✓ (checked)
-- **ALPN:** `http/1.1`
+- **Certificates:** Select `api.boldvpn.net` (from Acme dropdown)
 
 **Type:**
 - **Type:** `HTTP / HTTPS (SSL Offloading)`
@@ -187,9 +192,19 @@ Click **Save**
 
 - **Enable HAProxy:** ✓ (checked)
 - Click **Save**
-- Click **Apply** (top right corner)
 
-Wait for HAProxy to start (status should show as running)
+**IMPORTANT:** After saving, you must click **Apply Changes**!
+
+Look for the orange "Apply" button or notification at the top of the page.
+
+**Common issue:** If you don't see Apply button:
+1. Go back to: Services → HAProxy → Settings
+2. The Apply notification should appear at the top
+3. Click **Apply** to activate the configuration
+
+**Verify HAProxy started:**
+- Services → HAProxy → Diagnostics → Stats (should show data)
+- Or check: Services → HAProxy → Settings → Service (should show running)
 
 ---
 
