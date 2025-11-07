@@ -478,9 +478,9 @@ if [ "$ENABLE_IPPOOL" = "y" ] || [ "$ENABLE_IPPOOL" = "Y" ]; then
     # sqlippool should already be in sites-enabled/default
     echo "  [OK] SQL IP Pool configured"
 else
-    echo "  Disabling sqlippool in sites-enabled/default..."
+    echo "  Disabling unused SQL modules in sites-enabled/default..."
     
-    # Comment out sqlippool references in default site
+    # Comment out unused module references in default site
     DEFAULT_SITE="/usr/local/etc/raddb/sites-available/default"
     if [ ! -f "$DEFAULT_SITE" ]; then
         DEFAULT_SITE="/usr/local/etc/raddb/sites-enabled/default"
@@ -490,10 +490,13 @@ else
         # Backup
         cp "$DEFAULT_SITE" "$DEFAULT_SITE.ippool.bak"
         
-        # Comment out sqlippool lines
-        sed -i '' 's/^\([[:space:]]*\)sqlippool/#\1sqlippool/' "$DEFAULT_SITE"
+        # Comment out sqlippool and sql-voip lines (not needed for basic auth)
+        sed -i '' \
+            -e 's/^\([[:space:]]*\)sqlippool/#\1sqlippool/' \
+            -e 's/^\([[:space:]]*\)sql-voip/#\1sql-voip/' \
+            "$DEFAULT_SITE"
         
-        echo "  [OK] sqlippool disabled in default site"
+        echo "  [OK] Unused SQL modules disabled (sqlippool, sql-voip)"
     fi
 fi
 
