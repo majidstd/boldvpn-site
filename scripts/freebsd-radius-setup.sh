@@ -469,24 +469,34 @@ fi
 
 echo "  [OK] FreeRADIUS SQL configured"
 
-# Create custom dictionary for BoldVPN attributes
-echo "  Creating custom RADIUS dictionary..."
-cat > /usr/local/etc/raddb/dictionary.boldvpn <<'DICTEOF'
+# Create custom dictionary for BoldVPN attributes (if needed)
+echo "  Checking for custom RADIUS attributes..."
+
+# Note: Most attributes are STANDARD in RADIUS:
+#   - WISPr-Bandwidth-Max-Down/Up (standard WISPr)
+#   - Simultaneous-Use (standard RADIUS attribute)
+#
+# Only add custom attributes if you create non-standard ones
+# For basic setup with standard attributes, no custom dictionary needed!
+
+# Check if Max-Monthly-Traffic is in radreply (custom attribute)
+if su - postgres -c "psql radius -t -c \"SELECT COUNT(*) FROM radreply WHERE attribute = 'Max-Monthly-Traffic';\"" 2>/dev/null | grep -q "[1-9]"; then
+    echo "  [i] Found custom attribute: Max-Monthly-Traffic"
+    echo "  Creating custom dictionary..."
+    
+    cat > /usr/local/etc/raddb/dictionary.boldvpn <<'DICTEOF'
 # BoldVPN Custom RADIUS Attributes
-# For user quotas and bandwidth limits
-
-ATTRIBUTE Max-Monthly-Traffic      3000 integer64
-ATTRIBUTE WISPr-Bandwidth-Max-Down 3001 integer
-ATTRIBUTE WISPr-Bandwidth-Max-Up   3002 integer
-ATTRIBUTE Simultaneous-Use         3003 integer
+ATTRIBUTE Max-Monthly-Traffic 3000 integer64
 DICTEOF
-
-# Include custom dictionary in main dictionary if not already included
-if ! grep -q "dictionary.boldvpn" /usr/local/etc/raddb/dictionary 2>/dev/null; then
-    echo '$INCLUDE dictionary.boldvpn' >> /usr/local/etc/raddb/dictionary
-    echo "  [OK] Custom dictionary included"
+    
+    if ! grep -q "dictionary.boldvpn" /usr/local/etc/raddb/dictionary 2>/dev/null; then
+        echo '$INCLUDE dictionary.boldvpn' >> /usr/local/etc/raddb/dictionary
+        echo "  [OK] Custom dictionary created and included"
+    else
+        echo "  [OK] Custom dictionary already included"
+    fi
 else
-    echo "  [OK] Custom dictionary already included"
+    echo "  [OK] Using standard RADIUS attributes only"
 fi
 
 # Create log directory
