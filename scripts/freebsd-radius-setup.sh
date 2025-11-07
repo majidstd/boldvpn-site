@@ -61,6 +61,9 @@ read -p "OPNsense IP address (e.g., 192.168.1.1): " OPNSENSE_IP
 read -p "RADIUS shared secret (create strong password): " RADIUS_SECRET
 read -p "PostgreSQL radiususer password (create strong password): " DB_PASSWORD
 read -p "PostgreSQL postgres password (create strong password): " POSTGRES_PASSWORD
+echo ""
+read -p "Enable SQL IP Pool for VPN client IP assignment? (y/n, default: n): " ENABLE_IPPOOL
+ENABLE_IPPOOL=${ENABLE_IPPOOL:-n}
 
 echo ""
 echo "Configuration saved. Starting installation..."
@@ -454,6 +457,46 @@ client localhost {
 EOF
 
 echo "  [OK] RADIUS clients configured"
+echo "================================================================"
+
+# Step 8.5: Configure SQL IP Pool (optional)
+echo ""
+echo "[STEP] Step 8.5/10: Configuring SQL IP Pool..."
+
+if [ "$ENABLE_IPPOOL" = "y" ] || [ "$ENABLE_IPPOOL" = "Y" ]; then
+    echo "  Enabling sqlippool module..."
+    
+    # Enable sqlippool module
+    if [ ! -L "/usr/local/etc/raddb/mods-enabled/sqlippool" ]; then
+        cd /usr/local/etc/raddb/mods-enabled
+        ln -s ../mods-available/sqlippool sqlippool
+        echo "  [OK] sqlippool module enabled"
+    else
+        echo "  [OK] sqlippool already enabled"
+    fi
+    
+    # sqlippool should already be in sites-enabled/default
+    echo "  [OK] SQL IP Pool configured"
+else
+    echo "  Disabling sqlippool in sites-enabled/default..."
+    
+    # Comment out sqlippool references in default site
+    DEFAULT_SITE="/usr/local/etc/raddb/sites-available/default"
+    if [ ! -f "$DEFAULT_SITE" ]; then
+        DEFAULT_SITE="/usr/local/etc/raddb/sites-enabled/default"
+    fi
+    
+    if [ -f "$DEFAULT_SITE" ]; then
+        # Backup
+        cp "$DEFAULT_SITE" "$DEFAULT_SITE.ippool.bak"
+        
+        # Comment out sqlippool lines
+        sed -i '' 's/^\([[:space:]]*\)sqlippool/#\1sqlippool/' "$DEFAULT_SITE"
+        
+        echo "  [OK] sqlippool disabled in default site"
+    fi
+fi
+
 echo "================================================================"
 
 # Step 9: Enable and start FreeRADIUS
