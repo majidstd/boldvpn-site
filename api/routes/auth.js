@@ -66,7 +66,16 @@ router.post('/login', validateLogin, async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.value);
+    // Check if password is hashed (starts with $2a$ or $2b$ for bcrypt)
+    let isValidPassword = false;
+    if (user.value && (user.value.startsWith('$2a$') || user.value.startsWith('$2b$'))) {
+      // Bcrypt hashed password
+      isValidPassword = await bcrypt.compare(password, user.value);
+    } else {
+      // Plain text password (Cleartext-Password from RADIUS)
+      isValidPassword = (password === user.value);
+    }
+    
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
