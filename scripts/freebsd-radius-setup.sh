@@ -368,12 +368,12 @@ if [ ! -f "$QUERIES_CONF" ]; then
 safe_characters = "@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_: /"
 
 # Authorization queries
-authorize_check_query = "SELECT id, username, attribute, value, op FROM radcheck WHERE username = '%{SQL-User-Name}' ORDER BY id"
+authorize_check_query = "SELECT id, username, attribute, value, op FROM radcheck WHERE username = '%{User-Name}' ORDER BY id"
 
-authorize_reply_query = "SELECT id, username, attribute, value, op FROM radreply WHERE username = '%{SQL-User-Name}' ORDER BY id"
+authorize_reply_query = "SELECT id, username, attribute, value, op FROM radreply WHERE username = '%{User-Name}' ORDER BY id"
 
 # Group queries (optional, can be empty)
-group_membership_query = "SELECT groupname FROM radusergroup WHERE username = '%{SQL-User-Name}' ORDER BY priority"
+group_membership_query = "SELECT groupname FROM radusergroup WHERE username = '%{User-Name}' ORDER BY priority"
 
 # Accounting queries (empty for now, can be added later)
 accounting_start_query = ""
@@ -401,12 +401,12 @@ else
 safe_characters = "@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_: /"
 
 # Authorization queries
-authorize_check_query = "SELECT id, username, attribute, value, op FROM radcheck WHERE username = '%{SQL-User-Name}' ORDER BY id"
+authorize_check_query = "SELECT id, username, attribute, value, op FROM radcheck WHERE username = '%{User-Name}' ORDER BY id"
 
-authorize_reply_query = "SELECT id, username, attribute, value, op FROM radreply WHERE username = '%{SQL-User-Name}' ORDER BY id"
+authorize_reply_query = "SELECT id, username, attribute, value, op FROM radreply WHERE username = '%{User-Name}' ORDER BY id"
 
 # Group queries (optional, can be empty)
-group_membership_query = "SELECT groupname FROM radusergroup WHERE username = '%{SQL-User-Name}' ORDER BY priority"
+group_membership_query = "SELECT groupname FROM radusergroup WHERE username = '%{User-Name}' ORDER BY priority"
 
 # Accounting queries (empty for now, can be added later)
 accounting_start_query = ""
