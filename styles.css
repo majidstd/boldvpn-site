@@ -1,5 +1,5 @@
 :root { --bg:#0b1120; --panel:#0f172a; --muted:#94a3b8; --text:#e2e8f0; --primary:#0ea5e9; --primary-strong:#0284c7; --contrast:#111827; --card:#0b1226; --border:#1f2a44; }
-*{box-sizing:border-box}html,body{margin:0;padding:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:linear-gradient(180deg,#05080f 0%,var(--bg) 100%)}a{color:inherit;text-decoration:none}
+*{box-sizing:border-box}html{scrollbar-gutter:stable;overflow-y:scroll}html,body{margin:0;padding:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:linear-gradient(180deg,#05080f 0%,var(--bg) 100%)}a{color:inherit;text-decoration:none}
 .container{width:100%;max-width:1120px;margin:0 auto;padding:0 20px}
 .site-header{position:sticky;top:0;z-index:50;background:rgba(11,17,32,.7);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
 .nav{display:flex;align-items:center;justify-content:space-between;height:64px}

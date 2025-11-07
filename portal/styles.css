@@ -32,6 +32,12 @@
     box-sizing: border-box;
 }
 
+html {
+    /* Prevent layout shift when scrollbar appears/disappears */
+    scrollbar-gutter: stable;
+    overflow-y: scroll; /* Fallback for older browsers */
+}
+
 html, body {
     font-family: var(--font-family);
     background: linear-gradient(180deg, #05080f 0%, var(--bg) 100%);
@@ -564,6 +570,7 @@ html, body {
         padding: 24px;
     }
 }
+
 
 
 
