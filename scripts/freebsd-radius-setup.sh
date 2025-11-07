@@ -359,52 +359,69 @@ QUERIES_CONF="$QUERIES_DIR/queries.conf"
 mkdir -p "$QUERIES_DIR"
 
 if [ ! -f "$QUERIES_CONF" ]; then
-    echo "  Creating queries.conf..."
+    echo "  Creating simple queries.conf..."
     cat > "$QUERIES_CONF" <<'QUERIES_EOF'
 # -*- text -*-
-# PostgreSQL queries for FreeRADIUS
+# Simple PostgreSQL queries for FreeRADIUS
+# Only includes essential queries for basic authentication
 
 safe_characters = "@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_: /"
 
-authorize_check_query = "\
-    SELECT id, username, attribute, value, op \
-    FROM ${authcheck_table} \
-    WHERE username = '%{SQL-User-Name}' \
-    ORDER BY id"
+# Authorization queries
+authorize_check_query = "SELECT id, username, attribute, value, op FROM radcheck WHERE username = '%{SQL-User-Name}' ORDER BY id"
 
-authorize_reply_query = "\
-    SELECT id, username, attribute, value, op \
-    FROM ${authreply_table} \
-    WHERE username = '%{SQL-User-Name}' \
-    ORDER BY id"
+authorize_reply_query = "SELECT id, username, attribute, value, op FROM radreply WHERE username = '%{SQL-User-Name}' ORDER BY id"
 
-authorize_group_check_query = "\
-    SELECT id, groupname, attribute, value, op \
-    FROM ${groupcheck_table} \
-    WHERE groupname = '%{${group_attribute}}' \
-    ORDER BY id"
+# Group queries (optional, can be empty)
+group_membership_query = "SELECT groupname FROM radusergroup WHERE username = '%{SQL-User-Name}' ORDER BY priority"
 
-authorize_group_reply_query = "\
-    SELECT id, groupname, attribute, value, op \
-    FROM ${groupreply_table} \
-    WHERE groupname = '%{${group_attribute}}' \
-    ORDER BY id"
-
-group_membership_query = "\
-    SELECT groupname \
-    FROM ${usergroup_table} \
-    WHERE username = '%{SQL-User-Name}' \
-    ORDER BY priority"
-
+# Accounting queries (empty for now, can be added later)
 accounting_start_query = ""
 accounting_stop_query = ""
 accounting_update_query = ""
 accounting_on_query = ""
 accounting_off_query = ""
+
+# Post-auth query (empty for now)
+post-auth_query = ""
 QUERIES_EOF
-    echo "  [OK] queries.conf created"
+    echo "  [OK] Simple queries.conf created"
 else
-    echo "  [OK] queries.conf already exists"
+    echo "  [i] queries.conf already exists, checking if it needs fixing..."
+    # Check if the existing file has errors (references to undefined variables)
+    if grep -q '${client_table}' "$QUERIES_CONF" 2>/dev/null; then
+        echo "  [!] Found complex queries.conf with undefined variables"
+        echo "      Backing up and creating simple version..."
+        mv "$QUERIES_CONF" "$QUERIES_CONF.complex.bak"
+        cat > "$QUERIES_CONF" <<'QUERIES_EOF'
+# -*- text -*-
+# Simple PostgreSQL queries for FreeRADIUS
+# Only includes essential queries for basic authentication
+
+safe_characters = "@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_: /"
+
+# Authorization queries
+authorize_check_query = "SELECT id, username, attribute, value, op FROM radcheck WHERE username = '%{SQL-User-Name}' ORDER BY id"
+
+authorize_reply_query = "SELECT id, username, attribute, value, op FROM radreply WHERE username = '%{SQL-User-Name}' ORDER BY id"
+
+# Group queries (optional, can be empty)
+group_membership_query = "SELECT groupname FROM radusergroup WHERE username = '%{SQL-User-Name}' ORDER BY priority"
+
+# Accounting queries (empty for now, can be added later)
+accounting_start_query = ""
+accounting_stop_query = ""
+accounting_update_query = ""
+accounting_on_query = ""
+accounting_off_query = ""
+
+# Post-auth query (empty for now)
+post-auth_query = ""
+QUERIES_EOF
+        echo "  [OK] Simple queries.conf created (complex version backed up)"
+    else
+        echo "  [OK] queries.conf looks good"
+    fi
 fi
 
 # Create SQL module configuration with queries.conf
