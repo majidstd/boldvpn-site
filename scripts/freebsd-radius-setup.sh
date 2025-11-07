@@ -65,6 +65,15 @@ echo ""
 read -p "Enable SQL IP Pool for VPN client IP assignment? (y/n, default: n): " ENABLE_IPPOOL
 ENABLE_IPPOOL=${ENABLE_IPPOOL:-n}
 
+# Ask about VoIP accounting (depends on IP pool)
+if [ "$ENABLE_IPPOOL" = "y" ] || [ "$ENABLE_IPPOOL" = "Y" ]; then
+    read -p "Enable SQL VoIP accounting? (y/n, default: n): " ENABLE_VOIP
+    ENABLE_VOIP=${ENABLE_VOIP:-n}
+else
+    ENABLE_VOIP="n"
+    echo "  [i] SQL VoIP accounting disabled (requires IP Pool)"
+fi
+
 echo ""
 echo "Configuration saved. Starting installation..."
 echo ""
@@ -459,10 +468,11 @@ EOF
 echo "  [OK] RADIUS clients configured"
 echo "================================================================"
 
-# Step 8.5: Configure SQL IP Pool (optional)
+# Step 8.5: Configure SQL IP Pool and VoIP (optional)
 echo ""
-echo "[STEP] Step 8.5/10: Configuring SQL IP Pool..."
+echo "[STEP] Step 8.5/10: Configuring optional SQL modules..."
 
+# Handle SQL IP Pool
 if [ "$ENABLE_IPPOOL" = "y" ] || [ "$ENABLE_IPPOOL" = "Y" ]; then
     echo "  Enabling sqlippool module..."
     
@@ -474,29 +484,55 @@ if [ "$ENABLE_IPPOOL" = "y" ] || [ "$ENABLE_IPPOOL" = "Y" ]; then
     else
         echo "  [OK] sqlippool already enabled"
     fi
-    
-    # sqlippool should already be in sites-enabled/default
-    echo "  [OK] SQL IP Pool configured"
 else
-    echo "  Disabling unused SQL modules in sites-enabled/default..."
+    echo "  Disabling sqlippool in sites-enabled/default..."
     
-    # Comment out unused module references in default site
+    # Comment out sqlippool references in default site
     DEFAULT_SITE="/usr/local/etc/raddb/sites-available/default"
     if [ ! -f "$DEFAULT_SITE" ]; then
         DEFAULT_SITE="/usr/local/etc/raddb/sites-enabled/default"
     fi
     
     if [ -f "$DEFAULT_SITE" ]; then
-        # Backup
-        cp "$DEFAULT_SITE" "$DEFAULT_SITE.ippool.bak"
-        
-        # Comment out sqlippool and sql-voip lines (not needed for basic auth)
-        sed -i '' \
-            -e 's/^\([[:space:]]*\)sqlippool/#\1sqlippool/' \
-            -e 's/^\([[:space:]]*\)sql-voip/#\1sql-voip/' \
-            "$DEFAULT_SITE"
-        
-        echo "  [OK] Unused SQL modules disabled (sqlippool, sql-voip)"
+        # Comment out sqlippool lines
+        sed -i '' 's/^\([[:space:]]*\)sqlippool/#\1sqlippool/' "$DEFAULT_SITE"
+        echo "  [OK] sqlippool disabled in default site"
+    fi
+fi
+
+# Handle SQL VoIP
+if [ "$ENABLE_VOIP" = "y" ] || [ "$ENABLE_VOIP" = "Y" ]; then
+    echo "  Enabling sql-voip module..."
+    
+    # Enable sql-voip module (if it exists)
+    if [ -f "/usr/local/etc/raddb/mods-available/sql-voip" ]; then
+        if [ ! -L "/usr/local/etc/raddb/mods-enabled/sql-voip" ]; then
+            cd /usr/local/etc/raddb/mods-enabled
+            ln -s ../mods-available/sql-voip sql-voip
+            echo "  [OK] sql-voip module enabled"
+        else
+            echo "  [OK] sql-voip already enabled"
+        fi
+    else
+        echo "  [!] sql-voip module not available, skipping"
+    fi
+else
+    echo "  Disabling sql-voip in sites-enabled/default..."
+    
+    # Comment out sql-voip references in default site
+    DEFAULT_SITE="/usr/local/etc/raddb/sites-available/default"
+    if [ ! -f "$DEFAULT_SITE" ]; then
+        DEFAULT_SITE="/usr/local/etc/raddb/sites-enabled/default"
+    fi
+    
+    if [ -f "$DEFAULT_SITE" ]; then
+        # Comment out sql-voip lines
+        sed -i '' 's/^\([[:space:]]*\)sql-voip/#\1sql-voip/' "$DEFAULT_SITE"
+        echo "  [OK] sql-voip disabled in default site"
+    fi
+    
+    if [ "$ENABLE_IPPOOL" != "y" ] && [ "$ENABLE_IPPOOL" != "Y" ]; then
+        echo "  [i] sql-voip disabled (requires IP Pool)"
     fi
 fi
 
