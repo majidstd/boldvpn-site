@@ -46,50 +46,56 @@ html, body {
     padding: 0 20px;
 }
 
-/* Header - Matches main site */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 0;
-    border-bottom: 1px solid var(--border);
+/* Header - Uses main site classes */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
     background: rgba(11, 17, 32, 0.7);
     backdrop-filter: blur(8px);
-}
-
-.logo-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    color: inherit;
-}
-
-.logo {
-    width: 28px;
-    height: 28px;
-}
-
-.logo-container h1 {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: 0.2px;
-    color: var(--text);
+    border-bottom: 1px solid var(--border);
 }
 
 .nav {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.brand .logo {
+    width: 28px;
+    height: 28px;
+}
+
+.brand span {
+    font-size: 16px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
     gap: 18px;
 }
 
-.nav a {
+.nav-links a {
     color: var(--muted);
-    text-decoration: none;
     font-weight: 500;
+    text-decoration: none;
     transition: color 150ms ease;
 }
 
-.nav a:hover {
+.nav-links a:hover {
     color: var(--text);
 }
 
@@ -552,5 +558,6 @@ html, body {
         padding: 24px;
     }
 }
+
 
 
