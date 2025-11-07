@@ -317,7 +317,8 @@ curl -X POST http://localhost:3000/api/auth/login \
 | API invalid credentials | Check database connection, password format (bcrypt vs plain text) |
 | HAProxy backend DOWN | Increase health check timeout, verify API running |
 | Permission denied | `sudo chown -R root:wheel`, fix file permissions |
-| CORS errors | Add CORS middleware to API server.js |
+| CORS errors | Run `sudo sh scripts/fix-api-cors.sh` |
+| Portal network error | CORS issue - run fix-api-cors.sh script |
 
 ### Complete Troubleshooting Guides
 
@@ -532,6 +533,7 @@ boldvpn-site/
 | Script | Purpose |
 |--------|---------|
 | `fix-radius-config.sh` | Fix common RADIUS configuration issues |
+| `fix-api-cors.sh` | Fix API CORS for browser access |
 | `reinstall-freeradius.sh` | Quick FreeRADIUS reinstall |
 | `emergency-restore-access.sh` | Disable firewall if locked out |
 

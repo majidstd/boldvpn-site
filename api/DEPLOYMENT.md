@@ -549,25 +549,55 @@ cat /usr/local/boldvpn-site/api/utils/database.js | grep -A 10 "Pool("
 
 #### CORS Errors in Browser
 
-**Add CORS headers to API:**
+**Error:** `Access-Control-Allow-Origin header has a value 'http://localhost:3000' that is not equal to the supplied origin`
+
+**Cause:** API CORS is configured for localhost, not for the portal domain
+
+**Quick Fix - Run CORS fix script:**
+
+```bash
+sudo sh /usr/local/boldvpn-site/scripts/fix-api-cors.sh
+```
+
+**This automatically:**
+- Changes CORS origin to `*` (allow all)
+- Updates credentials to `false`
+- Restarts API service
+- Tests configuration
+
+**Manual Fix:**
 
 Edit `/usr/local/boldvpn-site/api/server.js`:
 
+Find (around line 64-69):
 ```javascript
-// Add AFTER express.json() middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
-});
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  ...
+}));
+```
+
+Change to:
+```javascript
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 ```
 
 Restart:
 ```bash
 sudo service boldvpn_api restart
 ```
+
+**Test:**
+- Open: https://boldvpn.net/portal/
+- Press F12 → Console
+- Run: `fetch('https://api.boldvpn.net/api/health').then(r => r.json()).then(d => console.log(d))`
+- Should see: `{status: "OK", ...}`
 
 ---
 

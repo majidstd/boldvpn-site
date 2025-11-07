@@ -776,6 +776,35 @@ cat /usr/local/boldvpn-site/api/utils/database.js | grep -A 10 "Pool("
 
 ---
 
+#### Portal Shows "Network Error" or CORS Errors
+
+**Error:** Portal can't connect to API, or browser console shows CORS policy error
+
+**Quick Fix:**
+```bash
+sudo sh /usr/local/boldvpn-site/scripts/fix-api-cors.sh
+```
+
+**This automatically fixes:**
+- CORS origin (changes to `*` to allow all)
+- Credentials setting (changes to `false`)
+- Restarts API service
+- Tests configuration
+
+**After running:**
+- Open: https://boldvpn.net/portal/
+- Login should work: testuser / Test@123!
+
+**Manual verification:**
+```bash
+# Check CORS config in server.js
+cat /usr/local/boldvpn-site/api/server.js | grep -A 6 "app.use(cors"
+
+# Should show: origin: '*'
+```
+
+---
+
 ### Database Issues
 
 #### PostgreSQL Not Running

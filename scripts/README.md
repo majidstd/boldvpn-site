@@ -20,12 +20,13 @@ All deployment and management scripts for BoldVPN on FreeBSD, organized in one p
 | `test-radius.sh` | Test RADIUS (11 tests) | `./scripts/test-radius.sh` |
 | `test-api.sh` | Test API (6 tests) | `./scripts/test-api.sh` |
 
-### 🔧 RADIUS Management
+### 🔧 Maintenance & Fixes
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | `fix-radius-config.sh` | Fix RADIUS config issues | `sudo ./scripts/fix-radius-config.sh` |
 | `reinstall-freeradius.sh` | Reinstall RADIUS only | `sudo ./scripts/reinstall-freeradius.sh` |
+| `fix-api-cors.sh` | Fix API CORS for browser access | `sudo ./scripts/fix-api-cors.sh` |
 
 ### 🔥 Firewall Scripts
 
@@ -235,6 +236,46 @@ sudo ./scripts/freebsd-api-setup.sh
 cd /usr/local/boldvpn-site
 ./scripts/update.sh
 ```
+
+---
+
+### `fix-api-cors.sh`
+
+**Purpose:** Fix API CORS configuration for browser access
+
+**What it does:**
+1. Backs up server.js (timestamped)
+2. Shows current CORS configuration
+3. Changes origin to `*` (allow all origins)
+4. Changes credentials to `false` (required with wildcard)
+5. Updates .env file
+6. Restarts API service
+7. Tests CORS configuration
+8. Provides testing instructions
+
+**Fixes:**
+- CORS policy errors in browser
+- "Access-Control-Allow-Origin" mismatch
+- Portal can't access API
+- Preflight request failures
+
+**When to use:**
+- Portal shows "Network error"
+- Browser console shows CORS error
+- API works from curl but not browser
+
+**Requirements:**
+- Must run as root (sudo)
+- API must be installed
+
+**Example:**
+```bash
+sudo sh scripts/fix-api-cors.sh
+```
+
+**After running:**
+- Test from browser: https://boldvpn.net/portal/
+- Login should work: testuser / Test@123!
 
 ---
 
