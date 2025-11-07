@@ -2,6 +2,53 @@
 
 Complete guide for deploying the BoldVPN API on FreeBSD 14 alongside FreeRADIUS.
 
+## 📑 Table of Contents
+
+### Getting Started
+- [Prerequisites](#prerequisites)
+- [Quick Deployment](#quick-deployment)
+
+### Configuration
+- [Step 1: Copy API Files](#step-1-copy-api-files-to-server)
+- [Step 2: Run Setup Script](#step-2-run-setup-script)
+- [Step 3: Configuration](#step-3-configuration)
+- [Step 4: Verify Installation](#step-4-verify-installation)
+
+### Service Management
+- [Managing the API Service](#managing-the-api-service)
+- [Updating the API](#updating-the-api)
+- [Monitoring](#monitoring)
+
+### Troubleshooting
+- [Comprehensive Troubleshooting](#comprehensive-troubleshooting)
+  - [API Issues](#api-issues)
+    - [API Won't Start](#api-wont-start)
+    - [Invalid Credentials](#api-returns-invalid-username-or-password)
+    - [CORS Errors](#cors-errors-in-browser)
+  - [Database Issues](#database-issues)
+    - [Can't Connect](#cant-connect-to-postgresql)
+    - [Connection Refused](#database-connection-refused)
+    - [Authentication Failed](#userpassword-authentication-failed)
+  - [RADIUS Issues](#radius-issues)
+    - [RADIUS Not Running](#radius-not-running)
+    - [Access-Reject](#radius-returns-access-reject)
+    - [SQL Module Errors](#sql-module-not-found)
+    - [Permission Errors](#permission-denied-errors)
+    - [Unknown Attributes](#unknown-attribute-errors)
+  - [HAProxy/Network Issues](#haproxynetwork-issues)
+    - [API Not Accessible](#api-not-accessible-from-internet)
+    - [SSL/TLS Errors](#ssltls-errors)
+    - [Connection Hangs](#connection-hangs-after-first-request)
+    - [Intermittent Connections](#intermittent-connections-from-lan)
+    - [WAN Firewall](#wan-firewall-blocking)
+- [Complete Diagnostic Checklist](#complete-diagnostic-checklist)
+- [Quick Fixes Summary](#quick-fixes-summary)
+
+### Reference
+- [Support](#support)
+
+---
+
 ## Prerequisites
 
 - ✅ FreeBSD 14.0-RELEASE server
