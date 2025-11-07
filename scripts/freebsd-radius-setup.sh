@@ -352,20 +352,63 @@ fi
 # Configure SQL module settings
 echo "  Creating SQL configuration..."
 
-# Check if queries.conf exists
-QUERIES_CONF="/usr/local/share/freeradius/mods-config/sql/main/postgresql/queries.conf"
-if [ -f "$QUERIES_CONF" ]; then
-    echo "  [OK] Found queries.conf"
-    USE_QUERIES="yes"
+# Always create queries.conf if it doesn't exist
+QUERIES_DIR="/usr/local/etc/raddb/mods-config/sql/main/postgresql"
+QUERIES_CONF="$QUERIES_DIR/queries.conf"
+
+mkdir -p "$QUERIES_DIR"
+
+if [ ! -f "$QUERIES_CONF" ]; then
+    echo "  Creating queries.conf..."
+    cat > "$QUERIES_CONF" <<'QUERIES_EOF'
+# -*- text -*-
+# PostgreSQL queries for FreeRADIUS
+
+safe_characters = "@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_: /"
+
+authorize_check_query = "\
+    SELECT id, username, attribute, value, op \
+    FROM ${authcheck_table} \
+    WHERE username = '%{SQL-User-Name}' \
+    ORDER BY id"
+
+authorize_reply_query = "\
+    SELECT id, username, attribute, value, op \
+    FROM ${authreply_table} \
+    WHERE username = '%{SQL-User-Name}' \
+    ORDER BY id"
+
+authorize_group_check_query = "\
+    SELECT id, groupname, attribute, value, op \
+    FROM ${groupcheck_table} \
+    WHERE groupname = '%{${group_attribute}}' \
+    ORDER BY id"
+
+authorize_group_reply_query = "\
+    SELECT id, groupname, attribute, value, op \
+    FROM ${groupreply_table} \
+    WHERE groupname = '%{${group_attribute}}' \
+    ORDER BY id"
+
+group_membership_query = "\
+    SELECT groupname \
+    FROM ${usergroup_table} \
+    WHERE username = '%{SQL-User-Name}' \
+    ORDER BY priority"
+
+accounting_start_query = ""
+accounting_stop_query = ""
+accounting_update_query = ""
+accounting_on_query = ""
+accounting_off_query = ""
+QUERIES_EOF
+    echo "  [OK] queries.conf created"
 else
-    echo "  [!] queries.conf not found, creating minimal config"
-    USE_QUERIES="no"
+    echo "  [OK] queries.conf already exists"
 fi
 
-# Create SQL module configuration
-if [ "$USE_QUERIES" = "yes" ]; then
-    # Full configuration with queries.conf
-    cat > /usr/local/etc/raddb/mods-available/sql <<EOF
+# Create SQL module configuration with queries.conf
+cat > /usr/local/etc/raddb/mods-available/sql <<EOF
 sql {
     driver = "rlm_sql_postgresql"
     dialect = "postgresql"
@@ -377,6 +420,12 @@ sql {
     radius_db = "radius"
     
     read_clients = no
+    
+    authcheck_table = "radcheck"
+    authreply_table = "radreply"
+    groupcheck_table = "radgroupcheck"
+    groupreply_table = "radgroupreply"
+    usergroup_table = "radusergroup"
     
     pool {
         start = 5
@@ -391,33 +440,6 @@ sql {
     \$INCLUDE \${modconfdir}/\${.:name}/main/\${dialect}/queries.conf
 }
 EOF
-else
-    # Minimal configuration without queries.conf
-    cat > /usr/local/etc/raddb/mods-available/sql <<EOF
-sql {
-    driver = "rlm_sql_postgresql"
-    dialect = "postgresql"
-    
-    server = "localhost"
-    port = 5432
-    login = "radiususer"
-    password = "$DB_PASSWORD"
-    radius_db = "radius"
-    
-    read_clients = no
-    
-    pool {
-        start = 5
-        min = 4
-        max = 10
-        spare = 3
-        uses = 0
-        lifetime = 0
-        idle_timeout = 60
-    }
-}
-EOF
-fi
 
 # Enable SQL module
 cd /usr/local/etc/raddb/mods-enabled
