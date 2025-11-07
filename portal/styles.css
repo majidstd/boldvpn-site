@@ -41,7 +41,8 @@ html, body {
 }
 
 .container {
-    max-width: 1200px;
+    width: 100%;
+    max-width: 1120px;
     margin: 0 auto;
     padding: 0 20px;
 }
@@ -558,6 +559,7 @@ html, body {
         padding: 24px;
     }
 }
+
 
 
 
