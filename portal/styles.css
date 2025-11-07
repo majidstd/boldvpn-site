@@ -40,6 +40,11 @@ html, body {
     line-height: 1.6;
 }
 
+/* Auth page background - matches main site login.html */
+.auth {
+    background: radial-gradient(700px 300px at 50% -10%, rgba(14, 165, 233, 0.25), rgba(14, 165, 233, 0) 60%);
+}
+
 .container {
     width: 100%;
     max-width: 1120px;
@@ -559,6 +564,7 @@ html, body {
         padding: 24px;
     }
 }
+
 
 
 
