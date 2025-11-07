@@ -418,6 +418,166 @@ Database: PostgreSQL (radius)
 
 **Documentation:** [portal/PORTAL-GUIDE.md](portal/PORTAL-GUIDE.md) | [portal/HOW-IT-WORKS.md](portal/HOW-IT-WORKS.md)
 
+### Portal Architecture
+
+The customer portal is a single-page application (SPA) that provides complete account management functionality.
+
+#### File Structure
+
+```
+portal/
+├── index.html      # Main HTML (login, register, dashboard)
+├── styles.css      # CSS (matches main site design)
+├── app.js          # JavaScript (all functionality)
+└── config.js       # API configuration
+```
+
+#### How It Works
+
+**1. User Access**
+```
+User clicks "Account Login" on main site
+  ↓
+Navigates to https://boldvpn.net/portal/
+  ↓
+Browser loads portal/index.html
+  ↓
+Loads config.js, app.js, styles.css
+```
+
+**2. Login Flow**
+```
+User enters username/password
+  ↓
+app.js calls POST /api/auth/login
+  ↓
+API checks database (radcheck table)
+  ↓
+Returns JWT token
+  ↓
+Portal stores token in localStorage
+  ↓
+Portal hides login form, shows dashboard
+```
+
+**3. Dashboard Loading**
+```
+Portal fetches user data:
+  ↓
+GET /api/user/profile     → User details
+GET /api/user/usage       → Data usage stats
+GET /api/user/sessions    → Connection history
+  ↓
+Dashboard displays all data
+```
+
+#### Components
+
+**Login Form** (`portal/index.html` lines 29-67)
+- Username/password fields
+- API authentication
+- JWT token storage
+- Error handling
+
+**Registration Form** (`portal/index.html` lines 70-133)
+- Create new account
+- Plan selection
+- Terms acceptance
+- API integration
+
+**Dashboard** (`portal/index.html` lines 136-223)
+- Welcome message with username
+- Data usage (used vs limit)
+- Connection speed limits
+- Connected devices count
+- Current session info
+- Logout button
+
+**Password Change Modal** (`portal/index.html` lines 226-248)
+- Current password verification
+- New password input
+- API call to update
+
+#### JavaScript Functions (`portal/app.js`)
+
+| Function | Purpose | API Endpoint |
+|----------|---------|--------------|
+| `handleLogin()` | Authenticates user | `POST /api/auth/login` |
+| `handleRegister()` | Creates new account | `POST /api/auth/register` |
+| `loadDashboard()` | Shows dashboard after login | - |
+| `loadUserProfile()` | Fetches user data | `GET /api/user/profile` |
+| `loadUsageStats()` | Fetches usage data | `GET /api/user/usage` |
+| `loadSessions()` | Fetches session history | `GET /api/user/sessions` |
+| `handleLogout()` | Logs out user | - |
+| `handlePasswordChange()` | Updates password | `POST /api/user/password` |
+
+#### Design System
+
+The portal uses the **exact same design** as the main site for consistency:
+
+**Colors:**
+- Primary: `#0ea5e9` (blue)
+- Background: `#0b1120` (dark)
+- Panel: `#0f172a`
+- Text: `#e2e8f0`
+- Muted: `#94a3b8`
+- Border: `#1f2a44`
+
+**Typography:**
+- Font: Inter (400, 500, 600, 700, 800)
+- Loaded from Google Fonts
+
+**Layout:**
+- Responsive grid system
+- Mobile-first design
+- Matches main site navigation
+
+#### API Integration
+
+**Configuration** (`portal/config.js`):
+```javascript
+const Config = {
+    API_URL: 'https://api.boldvpn.net/api',
+    TOKEN_KEY: 'boldvpn_token',
+    REFRESH_INTERVAL: 30000  // 30 seconds
+};
+```
+
+**Authentication Flow:**
+1. User logs in → Portal calls API
+2. API validates credentials against `radcheck` table
+3. API returns JWT token
+4. Portal stores token in `localStorage`
+5. Portal includes token in all subsequent API calls
+6. Token expires after 24 hours
+
+**Data Flow:**
+```
+Portal (JavaScript) → API (Node.js) → Database (PostgreSQL)
+     ↓                     ↓                    ↓
+  User sees data    Validates token    Queries radacct/radcheck
+```
+
+#### Future Enhancements (CMS Integration)
+
+The portal structure is designed to easily integrate with a CMS:
+
+**Planned Features:**
+- Admin panel for user management
+- Bulk user import/export
+- Usage reports and analytics
+- Billing integration (Stripe)
+- Email notifications
+- Two-factor authentication (2FA)
+- API key management
+
+**Structure Benefits:**
+- ✅ Separate from marketing site (`/portal/` vs `/`)
+- ✅ Clean URLs (`/portal/` not `/portal/index.html`)
+- ✅ Self-contained (all files in one folder)
+- ✅ Easy to extend (add new pages/features)
+- ✅ API-first design (ready for mobile apps)
+
 ---
 
 ## Captive Portal
