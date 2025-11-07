@@ -410,7 +410,7 @@ sudo service radiusd status|start|stop|restart
 sudo service boldvpn_api status|start|stop|restart
 
 # Logs
-tail -f /var/log/radius/radius.log
+tail -f /var/log/radius.log
 tail -f /var/log/boldvpn-api.log
 
 # Database

@@ -223,7 +223,7 @@ echo ""
 
 # Test 11: Check RADIUS logs exist
 run_test "Check RADIUS Log Files" \
-    "ls -lh /var/log/radius/radius.log" \
+    "ls -lh /var/log/radius.log" \
     "radius.log"
 
 echo ""
@@ -262,7 +262,7 @@ else
     echo "  - Database issues: Check PostgreSQL logs"
     echo ""
     echo "For detailed logs:"
-    echo "  tail -f /var/log/radius/radius.log"
+    echo "  tail -f /var/log/radius.log"
     echo ""
     exit 1
 fi

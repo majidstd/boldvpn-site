@@ -842,7 +842,7 @@ The update script automatically:
 
 ```bash
 # RADIUS logs
-sudo tail -f /var/log/radius/radius.log
+sudo tail -f /var/log/radius.log
 
 # API logs
 tail -f /var/log/boldvpn-api.log

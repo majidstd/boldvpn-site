@@ -182,7 +182,7 @@ Add addresses only if you want to bypass captive portal for specific IPs/network
 **On FreeBSD, watch RADIUS logs in real-time:**
 
 ```bash
-sudo tail -f /var/log/radius/radius.log
+sudo tail -f /var/log/radius.log
 ```
 
 **When user connects, you should see:**
@@ -281,13 +281,14 @@ echo "User-Name=testuser,User-Password=Test@123!" | \
 
 **If fails:**
 - Check RADIUS is running on FreeBSD: `sudo service radiusd status`
+- **Check FreeBSD firewall (MOST COMMON!)** - see below
 - Check firewall between OPNsense and FreeBSD
 - Verify shared secret matches
 
 **2. Check RADIUS logs on FreeBSD:**
 
 ```bash
-sudo tail -50 /var/log/radius/radius.log
+sudo tail -50 /var/log/radius.log
 ```
 
 **Look for:**
@@ -311,8 +312,84 @@ sudo radiusd -X
 - Wrong password in database
 - SQL module not finding user
 - queries.conf has wrong variable (SQL-User-Name vs User-Name)
+- **FreeBSD firewall blocking RADIUS traffic** (see below)
 
 **Fix:** See [FREEBSD-DEPLOYMENT.md#radius-returns-access-reject](FREEBSD-DEPLOYMENT.md#radius-returns-access-reject)
+
+---
+
+### FreeBSD Firewall Blocking RADIUS (VERY COMMON!)
+
+**Symptom:** 
+- `radclient` from OPNsense times out (no reply)
+- `radclient` from FreeBSD localhost works fine
+- `tcpdump` on FreeBSD shows packets arriving
+- RADIUS logs show NO requests
+
+**Diagnosis:**
+
+**1. Test localhost vs LAN IP on FreeBSD:**
+
+```bash
+# Test localhost (should work)
+echo "User-Name=testuser,User-Password=Test@123!" | \
+  radclient -x 127.0.0.1:1812 auth testing123
+
+# Test LAN IP (might fail if firewall blocking)
+echo "User-Name=testuser,User-Password=Test@123!" | \
+  radclient -x 192.168.50.2:1812 auth RadiusSecret@#
+```
+
+**If localhost works but LAN IP fails:** FreeBSD firewall is blocking!
+
+**2. Check if RADIUS is listening on all interfaces:**
+
+```bash
+sockstat -l | grep radiusd
+```
+
+**Expected:** `radiusd ... udp4 *:1812` (asterisk means all interfaces)
+
+**If shows `127.0.0.1:1812`:** RADIUS only listening on localhost (config issue)
+
+**Fix:**
+
+**Option 1: Disable firewall temporarily (for testing):**
+
+```bash
+sudo sysrc firewall_enable="NO"
+sudo service ipfw stop
+
+# Test again
+echo "User-Name=testuser,User-Password=Test@123!" | \
+  radclient -x 192.168.50.2:1812 auth RadiusSecret@#
+```
+
+**If it works now:** Firewall was the problem!
+
+**Option 2: Configure firewall properly:**
+
+```bash
+cd /usr/local/boldvpn-site
+git pull
+cd scripts
+sudo ./setup-firewall.sh
+
+# Enter OPNsense IP: 192.168.50.1
+# Confirm: yes
+```
+
+This will add proper rules for RADIUS, API, and SSH.
+
+**Option 3: Manual firewall rules:**
+
+```bash
+# Allow RADIUS from OPNsense
+sudo ipfw add 500 allow udp from 192.168.50.1 to me 1812 in keep-state
+sudo ipfw add 510 allow udp from 192.168.50.1 to me 1813 in keep-state
+sudo ipfw add 520 allow udp from me 1812 to 192.168.50.1 out keep-state
+sudo ipfw add 530 allow udp from me 1813 to 192.168.50.1 out keep-state
+```
 
 ---
 
@@ -338,7 +415,7 @@ Accounting port: 1813
 
 ```bash
 # On FreeBSD, watch logs
-sudo tail -f /var/log/radius/radius.log
+sudo tail -f /var/log/radius.log
 
 # Should see when user connects:
 Received Accounting-Request (Start)
@@ -513,7 +590,7 @@ sudo -u postgres psql radius -c "SELECT username, SUM(acctinputoctets) as upload
 
 **Watch RADIUS logs:**
 ```bash
-sudo tail -f /var/log/radius/radius.log
+sudo tail -f /var/log/radius.log
 ```
 
 **Watch accounting updates:**
@@ -563,7 +640,7 @@ echo "User-Name=testuser,User-Password=Test@123!" | \
 
 2. **Check RADIUS logs:**
    ```bash
-   sudo tail -50 /var/log/radius/radius.log
+   sudo tail -50 /var/log/radius.log
    ```
 
 3. **Run RADIUS in debug mode:**
@@ -593,7 +670,7 @@ Authentication tab → Enable accounting: ✅
 **Check RADIUS logs:**
 
 ```bash
-sudo tail -f /var/log/radius/radius.log
+sudo tail -f /var/log/radius.log
 ```
 
 **Should see:**

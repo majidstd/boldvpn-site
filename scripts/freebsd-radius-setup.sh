@@ -499,15 +499,12 @@ else
     echo "  [OK] Using standard RADIUS attributes only"
 fi
 
-# Create log directory
-echo "  Creating log directory..."
-mkdir -p /var/log/radius
-chown root:wheel /var/log/radius
-chmod 755 /var/log/radius
-touch /var/log/radius/radius.log
-chown root:wheel /var/log/radius/radius.log
-chmod 644 /var/log/radius/radius.log
-echo "  [OK] Log directory created"
+# Create log file
+echo "  Creating log file..."
+touch /var/log/radius.log
+chown root:wheel /var/log/radius.log
+chmod 644 /var/log/radius.log
+echo "  [OK] Log file created"
 
 echo "================================================================"
 
@@ -526,12 +523,7 @@ client opnsense {
     shortname = opnsense-captiveportal
 }
 
-# Localhost for testing
-client localhost {
-    ipaddr = 127.0.0.1
-    secret = testing123
-    nas_type = other
-}
+# Note: localhost client is already defined in the default clients.conf
 EOF
 
 echo "  [OK] RADIUS clients configured"
@@ -683,7 +675,7 @@ if service radiusd status >/dev/null 2>&1; then
     echo "  [OK] FreeRADIUS is running"
 else
     echo "  [!]  FreeRADIUS may not be running, checking logs..."
-    tail -20 /var/log/radius/radius.log 2>/dev/null || echo "  No logs found yet"
+    tail -20 /var/log/radius.log 2>/dev/null || echo "  No logs found yet"
 fi
 echo "================================================================"
 
@@ -795,7 +787,7 @@ echo "2. Test from VPN client:"
 echo "   Login: testuser / Test@123!"
 echo ""
 echo "3. View logs:"
-echo "   tail -f /var/log/radius/radius.log"
+echo "   tail -f /var/log/radius.log"
 echo ""
 echo "4. View accounting data:"
 echo "   psql -U radiususer -d radius -c 'SELECT * FROM radacct;'"

@@ -98,6 +98,6 @@ echo "================================================================"
 echo ""
 echo "View logs:"
 echo "  API:    tail -f /var/log/boldvpn-api.log"
-echo "  RADIUS: tail -f /var/log/radius/radius.log"
+echo "  RADIUS: tail -f /var/log/radius.log"
 echo ""
 

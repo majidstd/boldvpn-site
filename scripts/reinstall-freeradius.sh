@@ -182,9 +182,9 @@ echo "[i] Creating log directory..."
 mkdir -p /var/log/radius
 chown root:wheel /var/log/radius
 chmod 755 /var/log/radius
-touch /var/log/radius/radius.log
-chown root:wheel /var/log/radius/radius.log
-chmod 644 /var/log/radius/radius.log
+touch /var/log/radius.log
+chown root:wheel /var/log/radius.log
+chmod 644 /var/log/radius.log
 
 echo "[OK] Log directory created"
 echo ""
@@ -221,7 +221,7 @@ if service radiusd status >/dev/null 2>&1; then
     echo "[OK] FreeRADIUS is running"
 else
     echo "[X] FreeRADIUS failed to start"
-    echo "    Check logs: tail -20 /var/log/radius/radius.log"
+        echo "    Check logs: tail -20 /var/log/radius.log"
     exit 1
 fi
 

@@ -240,7 +240,7 @@ sudo service radiusd restart
 
 # View logs
 tail -f /var/log/boldvpn-api.log
-tail -f /var/log/radius/radius.log
+tail -f /var/log/radius.log
 ```
 
 ---
@@ -299,15 +299,15 @@ sudo sysrc boldvpn_api_enable="YES"
 
 ```bash
 # RADIUS logs
-tail -f /var/log/radius/radius.log
-tail -100 /var/log/radius/radius.log
+tail -f /var/log/radius.log
+tail -100 /var/log/radius.log
 
 # API logs
 tail -f /var/log/boldvpn-api.log
 tail -100 /var/log/boldvpn-api.log
 
 # Search for errors
-grep "\[X\]" /var/log/radius/radius.log
+grep "\[X\]" /var/log/radius.log
 grep "Error" /var/log/boldvpn-api.log
 ```
 
@@ -476,7 +476,7 @@ sudo service radiusd start
 sudo radiusd -C -X -l stdout
 
 # Check for specific errors
-sudo tail -50 /var/log/radius/radius.log
+sudo tail -50 /var/log/radius.log
 ```
 
 ---
@@ -1106,7 +1106,7 @@ sudo service boldvpn_api status
 
 **View logs:**
 ```bash
-tail -f /var/log/radius/radius.log
+tail -f /var/log/radius.log
 tail -f /var/log/boldvpn-api.log
 ```
 

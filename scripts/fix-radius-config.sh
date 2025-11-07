@@ -96,10 +96,10 @@ else
 fi
 
 # Create log file
-if [ ! -f "/var/log/radius/radius.log" ]; then
-    touch /var/log/radius/radius.log
-    chown root:wheel /var/log/radius/radius.log
-    chmod 644 /var/log/radius/radius.log
+if [ ! -f "/var/log/radius.log" ]; then
+    touch /var/log/radius.log
+    chown root:wheel /var/log/radius.log
+    chmod 644 /var/log/radius.log
     echo "[OK] Log file created"
 else
     echo "[OK] Log file already exists"
@@ -125,7 +125,7 @@ else
     # Add logging configuration
     sed -i '' '/log {/a\
 \	destination = files\
-\	file = /var/log/radius/radius.log
+\	file = /var/log/radius.log
 ' "$RADIUSD_CONF"
     
     echo "[OK] Logging configured"
@@ -180,7 +180,7 @@ if radiusd -C 2>&1 | grep -q "Configuration appears to be OK"; then
         echo "[OK] RADIUS service is running"
     else
         echo "[!] Failed to start RADIUS service"
-        echo "    Check logs: tail -20 /var/log/radius/radius.log"
+        echo "    Check logs: tail -20 /var/log/radius.log"
     fi
 else
     echo ""

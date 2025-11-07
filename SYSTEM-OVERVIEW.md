@@ -222,7 +222,7 @@ CREATE TABLE radacct (
 - **Service:** `radiusd`
 - **Ports:** 1812 (auth), 1813 (accounting)
 - **Config:** `/usr/local/etc/raddb/`
-- **Logs:** `/var/log/radius/radius.log`
+- **Logs:** `/var/log/radius.log`
 
 #### PostgreSQL
 - **Service:** `postgresql` (may be bundled with FreeRADIUS)
@@ -466,7 +466,7 @@ service radiusd status
 radtest testuser Test@123! localhost 0 testing123
 
 # View logs
-tail -f /var/log/radius/radius.log
+tail -f /var/log/radius.log
 
 # Check database
 psql -U radiususer -d radius -c "SELECT COUNT(*) FROM radacct WHERE acctstoptime IS NULL;"
@@ -512,7 +512,7 @@ GROUP BY username;
 1. Check RADIUS service: `service radiusd status`
 2. Test RADIUS: `radtest testuser Test@123! localhost 0 testing123`
 3. Check OPNsense RADIUS config: IP, port, secret
-4. View RADIUS logs: `tail -f /var/log/radius/radius.log`
+4. View RADIUS logs: `tail -f /var/log/radius.log`
 
 ### Customer Portal Won't Load
 
