@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # BoldVPN RADIUS Server - Safe Firewall Configuration
-# Uses custom ipfw rules to protect the server without locking you out
+# SIMPLIFIED VERSION - Just allow everything needed
 #
 # Usage:
 #   chmod +x setup-firewall.sh
@@ -73,22 +73,17 @@ echo "================================================================"
 echo ""
 
 # Prompt for OPNsense IP (to restrict RADIUS access)
-read -p "Enter OPNsense IP address (or 'any' for no restriction): " OPNSENSE_IP
-
-if [ "$OPNSENSE_IP" = "any" ]; then
-    RADIUS_RULE_AUTH="allow"
-    RADIUS_RULE_ACCT="allow"
-else
-    RADIUS_RULE_AUTH="allow from $OPNSENSE_IP"
-    RADIUS_RULE_ACCT="allow from $OPNSENSE_IP"
+read -p "Enter OPNsense IP address (default: 192.168.50.1): " OPNSENSE_IP
+if [ -z "$OPNSENSE_IP" ]; then
+    OPNSENSE_IP="192.168.50.1"
 fi
 
 echo ""
 echo "[i] Creating firewall rules..."
 echo ""
 
-# Create custom firewall rules file
-cat > /etc/ipfw.rules <<EOF
+# Create custom firewall rules file with DIRECT ipfw commands (no variables!)
+cat > /etc/ipfw.rules <<EOFFW
 #!/bin/sh
 #
 # BoldVPN RADIUS Server - Custom Firewall Rules
@@ -98,47 +93,42 @@ cat > /etc/ipfw.rules <<EOF
 # Flush all rules
 ipfw -q -f flush
 
-# Set default rule number
-cmd="ipfw -q add"
-
 # Rule 100: Allow all on loopback
-\$cmd 100 allow ip from any to any via lo0
+ipfw -q add 100 allow ip from any to any via lo0
 
 # Rule 200: Deny traffic to loopback that doesn't come from loopback
-\$cmd 200 deny ip from any to 127.0.0.0/8
-\$cmd 210 deny ip from 127.0.0.0/8 to any
+ipfw -q add 200 deny ip from any to 127.0.0.0/8
+ipfw -q add 210 deny ip from 127.0.0.0/8 to any
 
 # Rule 300: Allow established connections
-\$cmd 300 allow tcp from any to any established
+ipfw -q add 300 allow tcp from any to any established
 
 # Rule 400: Allow incoming SSH (CRITICAL - DON'T LOCK YOURSELF OUT!)
-\$cmd 400 allow tcp from any to me $CURRENT_SSH_PORT in keep-state
+ipfw -q add 400 allow tcp from any to me ${CURRENT_SSH_PORT} in keep-state
 
-# Rule 500: Allow RADIUS authentication (port 1812/udp)
-\$cmd 500 $RADIUS_RULE_AUTH udp to me 1812 in keep-state
+# Rule 500: Allow RADIUS authentication from OPNsense (port 1812/udp)
+ipfw -q add 500 allow udp from ${OPNSENSE_IP} to me 1812 in keep-state
 
-# Rule 510: Allow RADIUS accounting (port 1813/udp)
-\$cmd 510 $RADIUS_RULE_ACCT udp to me 1813 in keep-state
+# Rule 510: Allow RADIUS accounting from OPNsense (port 1813/udp)
+ipfw -q add 510 allow udp from ${OPNSENSE_IP} to me 1813 in keep-state
 
-# Rule 600: Allow API port (3000/tcp) - for future use
-\$cmd 600 allow tcp from any to me 3000 in keep-state
+# Rule 520: Allow RADIUS responses back to OPNsense
+ipfw -q add 520 allow udp from me 1812 to ${OPNSENSE_IP} out keep-state
+ipfw -q add 530 allow udp from me 1813 to ${OPNSENSE_IP} out keep-state
 
-# Rule 610: Allow HTTP (80/tcp) - for future web services
-\$cmd 610 allow tcp from any to me 80 in keep-state
-
-# Rule 620: Allow HTTPS (443/tcp) - for future web services
-\$cmd 620 allow tcp from any to me 443 in keep-state
+# Rule 600: Allow API port (3000/tcp) from LAN
+ipfw -q add 600 allow tcp from 192.168.50.0/24 to me 3000 in keep-state
 
 # Rule 700: Allow all outgoing traffic
-\$cmd 700 allow ip from me to any out keep-state
+ipfw -q add 700 allow ip from me to any out keep-state
 
 # Rule 800: Allow ICMP (ping)
-\$cmd 800 allow icmp from any to any
+ipfw -q add 800 allow icmp from any to any
 
 # Rule 900: Deny and log everything else
-\$cmd 900 deny log ip from any to any
+ipfw -q add 900 deny log ip from any to any
 
-EOF
+EOFFW
 
 chmod 755 /etc/ipfw.rules
 
@@ -150,7 +140,7 @@ echo "================================================================"
 echo "  Firewall Rules Preview"
 echo "================================================================"
 echo ""
-cat /etc/ipfw.rules | grep "^\$cmd" | sed 's/\$cmd /  Rule: ipfw add /'
+cat /etc/ipfw.rules | grep "^ipfw" | sed 's/ipfw -q add/  Rule /'
 echo ""
 
 # Configure rc.conf to use custom firewall
@@ -169,13 +159,9 @@ echo "================================================================"
 echo ""
 echo "[!] WARNING: About to enable firewall with the rules above"
 echo ""
-echo "    SSH port $CURRENT_SSH_PORT will be allowed"
-echo "    RADIUS ports 1812/1813 will be allowed"
-if [ "$OPNSENSE_IP" != "any" ]; then
-    echo "    RADIUS restricted to: $OPNSENSE_IP"
-else
-    echo "    RADIUS accessible from: any IP"
-fi
+echo "    SSH port ${CURRENT_SSH_PORT} will be allowed from anywhere"
+echo "    RADIUS ports 1812/1813 will be allowed from ${OPNSENSE_IP}"
+echo "    API port 3000 will be allowed from LAN (192.168.50.0/24)"
 echo ""
 read -p "Continue and enable firewall? (yes/no): " CONFIRM
 
@@ -191,7 +177,7 @@ echo ""
 echo "[i] Enabling firewall..."
 
 # Load the firewall rules
-/etc/ipfw.rules
+sh /etc/ipfw.rules
 
 # Start the firewall service
 service ipfw start
@@ -205,7 +191,7 @@ echo ""
 # Show active rules
 echo "Active firewall rules:"
 echo ""
-ipfw list | head -20
+ipfw list
 
 echo ""
 echo "================================================================"
@@ -228,22 +214,10 @@ echo "  Firewall Summary"
 echo "================================================================"
 echo ""
 echo "Allowed Ports:"
-echo "  - $CURRENT_SSH_PORT/tcp   (SSH)"
-echo "  - 1812/udp  (RADIUS auth)"
-echo "  - 1813/udp  (RADIUS accounting)"
-echo "  - 3000/tcp  (API backend)"
-echo "  - 80/tcp    (HTTP)"
-echo "  - 443/tcp   (HTTPS)"
-echo ""
-
-if [ "$OPNSENSE_IP" != "any" ]; then
-    echo "RADIUS Access:"
-    echo "  - Restricted to: $OPNSENSE_IP"
-else
-    echo "RADIUS Access:"
-    echo "  - Open to: any IP (consider restricting!)"
-fi
-
+echo "  - ${CURRENT_SSH_PORT}/tcp   (SSH from anywhere)"
+echo "  - 1812/udp  (RADIUS auth from ${OPNSENSE_IP})"
+echo "  - 1813/udp  (RADIUS accounting from ${OPNSENSE_IP})"
+echo "  - 3000/tcp  (API from LAN 192.168.50.0/24)"
 echo ""
 echo "To view rules:    ipfw list"
 echo "To disable:       service ipfw stop"
