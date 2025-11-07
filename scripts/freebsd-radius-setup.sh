@@ -101,59 +101,30 @@ else
     FREERADIUS_PGSQL=$(echo $FREERADIUS_PGSQL | awk '{print $1}' | cut -d'-' -f1-2)
 fi
 
-# Search for PostgreSQL packages
-echo "Searching for PostgreSQL packages..."
-PGSQL_SERVER=$(pkg search -q postgresql | grep -E "^postgresql[0-9]+-server-[0-9]" | sort -V | tail -1)
-
-if [ -z "$PGSQL_SERVER" ]; then
-    echo "[!]  Using default: postgresql15-server"
-    PGSQL_SERVER="postgresql15-server"
-else
-    # Extract just the package name without version
-    PGSQL_SERVER=$(echo $PGSQL_SERVER | awk '{print $1}' | grep -o "^postgresql[0-9]*-server")
-fi
-
-# Extract version number
-PGSQL_VER=$(echo $PGSQL_SERVER | sed 's/postgresql\([0-9]*\)-.*/\1/')
-if [ -z "$PGSQL_VER" ]; then
-    # Fallback if version extraction fails
-    if pkg info | grep -q postgresql16-server; then
-        PGSQL_VER="16"
-    elif pkg info | grep -q postgresql15-server; then
-        PGSQL_VER="15"
-    else
-        PGSQL_VER="15"  # Default fallback
-    fi
-fi
-PGSQL_CLIENT="postgresql${PGSQL_VER}-client"
-PGSQL_CONTRIB="postgresql${PGSQL_VER}-contrib"
+# Note: PostgreSQL is bundled with freeradius3-pgsql, no separate install needed!
+echo "Note: PostgreSQL client is bundled with freeradius3-pgsql"
 
 echo ""
 echo "  [OK] Found packages:"
 echo "  FreeRADIUS: $FREERADIUS_PKG"
-echo "  FreeRADIUS PostgreSQL: $FREERADIUS_PGSQL"
-echo "  PostgreSQL Server: $PGSQL_SERVER"
-echo "  PostgreSQL Client: $PGSQL_CLIENT"
-echo "  PostgreSQL Contrib: $PGSQL_CONTRIB"
+echo "  FreeRADIUS PostgreSQL: $FREERADIUS_PGSQL (includes PostgreSQL client)"
 echo ""
 
 # Step 3: Install packages
 echo "[STEP] Step 3/10: Installing packages..."
 
 # Check what's already installed
-for pkg_name in ${FREERADIUS_PKG} ${FREERADIUS_PGSQL} ${PGSQL_SERVER} ${PGSQL_CLIENT} ${PGSQL_CONTRIB} node npm nginx git sudo vim; do
+for pkg_name in ${FREERADIUS_PGSQL} node npm nginx git sudo vim; do
     if pkg_installed "$pkg_name"; then
         echo "  [OK] Already installed: $pkg_name"
     fi
 done
 
 echo "  Installing missing packages (this may take 5-10 minutes)..."
+# Only install freeradius3-pgsql (which includes everything we need)
+# DO NOT install freeradius3 or postgresql separately - they conflict!
 run_cmd pkg install -y \
-  ${FREERADIUS_PKG} \
   ${FREERADIUS_PGSQL} \
-  ${PGSQL_SERVER} \
-  ${PGSQL_CLIENT} \
-  ${PGSQL_CONTRIB} \
   node \
   npm \
   nginx \
