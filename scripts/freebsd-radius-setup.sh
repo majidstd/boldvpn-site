@@ -160,121 +160,37 @@ echo "================================================================"
 # Step 4: Configure PostgreSQL
 echo ""
 echo "[STEP]  Step 4/10: Configuring PostgreSQL..."
+echo "  [i] Note: PostgreSQL is bundled with freeradius3-pgsql"
+echo "  [i] For database server, install postgresql-server separately if needed"
+echo ""
 
-# Detect the correct PostgreSQL service name
-# First check if service script exists
-PGSQL_SERVICE=""
-if [ -f "/usr/local/etc/rc.d/postgresql" ]; then
-    PGSQL_SERVICE="postgresql"
+# Check if PostgreSQL is running (user may have their own installation)
+if pgrep -q postgres; then
+    echo "  [OK] PostgreSQL is running"
+    
+    # Try to create database and user
+    echo "  Creating RADIUS database and user..."
+    su - postgres -c "createdb radius" 2>/dev/null || echo "  [OK] Database 'radius' already exists"
+    su - postgres -c "psql -c \"CREATE USER radiususer WITH PASSWORD '$DB_PASSWORD';\"" 2>/dev/null || echo "  [OK] User 'radiususer' already exists"
+    su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE radius TO radiususer;\"" 2>/dev/null
+    su - postgres -c "psql -c \"ALTER DATABASE radius OWNER TO radiususer;\"" 2>/dev/null
+    
+    echo "  [OK] PostgreSQL configured"
 else
-    # Try with version number
-    PGSQL_SERVICE=$(ls /usr/local/etc/rc.d/postgresql* 2>/dev/null | head -1 | xargs basename)
+    echo "  [!] PostgreSQL is not running!"
+    echo "      freeradius3-pgsql only includes the PostgreSQL CLIENT"
+    echo "      You need to install PostgreSQL SERVER separately:"
+    echo ""
+    echo "      pkg install postgresql15-server (or postgresql16/17/18)"
+    echo "      sysrc postgresql_enable=YES"
+    echo "      service postgresql initdb"
+    echo "      service postgresql start"
+    echo ""
+    echo "      Then re-run this script to configure the database"
+    echo ""
+    echo "  [!] Skipping PostgreSQL configuration"
 fi
 
-# If no service script found, try to find the data directory to determine version
-if [ -z "$PGSQL_SERVICE" ]; then
-    echo "  [i] PostgreSQL service script not found, checking data directory..."
-
-    # Look for existing PostgreSQL data directories
-    for dir in /var/db/postgres/data* ; do
-        if [ -d "$dir" ]; then
-            # Extract version from directory name
-            if [ -f "$dir/PG_VERSION" ]; then
-                PG_VER=$(cat "$dir/PG_VERSION")
-                PGSQL_SERVICE="postgresql${PG_VER%%.*}"
-                echo "  [i] Found existing PostgreSQL data directory: $dir (version $PG_VER)"
-                break
-            fi
-        fi
-    done
-
-    # If still not found, assume version 15 and create the service script
-    if [ -z "$PGSQL_SERVICE" ]; then
-        if pkg info | grep -q postgresql15-server; then
-            PGSQL_SERVICE="postgresql15"
-            echo "  [i] Assuming PostgreSQL 15 (installed but not initialized)"
-        elif pkg info | grep -q postgresql16-server; then
-            PGSQL_SERVICE="postgresql16"
-            echo "  [i] Assuming PostgreSQL 16 (installed but not initialized)"
-        else
-            echo "  [!] Cannot determine PostgreSQL version!"
-            echo "      Please check: pkg info | grep postgresql"
-            exit 1
-        fi
-    fi
-fi
-
-echo "  [i] PostgreSQL service: $PGSQL_SERVICE"
-
-if service_enabled postgresql_enable; then
-    echo "  [OK] PostgreSQL already enabled"
-else
-    run_cmd sysrc postgresql_enable="YES"
-fi
-
-# Check if PostgreSQL data directory exists
-PGSQL_DATA_DIR=""
-for dir in "/var/db/postgres/data${PGSQL_VER}" "/var/db/postgres/data15" "/var/db/postgres/data16" "/var/db/postgres/data"; do
-    if [ -d "$dir" ]; then
-        PGSQL_DATA_DIR="$dir"
-        break
-    fi
-done
-
-# Initialize PostgreSQL if needed
-if [ -z "$PGSQL_DATA_DIR" ]; then
-    echo "  Initializing PostgreSQL database..."
-
-    # Try to use the service script if it exists
-    if [ -x "/usr/local/etc/rc.d/${PGSQL_SERVICE}" ]; then
-        run_cmd /usr/local/etc/rc.d/${PGSQL_SERVICE} initdb
-    else
-        # If service script doesn't exist, try direct initdb
-        echo "  Service script not found, trying direct initdb..."
-        if pkg info | grep -q postgresql15-server; then
-            run_cmd /usr/local/bin/initdb -D /var/db/postgres/data15
-            # Create basic service script
-            ln -sf /usr/local/share/postgresql15/server/postgresql /usr/local/etc/rc.d/postgresql15
-        elif pkg info | grep -q postgresql16-server; then
-            run_cmd /usr/local/bin/initdb -D /var/db/postgres/data16
-            # Create basic service script
-            ln -sf /usr/local/share/postgresql16/server/postgresql /usr/local/etc/rc.d/postgresql16
-        else
-            echo "  [!] Cannot find PostgreSQL initdb command!"
-            exit 1
-        fi
-    fi
-    echo "  [OK] PostgreSQL initialized"
-else
-    echo "  [OK] PostgreSQL already initialized (found: $PGSQL_DATA_DIR)"
-fi
-
-# Start PostgreSQL
-echo "  Starting PostgreSQL..."
-run_cmd service ${PGSQL_SERVICE} start || {
-    echo "  Service start failed, trying direct start..."
-    # If service command fails, try direct start
-    if [ -f "$PGSQL_DATA_DIR/postmaster.pid" ]; then
-        echo "  [OK] PostgreSQL appears to be running already"
-    else
-        echo "  Trying to start PostgreSQL directly..."
-        run_cmd pg_ctl -D "$PGSQL_DATA_DIR" start -l "$PGSQL_DATA_DIR/pg.log"
-    fi
-}
-sleep 3
-
-# Set postgres password
-echo "  Setting PostgreSQL postgres password..."
-run_cmd su - postgres -c "psql -c \"ALTER USER postgres WITH PASSWORD '$POSTGRES_PASSWORD';\"" 2>/dev/null || echo "  Password may already be set"
-
-# Create radius database and user
-echo "  Creating RADIUS database and user..."
-run_cmd su - postgres -c "createdb radius" 2>/dev/null || echo "  [OK] Database 'radius' already exists"
-run_cmd su - postgres -c "psql -c \"CREATE USER radiususer WITH PASSWORD '$DB_PASSWORD';\"" 2>/dev/null || echo "  [OK] User 'radiususer' already exists"
-run_cmd su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE radius TO radiususer;\"" 2>/dev/null
-run_cmd su - postgres -c "psql -c \"ALTER DATABASE radius OWNER TO radiususer;\"" 2>/dev/null
-
-echo "  [OK] PostgreSQL configured"
 echo "================================================================"
 
 # Step 5: Import FreeRADIUS schema
