@@ -469,6 +469,26 @@ fi
 
 echo "  [OK] FreeRADIUS SQL configured"
 
+# Create custom dictionary for BoldVPN attributes
+echo "  Creating custom RADIUS dictionary..."
+cat > /usr/local/etc/raddb/dictionary.boldvpn <<'DICTEOF'
+# BoldVPN Custom RADIUS Attributes
+# For user quotas and bandwidth limits
+
+ATTRIBUTE Max-Monthly-Traffic      3000 integer64
+ATTRIBUTE WISPr-Bandwidth-Max-Down 3001 integer
+ATTRIBUTE WISPr-Bandwidth-Max-Up   3002 integer
+ATTRIBUTE Simultaneous-Use         3003 integer
+DICTEOF
+
+# Include custom dictionary in main dictionary if not already included
+if ! grep -q "dictionary.boldvpn" /usr/local/etc/raddb/dictionary 2>/dev/null; then
+    echo '$INCLUDE dictionary.boldvpn' >> /usr/local/etc/raddb/dictionary
+    echo "  [OK] Custom dictionary included"
+else
+    echo "  [OK] Custom dictionary already included"
+fi
+
 # Create log directory
 echo "  Creating log directory..."
 mkdir -p /var/log/radius
