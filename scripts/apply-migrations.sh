@@ -59,6 +59,10 @@ done
 
 # Apply inline schema changes idempotently
 echo "Applying inline schema changes..."
+
+# Ensure plpgsql is available for the DO block
+psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS plpgsql;"
+
 ADD_COLUMN_SQL="
 DO \$\$
 BEGIN
