@@ -7,7 +7,8 @@ const {
   getUserAttributes,
   getUserUsage,
   getCurrentSession,
-  updateUserPassword
+  updateUserPassword,
+  getApiAuthData
 } = require('../utils/database');
 
 // Get user profile
@@ -76,26 +77,20 @@ router.put('/password', requireAuth, validatePasswordChange, async (req, res) =>
     const { username } = req.user;
     const { currentPassword, newPassword } = req.body;
 
-    // Get current user
-    const { getUserByUsername } = require('../utils/database');
-    const user = await getUserByUsername(username);
-
-    if (!user) {
+    // Get user's API authentication data (hashed password)
+    const userAuthData = await getApiAuthData(username);
+    if (!userAuthData) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, user.value);
+    // Verify current password against the stored hash
+    const isValidPassword = await bcrypt.compare(currentPassword, userAuthData.password_hash || '');
     if (!isValidPassword) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
 
-    // Hash new password
-    const saltRounds = 12;
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
-
-    // Update password
-    await updateUserPassword(username, newPasswordHash);
+    // Update password (updateUserPassword now handles hashing internally)
+    await updateUserPassword(username, newPassword); // Pass plain-text newPassword
 
     res.json({ message: 'Password changed successfully' });
 

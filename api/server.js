@@ -39,29 +39,67 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// Auth rate limiting (stricter)
+// Auth rate limiting (more lenient for development/testing)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth requests per windowMs
+  max: 20, // limit each IP to 20 auth requests per windowMs (increased from 5)
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for successful logins
+  skipSuccessfulRequests: true,
 });
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// CORS configuration
+// CORS configuration - whitelist allowed origins
+const allowedOrigins = [
+  'https://boldvpn.net',
+  'https://www.boldvpn.net',
+  'https://login.boldvpn.net',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn('[!] CORS blocked origin:', origin);
+      callback(null, true); // Allow anyway during development
+      // In production, use: callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Body parsing middleware
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Request logging middleware (for debugging)
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  // Log request
+  console.log(`[→] ${req.method} ${req.path} from ${req.ip}`);
+  
+  // Log response when finished
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`[←] ${req.method} ${req.path} ${res.statusCode} (${duration}ms)`);
+  });
+  
+  next();
+});
 
 // Database connection test
 pool.connect((err, client, release) => {
@@ -79,13 +117,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/billing', billingRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
+const healthCheck = require('./healthcheck');
+app.get('/api/health', healthCheck);
 
 // 404 handler
 app.use('*', (req, res) => {

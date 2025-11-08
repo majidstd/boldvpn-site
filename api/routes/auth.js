@@ -13,11 +13,12 @@ const {
 } = require('../middleware/auth');
 
 const {
-  getUserByUsername,
+  getApiAuthData, // New function for API login
+  getUserByUsername, // Still used for checking if username exists
   getUserByEmail,
   getUserAttributes,
-  createUser,
-  updateUserPassword,
+  createUser, // Now takes plain-text password
+  updateUserPassword, // Now takes plain-text password
   createPasswordResetToken,
   getResetTokenByToken,
   deleteResetTokenByEmail,
@@ -31,17 +32,13 @@ router.post('/register', validateRegistration, async (req, res) => {
     const { username, email, password, plan } = req.body;
 
     // Check if user already exists
-    const existingUser = await getUserByUsername(username);
+    const existingUser = await getUserByUsername(username); // Still use this to check username existence
     if (existingUser) {
       return res.status(409).json({ error: 'Username already exists' });
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
-
-    // Create user
-    await createUser(username, passwordHash, email, plan);
+    // Create user (createUser now handles hashing internally)
+    await createUser(username, password, email, plan); // Pass plain-text password
 
     // Generate JWT token
     const token = jwt.sign(
@@ -67,20 +64,20 @@ router.post('/login', validateLogin, async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Get user from database
-    const user = await getUserByUsername(username);
-    if (!user) {
+    // Get user's API authentication data (hashed password)
+    const userAuthData = await getApiAuthData(username);
+    if (!userAuthData) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.value || '');
+    // Verify password against the stored hash
+    const isValidPassword = await bcrypt.compare(password, userAuthData.password_hash || '');
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Get user attributes (plan info)
+    // Get user attributes (plan info) - still need to get from radreply
     const attributes = await getUserAttributes(username);
     const plan = getPlanFromAttributes(attributes);
 
@@ -108,7 +105,16 @@ router.post('/login', validateLogin, async (req, res) => {
 
   } catch (error) {
     console.error('[!] Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('[!] Login error stack:', error.stack);
+    
+    // Send more descriptive error message
+    if (error.message && error.message.includes('timeout')) {
+      res.status(503).json({ error: 'Database timeout. Please try again.' });
+    } else if (error.code === 'ECONNREFUSED') {
+      res.status(503).json({ error: 'Database connection failed' });
+    } else {
+      res.status(500).json({ error: 'Login failed. Please try again.' });
+    }
   }
 });
 
@@ -146,7 +152,7 @@ router.post('/reset-password', validatePasswordReset, async (req, res) => {
 // Password reset confirmation
 router.post('/reset-password-confirm', validatePasswordResetConfirm, async (req, res) => {
   try {
-    const { token, password } = req.body;
+    const { token, password } = req.body; // 'password' is the new plain-text password
 
     const resetToken = await getResetTokenByToken(token);
 
@@ -156,16 +162,11 @@ router.post('/reset-password-confirm', validatePasswordResetConfirm, async (req,
 
     const user = await getUserByEmail(resetToken.email);
     if (!user) {
-      // This should not happen if the token is valid, but as a safeguard:
       return res.status(400).json({ error: 'User not found.' });
     }
 
-    // Hash new password
-    const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
-
-    // Update password
-    await updateUserPassword(user.username, passwordHash);
+    // Update password (updateUserPassword now handles hashing internally)
+    await updateUserPassword(user.username, password); // Pass plain-text password
 
     // Delete the token now that it's been used
     await deleteResetTokenByEmail(resetToken.email);

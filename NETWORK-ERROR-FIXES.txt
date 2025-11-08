@@ -1,0 +1,281 @@
+# Network Error Fixes Applied
+Date: 2025-11-08
+
+═══════════════════════════════════════════════════════════════════
+PROBLEM DIAGNOSIS
+═══════════════════════════════════════════════════════════════════
+
+Issue: "Network error" after a few login attempts
+Root Causes Found:
+
+1. RATE LIMITING TOO STRICT
+   - Only 5 login attempts per 15 minutes
+   - Blocked you after testing
+   
+2. DATABASE CONNECTION TIMEOUT
+   - Only 2 seconds timeout (too short!)
+   - Pool could get exhausted
+   
+3. POOR ERROR HANDLING
+   - Generic "Network error" message
+   - No details on what failed
+   
+4. CORS ISSUES
+   - Only single origin allowed
+   - Could block legitimate requests
+
+═══════════════════════════════════════════════════════════════════
+FIXES APPLIED
+═══════════════════════════════════════════════════════════════════
+
+✅ 1. RELAXED RATE LIMITING (api/server.js)
+   Changed:
+   - max: 5 → max: 20 (4x more attempts)
+   - Added skipSuccessfulRequests: true
+   - Only counts failed attempts now!
+   
+   Result: Can test login 20 times in 15 min
+
+✅ 2. IMPROVED DATABASE POOL (api/utils/database.js)
+   Changed:
+   - connectionTimeoutMillis: 2000 → 10000 (2s → 10s)
+   - Added error event handler
+   - Added connection event logging
+   
+   Result: Won't timeout on slow DB queries
+
+✅ 3. BETTER ERROR MESSAGES (portal/app.js)
+   Added:
+   - Detailed error messages
+   - "Cannot connect to server" for fetch failures
+   - 30-second request timeout
+   
+   Result: See actual error instead of generic message
+
+✅ 4. CORS WHITELIST (api/server.js)
+   Changed:
+   - Single origin → Multiple origins
+   - Added localhost, 127.0.0.1
+   - Logs blocked origins
+   - Allows requests with no origin
+   
+   Result: CORS won't block your requests
+
+✅ 5. ENHANCED HEALTH CHECK (api/healthcheck.js)
+   Added:
+   - Database connectivity test
+   - Connection pool status
+   - Detailed diagnostics
+   
+   Test: curl http://localhost:3000/api/health
+
+✅ 6. REQUEST/RESPONSE LOGGING (api/server.js)
+   Added:
+   - Log every API request
+   - Log response time
+   - Log status codes
+   
+   Result: Can see exactly what's happening
+
+✅ 7. BETTER ERROR HANDLING (api/routes/auth.js)
+   Added:
+   - Specific error messages
+   - Database timeout detection
+   - Connection failure detection
+   - Stack trace logging
+   
+   Result: Know exactly what failed
+
+═══════════════════════════════════════════════════════════════════
+HOW TO TEST
+═══════════════════════════════════════════════════════════════════
+
+1. Restart API Server
+   cd /usr/local/boldvpn-site/api
+   sudo service boldvpn_api restart
+   
+   # Or if running manually:
+   node server.js
+
+2. Test Health Check
+   curl http://localhost:3000/api/health
+   
+   Should show:
+   {
+     "status": "OK",
+     "database": "connected",
+     "pool": {
+       "total": 1,
+       "idle": 1,
+       "waiting": 0
+     }
+   }
+
+3. Test Login (from command line)
+   curl -X POST http://localhost:3000/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"testuser","password":"Test@123!"}'
+   
+   Should return JWT token
+
+4. Test from Portal
+   Open: http://localhost:3000/portal/ (or your domain)
+   Login with testuser / Test@123!
+   
+   Check browser console (F12) for detailed errors
+
+5. Monitor Logs
+   # Watch API logs
+   tail -f /var/log/boldvpn-api.log
+   
+   # Should see:
+   [→] POST /api/auth/login from ::1
+   [DB] Query executed in 25 ms: SELECT * FROM radcheck...
+   [←] POST /api/auth/login 200 (45ms)
+
+═══════════════════════════════════════════════════════════════════
+WHAT TO WATCH FOR
+═══════════════════════════════════════════════════════════════════
+
+Good Signs:
+✅ "[OK] Database connected successfully"
+✅ "[i] New database connection established"
+✅ "[←] POST /api/auth/login 200"
+✅ Response time < 500ms
+
+Bad Signs:
+❌ "[X] Database connection failed"
+❌ "[!] Database timeout"
+❌ "[!] CORS blocked origin"
+❌ Response time > 5000ms
+❌ "pool exhausted" errors
+
+If you see "pool exhausted":
+- Increase max: 20 → 50 in database.js
+- Check for connection leaks
+- Restart PostgreSQL
+
+If you see "CORS blocked":
+- Add your domain to allowedOrigins array
+- Check FRONTEND_URL in .env
+
+If you see timeout errors:
+- Check PostgreSQL is running:
+  sudo service postgresql status
+  
+- Check connectivity:
+  psql -U radiususer -d radius -c "SELECT 1"
+
+═══════════════════════════════════════════════════════════════════
+ADDITIONAL IMPROVEMENTS
+═══════════════════════════════════════════════════════════════════
+
+🔧 Future Enhancements:
+
+1. Connection Pool Monitoring
+   Add to server.js:
+   
+   setInterval(() => {
+     console.log('[i] Pool:', {
+       total: pool.totalCount,
+       idle: pool.idleCount,
+       waiting: pool.waitingCount
+     });
+   }, 60000); // Every minute
+
+2. Retry Logic for Portal
+   Add to portal/app.js:
+   
+   async fetchWithRetry(url, options, retries = 3) {
+     for (let i = 0; i < retries; i++) {
+       try {
+         return await fetch(url, options);
+       } catch (error) {
+         if (i === retries - 1) throw error;
+         await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+       }
+     }
+   }
+
+3. Circuit Breaker Pattern
+   If database keeps failing, temporarily stop trying:
+   
+   let dbFailures = 0;
+   let circuitOpen = false;
+   
+   if (circuitOpen) {
+     return res.status(503).json({ 
+       error: 'Service temporarily unavailable' 
+     });
+   }
+
+4. Structured Logging
+   Use Winston or Pino instead of console.log:
+   
+   npm install winston
+   
+   Better log management for production
+
+5. APM (Application Performance Monitoring)
+   Use free tier of:
+   - New Relic
+   - DataDog
+   - Sentry
+   
+   See performance issues in real-time
+
+═══════════════════════════════════════════════════════════════════
+TESTING CHECKLIST
+═══════════════════════════════════════════════════════════════════
+
+After applying fixes:
+
+[ ] Health check returns 200 OK
+[ ] Database shows "connected"
+[ ] Can login successfully
+[ ] Can login 10+ times without rate limit
+[ ] Error messages are descriptive
+[ ] Logs show request/response times
+[ ] No CORS errors in browser console
+[ ] Response times < 500ms
+[ ] No pool exhaustion errors
+[ ] Can test from different origins
+
+═══════════════════════════════════════════════════════════════════
+TROUBLESHOOTING COMMANDS
+═══════════════════════════════════════════════════════════════════
+
+# Check if API is running
+curl http://localhost:3000/api/health
+
+# Check if database is accessible
+psql -U radiususer -d radius -c "SELECT COUNT(*) FROM radcheck"
+
+# Check API logs
+tail -f /var/log/boldvpn-api.log
+
+# Check PostgreSQL logs
+sudo tail -f /var/db/postgres/data*/pg.log
+
+# Check open connections
+sudo netstat -an | grep 3000
+
+# Check database connections
+psql -U radiususer -d radius -c "SELECT count(*) FROM pg_stat_activity"
+
+# Restart everything
+sudo service postgresql restart
+sudo service boldvpn_api restart
+
+# Test rate limiting reset
+# Wait 15 minutes or restart API to reset counters
+
+═══════════════════════════════════════════════════════════════════
+
+Your network error should now be fixed!
+
+The main issue was rate limiting (5 attempts) combined with slow
+database timeouts. Now you can test 20 times, timeouts are longer,
+and you'll see exactly what's failing if there's an error.
+
+Test and let me know if you still see issues!

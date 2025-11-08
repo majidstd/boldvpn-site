@@ -12,8 +12,6 @@ ENV_FILE="api/.env"
 
 # Path to the migration files, relative to the project root
 MIGRATION_DIR="api/migrations"
-# Use a space-separated string for POSIX sh compatibility
-MIGRATION_FILES="001_add_user_details.sql 002_create_password_reset_tokens.sql"
 
 
 # --- Script Start ---
@@ -46,17 +44,33 @@ export PGPASSWORD=$DB_PASSWORD
 
 echo "Applying migrations to database '$DB_NAME' on host '$DB_HOST'..."
 
-# Loop through migration files and apply them
-for MIGRATION_FILE in $MIGRATION_FILES; do
-  FILE_PATH="$MIGRATION_DIR/$MIGRATION_FILE"
+# Loop through all .sql migration files and apply them
+echo "Applying .sql migration files..."
+for FILE_PATH in "$MIGRATION_DIR"/*.sql; do
   if [ -f "$FILE_PATH" ]; then
-    echo "Applying migration: $MIGRATION_FILE"
+    echo "Applying migration: $(basename "$FILE_PATH")"
     psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f "$FILE_PATH"
-    echo "Successfully applied $MIGRATION_FILE."
+    echo "Successfully applied $(basename "$FILE_PATH")."
   else
-    echo "Warning: Migration file not found, skipping: $FILE_PATH"
+    echo "No .sql migration files found. Skipping."
+    break
   fi
 done
+
+# Apply inline schema changes idempotently
+echo "Applying inline schema changes..."
+ADD_COLUMN_SQL="
+DO \$\$
+BEGIN
+  IF NOT EXISTS(SELECT * FROM information_schema.columns WHERE table_name='user_details' AND column_name='password_hash') THEN
+    ALTER TABLE user_details ADD COLUMN password_hash VARCHAR(255);
+  END IF;
+END;
+\$\$;"
+
+psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "$ADD_COLUMN_SQL"
+echo "Successfully ensured 'password_hash' column exists in 'user_details'."
+
 
 # Unset the password variable for security
 unset PGPASSWORD

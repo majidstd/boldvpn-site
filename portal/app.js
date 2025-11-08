@@ -136,7 +136,9 @@ class BoldVPNPortal {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                // Add timeout to prevent hanging
+                signal: AbortSignal.timeout(30000) // 30 second timeout
             });
 
             const data = await response.json();
@@ -159,7 +161,17 @@ class BoldVPNPortal {
             }
         } catch (error) {
             console.error('Login error:', error);
-            this.showError('login-error', 'Network error. Please try again.');
+            
+            // More detailed error messages
+            let errorMessage = 'Network error. Please try again.';
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            if (error.toString().includes('Failed to fetch')) {
+                errorMessage = 'Cannot connect to server. Please check your connection.';
+            }
+            
+            this.showError('login-error', errorMessage);
         } finally {
             this.setLoading('login-btn', false);
         }
