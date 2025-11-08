@@ -1,4 +1,4 @@
-CREATE TABLE user_details (
+CREATE TABLE IF NOT EXISTS user_details (
   username VARCHAR(255) PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
