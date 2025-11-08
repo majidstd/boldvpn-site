@@ -1,21 +1,29 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const router = express.Router();
 
 const {
   validateRegistration,
   validateLogin,
   validatePasswordReset,
-  validatePasswordChange
+  validatePasswordChange,
+  validatePasswordResetConfirm
 } = require('../middleware/auth');
 
 const {
   getUserByUsername,
+  getUserByEmail,
   getUserAttributes,
   createUser,
-  updateUserPassword
+  updateUserPassword,
+  createPasswordResetToken,
+  getResetTokenByToken,
+  deleteResetTokenByEmail,
 } = require('../utils/database');
+
+const { sendPasswordResetEmail } = require('../utils/email');
 
 // User registration
 router.post('/register', validateRegistration, async (req, res) => {
@@ -66,16 +74,8 @@ router.post('/login', validateLogin, async (req, res) => {
     }
 
     // Verify password
-    // Check if password is hashed (starts with $2a$ or $2b$ for bcrypt)
-    let isValidPassword = false;
-    if (user.value && (user.value.startsWith('$2a$') || user.value.startsWith('$2b$'))) {
-      // Bcrypt hashed password
-      isValidPassword = await bcrypt.compare(password, user.value);
-    } else {
-      // Plain text password (Cleartext-Password from RADIUS)
-      isValidPassword = (password === user.value);
-    }
-    
+    const isValidPassword = await bcrypt.compare(password, user.value || '');
+
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
@@ -116,23 +116,68 @@ router.post('/login', validateLogin, async (req, res) => {
 router.post('/reset-password', validatePasswordReset, async (req, res) => {
   try {
     const { email } = req.body;
+    const user = await getUserByEmail(email);
 
-    // For now, we'll treat email as username
-    const user = await getUserByUsername(email);
-    if (!user) {
-      // Don't reveal if user exists or not for security
-      return res.json({ message: 'If the email exists, a reset link has been sent' });
+    if (user) {
+      // Generate a token
+      const token = crypto.randomBytes(32).toString('hex');
+
+      // Invalidate old tokens for this email
+      await deleteResetTokenByEmail(email);
+
+      // Create a new token
+      await createPasswordResetToken(email, token);
+
+      // Send the email
+      await sendPasswordResetEmail(email, token);
     }
 
-    // TODO: Generate reset token and send email
-    // For now, just return success
-    res.json({ message: 'If the email exists, a reset link has been sent' });
+    // Always return a generic success message to prevent email enumeration attacks
+    res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
 
   } catch (error) {
     console.error('[!] Password reset error:', error);
-    res.status(500).json({ error: 'Password reset failed' });
+    // Do not send a 500 status to the client, as it could leak information.
+    // Log the error and send the same generic message.
+    res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
   }
 });
+
+// Password reset confirmation
+router.post('/reset-password-confirm', validatePasswordResetConfirm, async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    const resetToken = await getResetTokenByToken(token);
+
+    if (!resetToken) {
+      return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
+    }
+
+    const user = await getUserByEmail(resetToken.email);
+    if (!user) {
+      // This should not happen if the token is valid, but as a safeguard:
+      return res.status(400).json({ error: 'User not found.' });
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Update password
+    await updateUserPassword(user.username, passwordHash);
+
+    // Delete the token now that it's been used
+    await deleteResetTokenByEmail(resetToken.email);
+
+    res.json({ message: 'Password has been reset successfully.' });
+
+  } catch (error) {
+    console.error('[!] Password reset confirm error:', error);
+    res.status(500).json({ error: 'An error occurred during password reset.' });
+  }
+});
+
 
 // Verify JWT token
 router.get('/verify', async (req, res) => {

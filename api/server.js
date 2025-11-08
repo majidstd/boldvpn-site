@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { Pool } = require('pg');
+const { pool } = require('./utils/database');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -14,16 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Database configuration
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'radius',
-  user: process.env.DB_USER || 'radiususer',
-  password: process.env.DB_PASSWORD,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+// The database pool is now managed in ./utils/database.js
 
 // Security middleware
 app.use(helmet({
@@ -69,7 +60,7 @@ app.use(cors({
 }));
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection test

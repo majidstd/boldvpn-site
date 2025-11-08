@@ -29,22 +29,38 @@ const query = async (text, params) => {
 // Get user by username
 const getUserByUsername = async (username) => {
   const result = await query(
-    'SELECT * FROM radcheck WHERE username = $1',
+    'SELECT * FROM radcheck WHERE username = ',
     [username]
   );
   return result.rows[0];
 };
 
-// Get user by email (if we add email support later)
+// Get user by email
 const getUserByEmail = async (email) => {
-  // For now, we'll use username as email
-  return await getUserByUsername(email);
+  const result = await query(
+    'SELECT username FROM user_details WHERE email = ',
+    [email]
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  const { username } = result.rows[0];
+  return await getUserByUsername(username);
+};
+
+// Get user email by username
+const getUserEmail = async (username) => {
+  const result = await query(
+    'SELECT email FROM user_details WHERE username = ',
+    [username]
+  );
+  return result.rows[0] ? result.rows[0].email : null;
 };
 
 // Get user attributes (quotas, limits, etc.)
 const getUserAttributes = async (username) => {
   const result = await query(
-    'SELECT attribute, op, value FROM radreply WHERE username = $1',
+    'SELECT attribute, op, value FROM radreply WHERE username = ',
     [username]
   );
 
@@ -66,7 +82,7 @@ const getUserUsage = async (username) => {
       COUNT(*) as session_count,
       MAX(acctstarttime) as last_session
     FROM radacct
-    WHERE username = $1
+    WHERE username = 
   `, [username]);
 
   return result.rows[0];
@@ -77,7 +93,7 @@ const getCurrentSession = async (username) => {
   const result = await query(`
     SELECT *
     FROM radacct
-    WHERE username = $1 AND acctstoptime IS NULL
+    WHERE username =  AND acctstoptime IS NULL
     ORDER BY acctstarttime DESC
     LIMIT 1
   `, [username]);
@@ -92,9 +108,15 @@ const createUser = async (username, passwordHash, email, plan) => {
   try {
     await client.query('BEGIN');
 
+    // Insert into user_details
+    await client.query(
+      'INSERT INTO user_details (username, email) VALUES (, $2)',
+      [username, email]
+    );
+
     // Insert into radcheck for authentication
     await client.query(
-      'INSERT INTO radcheck (username, attribute, op, value) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO radcheck (username, attribute, op, value) VALUES (, $2, $3, $4)',
       [username, 'Cleartext-Password', ':=', passwordHash]
     );
 
@@ -102,7 +124,7 @@ const createUser = async (username, passwordHash, email, plan) => {
     const planAttributes = getPlanAttributes(plan);
     for (const [attribute, value] of Object.entries(planAttributes)) {
       await client.query(
-        'INSERT INTO radreply (username, attribute, op, value) VALUES ($1, $2, $3, $4)',
+        'INSERT INTO radreply (username, attribute, op, value) VALUES (, $2, $3, $4)',
         [username, attribute, ':=', value]
       );
     }
@@ -120,7 +142,7 @@ const createUser = async (username, passwordHash, email, plan) => {
 // Update user password
 const updateUserPassword = async (username, newPasswordHash) => {
   await query(
-    'UPDATE radcheck SET value = $1 WHERE username = $2 AND attribute = $3',
+    'UPDATE radcheck SET value =  WHERE username = $2 AND attribute = $3',
     [newPasswordHash, username, 'Cleartext-Password']
   );
 };
@@ -163,7 +185,7 @@ const getAllUsers = async (limit = 100, offset = 0) => {
     FROM radcheck r
     LEFT JOIN radreply rr ON r.username = rr.username
     ORDER BY r.username
-    LIMIT $1 OFFSET $2
+    LIMIT  OFFSET $2
   `, [limit, offset]);
 
   return result.rows;
@@ -176,9 +198,10 @@ const deleteUser = async (username) => {
   try {
     await client.query('BEGIN');
 
-    await client.query('DELETE FROM radreply WHERE username = $1', [username]);
-    await client.query('DELETE FROM radcheck WHERE username = $1', [username]);
-    await client.query('DELETE FROM radacct WHERE username = $1', [username]);
+    await client.query('DELETE FROM user_details WHERE username = ', [username]);
+    await client.query('DELETE FROM radreply WHERE username = ', [username]);
+    await client.query('DELETE FROM radcheck WHERE username = ', [username]);
+    await client.query('DELETE FROM radacct WHERE username = ', [username]);
 
     await client.query('COMMIT');
     return true;
@@ -190,11 +213,35 @@ const deleteUser = async (username) => {
   }
 };
 
+// --- Password Reset Token Functions ---
+
+const createPasswordResetToken = async (email, token) => {
+  const expires_at = new Date(Date.now() + 3600000); // 1 hour from now
+  await query(
+    'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (, $2, $3)',
+    [email, token, expires_at]
+  );
+};
+
+const getResetTokenByToken = async (token) => {
+  const result = await query(
+    'SELECT * FROM password_reset_tokens WHERE token =  AND expires_at > NOW()',
+    [token]
+  );
+  return result.rows[0];
+};
+
+const deleteResetTokenByEmail = async (email) => {
+  await query('DELETE FROM password_reset_tokens WHERE email = ', [email]);
+};
+
+
 module.exports = {
   pool,
   query,
   getUserByUsername,
   getUserByEmail,
+  getUserEmail,
   getUserAttributes,
   getUserUsage,
   getCurrentSession,
@@ -202,5 +249,9 @@ module.exports = {
   updateUserPassword,
   getPlanAttributes,
   getAllUsers,
-  deleteUser
+  deleteUser,
+  createPasswordResetToken,
+  getResetTokenByToken,
+  deleteResetTokenByEmail,
 };
+

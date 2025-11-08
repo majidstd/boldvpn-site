@@ -108,6 +108,32 @@ const validatePasswordReset = [
   }
 ];
 
+// Validation rules for password reset confirmation
+const validatePasswordResetConfirm = [
+  body('token')
+    .isHexadecimal()
+    .withMessage('Invalid token format')
+    .isLength({ min: 64, max: 64 })
+    .withMessage('Invalid token length'),
+
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: errors.array()
+      });
+    }
+    next();
+  }
+];
+
 // Validation rules for password change
 const validatePasswordChange = [
   body('currentPassword')
@@ -146,5 +172,6 @@ module.exports = {
   validateRegistration,
   validateLogin,
   validatePasswordReset,
+  validatePasswordResetConfirm,
   validatePasswordChange
 };

@@ -109,7 +109,7 @@ router.put('/password', requireAuth, validatePasswordChange, async (req, res) =>
 router.get('/usage-history', requireAuth, async (req, res) => {
   try {
     const { username } = req.user;
-    const { days = 30 } = req.query;
+    const days = parseInt(req.query.days, 10) || 30;
 
     const { query } = require('../utils/database');
     const result = await query(`
@@ -121,10 +121,10 @@ router.get('/usage-history', requireAuth, async (req, res) => {
         COUNT(*) as sessions
       FROM radacct
       WHERE username = $1
-        AND acctstarttime >= CURRENT_DATE - INTERVAL '${days} days'
+        AND acctstarttime >= CURRENT_DATE - ($2 * INTERVAL '1 day')
       GROUP BY DATE(acctstarttime)
       ORDER BY date DESC
-    `, [username]);
+    `, [username, days]);
 
     // Format the results
     const formatBytes = (bytes) => {
