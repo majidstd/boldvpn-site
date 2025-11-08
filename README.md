@@ -1,8 +1,32 @@
-# BoldVPN - Complete VPN Service Platform
+# BoldVPN - Free Internet for Everyone 🌍
 
-Enterprise-grade VPN service with RADIUS authentication, customer portal, and API backend.
+**Breaking down censorship barriers and providing unrestricted internet access worldwide.**
+
+BoldVPN is a complete, open-source VPN service platform designed to provide free, uncensored internet access to users in countries with internet censorship and restrictions.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform: FreeBSD](https://img.shields.io/badge/Platform-FreeBSD-red.svg)](https://www.freebsd.org/)
+[![VPN: WireGuard](https://img.shields.io/badge/VPN-WireGuard-blue.svg)](https://www.wireguard.com/)
+
+---
+
+## 🎯 Mission
+
+**Provide free, uncensored internet access to users in countries facing internet censorship and restrictions.**
+
+In many countries, governments block access to:
+- 🚫 Social media platforms
+- 🚫 News websites
+- 🚫 Messaging apps
+- 🚫 Educational resources
+- 🚫 Human rights information
+
+**BoldVPN fights back by providing:**
+- ✅ Free VPN access
+- ✅ Unrestricted internet
+- ✅ Privacy protection
+- ✅ Bypass censorship
+- ✅ Secure connections
 
 ---
 
@@ -10,6 +34,7 @@ Enterprise-grade VPN service with RADIUS authentication, customer portal, and AP
 
 ### Overview
 - [What is BoldVPN?](#what-is-boldvpn)
+- [Mission](#-mission)
 - [System Architecture](#system-architecture)
 - [Features](#features)
 - [Technology Stack](#technology-stack)
@@ -40,13 +65,31 @@ Enterprise-grade VPN service with RADIUS authentication, customer portal, and AP
 
 ## What is BoldVPN?
 
-BoldVPN is a complete, production-ready VPN service platform that includes:
+BoldVPN is a **complete, production-ready VPN service platform** built to combat internet censorship and provide free, unrestricted internet access globally.
 
-- **RADIUS AAA Server** - Authentication, Authorization, and Accounting for VPN clients
-- **API Backend** - RESTful API for customer portal and integrations
-- **Customer Portal** - Web interface for account management and usage tracking
-- **Captive Portal** - Custom login interface for VPN connections
-- **HAProxy Integration** - Public API access with SSL/TLS termination
+### Core Components
+
+- **🔐 RADIUS AAA Server** - Authentication, Authorization, and Accounting for VPN clients
+- **🌐 WireGuard VPN** - Fast, modern, secure VPN protocol
+- **💻 API Backend** - RESTful API for customer portal and integrations
+- **🖥️ Customer Portal** - Web interface for account management and usage tracking
+- **🚪 Captive Portal** - Custom login interface for VPN connections
+- **🔒 HAProxy Reverse Proxy** - Public API access with SSL/TLS termination
+
+### Why BoldVPN?
+
+**For Users in Censored Countries:**
+- Free VPN access to bypass government restrictions
+- Access blocked websites and services
+- Protect privacy from surveillance
+- Secure, encrypted connections
+
+**For VPN Operators:**
+- Complete, open-source platform
+- Easy deployment on FreeBSD/OPNsense
+- Scalable architecture
+- Professional customer portal
+- Full accounting and usage tracking
 
 **Live Demo:**
 - 🌐 Marketing Site: https://boldvpn.net
