@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # This script applies database migrations to your PostgreSQL database.
 # It reads connection details from the api/.env file.
@@ -12,10 +12,9 @@ ENV_FILE="api/.env"
 
 # Path to the migration files, relative to the project root
 MIGRATION_DIR="api/migrations"
-MIGRATION_FILES=(
-  "001_add_user_details.sql"
-  "002_create_password_reset_tokens.sql"
-)
+# Use a space-separated string for POSIX sh compatibility
+MIGRATION_FILES="001_add_user_details.sql 002_create_password_reset_tokens.sql"
+
 
 # --- Script Start ---
 echo "Starting database migration script..."
@@ -30,9 +29,11 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
-# Load environment variables from .env file
+# Load environment variables from .env file in a POSIX-compliant way
 # This makes them available to sub-processes like psql
-export $(grep -v '^#' "$ENV_FILE" | xargs)
+set -a
+. "./$ENV_FILE"
+set +a
 
 # Check for required database variables
 if [ -z "$DB_USER" ] || [ -z "$DB_HOST" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASSWORD" ]; then
@@ -46,7 +47,7 @@ export PGPASSWORD=$DB_PASSWORD
 echo "Applying migrations to database '$DB_NAME' on host '$DB_HOST'..."
 
 # Loop through migration files and apply them
-for MIGRATION_FILE in "${MIGRATION_FILES[@]}"; do
+for MIGRATION_FILE in $MIGRATION_FILES; do
   FILE_PATH="$MIGRATION_DIR/$MIGRATION_FILE"
   if [ -f "$FILE_PATH" ]; then
     echo "Applying migration: $MIGRATION_FILE"
