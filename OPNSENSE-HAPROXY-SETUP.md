@@ -48,7 +48,7 @@ Complete guide for setting up HAProxy reverse proxy on OPNsense to make the Bold
 
 ### Advanced Topics
 - [Monitoring HAProxy](#-monitoring-haproxy)
-- [TLS Security Hardening](#-tls-security-hardening)
+- [TLS Security Hardening](#-optional-tls-security-hardening)
 - [Testing with curl TLS Issues](#-testing-with-curl-tls-issues)
 
 ### Final Steps
