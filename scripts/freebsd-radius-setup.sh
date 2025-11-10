@@ -425,7 +425,7 @@ QUERIES_EOF
 fi
 
 # Create SQL module configuration with queries.conf
-cat > /usr/local/etc/raddb/mods-available/sql <<EOF
+    cat > /usr/local/etc/raddb/mods-available/sql <<EOF
 sql {
     driver = "rlm_sql_postgresql"
     dialect = "postgresql"

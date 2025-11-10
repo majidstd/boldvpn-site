@@ -79,7 +79,7 @@ echo ""
 # Detect where we are and find api directory
 if [ -f "package.json" ] && [ -f "server.js" ]; then
     # Already in api directory
-    API_DIR="$(pwd)"
+API_DIR="$(pwd)"
     echo "[OK] Running from API directory: $API_DIR"
 elif [ -d "api" ] && [ -f "api/package.json" ]; then
     # In repo root, api/ subdirectory exists
