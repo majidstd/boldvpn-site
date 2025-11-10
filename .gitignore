@@ -44,3 +44,4 @@ yarn.lock
 # Build outputs
 dist/
 build/
+.DS_Store
