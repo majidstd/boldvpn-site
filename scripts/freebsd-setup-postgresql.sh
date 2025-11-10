@@ -152,125 +152,7 @@ echo "${GREEN}[OK] Database and user configured${NC}"
 
 echo ""
 echo "================================================================"
-echo "[STEP] Step 6/8: Creating RADIUS Tables"
-echo "================================================================"
-echo ""
-
-# Create RADIUS tables
-echo "[i] Creating RADIUS tables (radcheck, radreply, radacct, etc.)..."
-su - postgres -c "psql -U radiususer -d radius" <<'EOF'
--- Create radcheck table (user credentials)
-CREATE TABLE IF NOT EXISTS radcheck (
-  id SERIAL PRIMARY KEY,
-  username VARCHAR(64) NOT NULL,
-  attribute VARCHAR(64) NOT NULL,
-  op VARCHAR(2) NOT NULL DEFAULT '==',
-  value VARCHAR(253) NOT NULL
-);
-CREATE INDEX IF NOT EXISTS radcheck_username ON radcheck(username);
-
--- Create radreply table (user attributes/quotas)
-CREATE TABLE IF NOT EXISTS radreply (
-  id SERIAL PRIMARY KEY,
-  username VARCHAR(64) NOT NULL,
-  attribute VARCHAR(64) NOT NULL,
-  op VARCHAR(2) NOT NULL DEFAULT '==',
-  value VARCHAR(253) NOT NULL
-);
-CREATE INDEX IF NOT EXISTS radreply_username ON radreply(username);
-
--- Create radacct table (accounting/usage tracking)
-CREATE TABLE IF NOT EXISTS radacct (
-  radacctid BIGSERIAL PRIMARY KEY,
-  acctsessionid VARCHAR(64) NOT NULL,
-  acctuniqueid VARCHAR(32) NOT NULL,
-  username VARCHAR(64) NOT NULL,
-  realm VARCHAR(64),
-  nasipaddress INET NOT NULL,
-  nasportid VARCHAR(15),
-  nasporttype VARCHAR(32),
-  acctstarttime TIMESTAMP WITH TIME ZONE,
-  acctupdatetime TIMESTAMP WITH TIME ZONE,
-  acctstoptime TIMESTAMP WITH TIME ZONE,
-  acctsessiontime BIGINT,
-  acctauthentic VARCHAR(32),
-  connectinfo_start VARCHAR(50),
-  connectinfo_stop VARCHAR(50),
-  acctinputoctets BIGINT,
-  acctoutputoctets BIGINT,
-  calledstationid VARCHAR(50),
-  callingstationid VARCHAR(50),
-  acctterminatecause VARCHAR(32),
-  servicetype VARCHAR(32),
-  framedprotocol VARCHAR(32),
-  framedipaddress INET
-);
-CREATE INDEX IF NOT EXISTS radacct_username ON radacct(username);
-CREATE INDEX IF NOT EXISTS radacct_session ON radacct(acctsessionid);
-CREATE INDEX IF NOT EXISTS radacct_start ON radacct(acctstarttime);
-
--- Create radgroupcheck table (group policies)
-CREATE TABLE IF NOT EXISTS radgroupcheck (
-  id SERIAL PRIMARY KEY,
-  groupname VARCHAR(64) NOT NULL,
-  attribute VARCHAR(64) NOT NULL,
-  op VARCHAR(2) NOT NULL DEFAULT '==',
-  value VARCHAR(253) NOT NULL
-);
-
--- Create radgroupreply table (group attributes)
-CREATE TABLE IF NOT EXISTS radgroupreply (
-  id SERIAL PRIMARY KEY,
-  groupname VARCHAR(64) NOT NULL,
-  attribute VARCHAR(64) NOT NULL,
-  op VARCHAR(2) NOT NULL DEFAULT '==',
-  value VARCHAR(253) NOT NULL
-);
-
--- Create radusergroup table (user-to-group mapping)
-CREATE TABLE IF NOT EXISTS radusergroup (
-  username VARCHAR(64) NOT NULL,
-  groupname VARCHAR(64) NOT NULL,
-  priority INT NOT NULL DEFAULT 1
-);
-EOF
-
-echo "${GREEN}[OK] RADIUS tables created${NC}"
-
-echo ""
-echo "================================================================"
-echo "[STEP] Step 7/8: Creating API Tables"
-echo "================================================================"
-echo ""
-
-# Create user_details and password_reset_tokens tables
-echo "[i] Creating API tables (user_details, password_reset_tokens)..."
-su - postgres -c "psql -U radiususer -d radius" <<'EOF'
--- Create user_details table (for API authentication with bcrypt)
-CREATE TABLE IF NOT EXISTS user_details (
-  username VARCHAR(255) PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Create password_reset_tokens table (for password reset functionality)
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) NOT NULL,
-  token VARCHAR(255) NOT NULL UNIQUE,
-  expires_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token);
-CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email);
-EOF
-
-echo "${GREEN}[OK] API tables created${NC}"
-
-echo ""
-echo "================================================================"
-echo "[STEP] Step 8/8: Testing Database Connection"
+echo "[STEP] Step 6/6: Testing Database Connection"
 echo "================================================================"
 echo ""
 
@@ -284,23 +166,8 @@ else
     exit 1
 fi
 
-# Verify tables exist
-echo "[i] Verifying tables..."
-RADIUS_TABLE_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql -U radiususer -d radius -h localhost -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('radcheck', 'radreply', 'radacct', 'radgroupcheck', 'radgroupreply', 'radusergroup');" 2>/dev/null | tr -d ' ')
-
-API_TABLE_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql -U radiususer -d radius -h localhost -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('user_details', 'password_reset_tokens');" 2>/dev/null | tr -d ' ')
-
-if [ "$RADIUS_TABLE_COUNT" = "6" ]; then
-    echo "${GREEN}[OK] RADIUS tables verified (6/6)${NC}"
-else
-    echo "${YELLOW}[!] Warning: Expected 6 RADIUS tables, found $RADIUS_TABLE_COUNT${NC}"
-fi
-
-if [ "$API_TABLE_COUNT" = "2" ]; then
-    echo "${GREEN}[OK] API tables verified (2/2)${NC}"
-else
-    echo "${YELLOW}[!] Warning: Expected 2 API tables, found $API_TABLE_COUNT${NC}"
-fi
+# Database is ready - no tables created yet
+echo "${GREEN}[OK] Database is ready for schema creation${NC}"
 
 echo ""
 echo "================================================================"
@@ -314,22 +181,17 @@ echo "  Database User: radiususer"
 echo "  Database Password: $DB_PASSWORD"
 echo "  Postgres Password: $POSTGRES_PASSWORD"
 echo ""
-echo "  Tables Created:"
-echo "    RADIUS: radcheck, radreply, radacct, radgroupcheck, radgroupreply, radusergroup"
-echo "    API: user_details, password_reset_tokens"
+echo "${YELLOW}IMPORTANT - Next Steps:${NC}"
 echo ""
-echo "${YELLOW}Next Steps:${NC}"
-echo "  1. Run the FreeRADIUS setup script to configure FreeRADIUS:"
-echo "     sudo sh scripts/freebsd-setup-radius.sh"
+echo "  1. Run FreeRADIUS setup to create RADIUS tables:"
+echo "     ${GREEN}sudo sh scripts/freebsd-setup-radius.sh${NC}"
 echo ""
-echo "  2. The RADIUS setup will:"
-echo "     - Install and configure FreeRADIUS to use this database"
-echo "     - Create test users in both radcheck and user_details"
-echo "     - Configure firewall rules"
+echo "  2. Run API setup to create API tables and start the server:"
+echo "     ${GREEN}sudo sh scripts/freebsd-setup-api.sh${NC}"
 echo ""
-echo "  3. Run the API setup script to deploy the Node.js API:"
-echo "     sudo sh scripts/freebsd-setup-api.sh"
+echo "${YELLOW}[!] No tables have been created yet.${NC}"
+echo "${YELLOW}[!] Each component will create its own schema.${NC}"
 echo ""
-echo "${GREEN}[OK] PostgreSQL + ALL tables ready! No migrations needed!${NC}"
+echo "${GREEN}[OK] PostgreSQL server ready!${NC}"
 echo ""
 

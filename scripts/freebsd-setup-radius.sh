@@ -169,40 +169,42 @@ fi
 
 echo "================================================================"
 
-# Step 4: Configure PostgreSQL
+# Step 4: Check PostgreSQL Prerequisites
 echo ""
-echo "[STEP]  Step 4/10: Configuring PostgreSQL..."
-echo "  [i] Note: PostgreSQL is bundled with freeradius3-pgsql"
-echo "  [i] For database server, install postgresql-server separately if needed"
+echo "[STEP]  Step 4/10: Checking PostgreSQL Prerequisites..."
 echo ""
 
-# Check if PostgreSQL is running (user may have their own installation)
-if pgrep -q postgres; then
-    echo "  [OK] PostgreSQL is running"
-    
-    # Try to create database and user
-    echo "  Creating RADIUS database and user..."
-    su - postgres -c "createdb radius" 2>/dev/null || echo "  [OK] Database 'radius' already exists"
-    su - postgres -c "psql -c \"CREATE USER radiususer WITH PASSWORD '$DB_PASSWORD';\"" 2>/dev/null || echo "  [OK] User 'radiususer' already exists"
-    su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE radius TO radiususer;\"" 2>/dev/null
-    su - postgres -c "psql -c \"ALTER DATABASE radius OWNER TO radiususer;\"" 2>/dev/null
-    
-    echo "  [OK] PostgreSQL configured"
-else
-    echo "  [!] PostgreSQL is not running!"
-    echo "      freeradius3-pgsql only includes the PostgreSQL CLIENT"
-    echo "      You need to install PostgreSQL SERVER separately:"
+# Check if PostgreSQL is running
+if ! pgrep -q postgres; then
+    echo "[X] PostgreSQL is not running!"
     echo ""
-    echo "      pkg install postgresql15-server (or postgresql16/17/18)"
-    echo "      sysrc postgresql_enable=YES"
-    echo "      service postgresql initdb"
-    echo "      service postgresql start"
+    echo "You must run the PostgreSQL setup script first:"
+    echo "  sudo sh scripts/freebsd-setup-postgresql.sh"
     echo ""
-    echo "      Then re-run this script to configure the database"
-    echo ""
-    echo "  [!] Skipping PostgreSQL configuration"
+    exit 1
 fi
 
+# Check if radius database exists
+if ! su - postgres -c "psql -lqt" 2>/dev/null | cut -d \| -f 1 | grep -qw radius; then
+    echo "[X] Database 'radius' does not exist!"
+    echo ""
+    echo "You must run the PostgreSQL setup script first:"
+    echo "  sudo sh scripts/freebsd-setup-postgresql.sh"
+    echo ""
+    exit 1
+fi
+
+# Check if radiususer exists
+if ! su - postgres -c "psql -t -c \"SELECT 1 FROM pg_roles WHERE rolname='radiususer'\"" 2>/dev/null | grep -q 1; then
+    echo "[X] Database user 'radiususer' does not exist!"
+    echo ""
+    echo "You must run the PostgreSQL setup script first:"
+    echo "  sudo sh scripts/freebsd-setup-postgresql.sh"
+    echo ""
+    exit 1
+fi
+
+echo "  [OK] PostgreSQL is running and database exists"
 echo "================================================================"
 
 # Step 5: Import FreeRADIUS schema
@@ -299,29 +301,10 @@ CREATE TABLE IF NOT EXISTS radusergroup (
   groupname VARCHAR(64) NOT NULL,
   priority INT NOT NULL DEFAULT 1
 );
-
--- Create user_details table (for API authentication with bcrypt)
-CREATE TABLE IF NOT EXISTS user_details (
-  username VARCHAR(255) PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Create password_reset_tokens table (for password reset functionality)
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) NOT NULL,
-  token VARCHAR(255) NOT NULL UNIQUE,
-  expires_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token);
-CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email);
 EOF
 
-echo "  [OK] Database tables verified/created"
-echo "  [i] If you ran freebsd-setup-postgresql.sh first, these tables already existed"
+echo "  [OK] RADIUS tables created"
+echo "  [i] API tables will be created by freebsd-setup-api.sh"
 echo "================================================================"
 
 # Step 7: Configure FreeRADIUS SQL
@@ -731,34 +714,7 @@ EOF
     echo "  [OK] Test user created in radcheck: testuser / Test@123!"
 fi
 
-# Create test user in user_details (for API/portal login with bcrypt)
-echo "  Creating test user in user_details (API authentication)..."
-
-# Check if user exists in user_details
-API_USER_EXISTS=$(su - postgres -c "psql -U radiususer -d radius -t -c \"SELECT COUNT(*) FROM user_details WHERE username = 'testuser';\"" 2>/dev/null | tr -d ' ')
-
-if [ "$API_USER_EXISTS" -gt 0 ]; then
-    echo "  [OK] Test user 'testuser' already exists in user_details"
-else
-    # Generate bcrypt hash for 'Test@123!' using Node.js
-    # bcrypt hash with salt rounds = 12
-    # This is the hash for 'Test@123!'
-    BCRYPT_HASH='$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqYlYqYlYq'
-    
-    # If node is available, generate a fresh hash
-    if command -v node >/dev/null 2>&1; then
-        echo "  [i] Generating bcrypt hash for test user..."
-        BCRYPT_HASH=$(node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('Test@123!', 12).then(hash => console.log(hash));" 2>/dev/null || echo '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqYlYqYlYq')
-    fi
-    
-    run_cmd su - postgres -c "psql -U radiususer -d radius" <<EOF
--- Create test user in user_details (for portal login with bcrypt)
-INSERT INTO user_details (username, email, password_hash) VALUES
-('testuser', 'test@example.com', '$BCRYPT_HASH')
-ON CONFLICT (username) DO NOTHING;
-EOF
-    echo "  [OK] Test user created in user_details with bcrypt hash"
-fi
+echo "  [i] API user will be created by freebsd-setup-api.sh"
 
 # Step 11: Configure firewall
 echo ""
@@ -822,28 +778,22 @@ echo "    Quota: 10GB/month"
 echo "    Speed: 100 Mbps"
 echo "    Devices: 3"
 echo ""
-echo "  Authentication:"
-echo "    VPN/RADIUS: Uses radcheck table (Cleartext-Password)"
-echo "    API/Portal: Uses user_details table (bcrypt hash)"
-echo ""
 echo "============================================"
 echo "  Next Steps:"
 echo "============================================"
 echo ""
-echo "1. Configure OPNsense Captive Portal:"
+echo "1. Run API setup to create API tables and start the server:"
+echo "   sudo sh scripts/freebsd-setup-api.sh"
+echo ""
+echo "2. Configure OPNsense Captive Portal:"
 echo "   Services → Captive Portal → BoldVPN Zone"
 echo "   Authentication: RADIUS"
 echo "   Server: $(hostname -I | awk '{print $1}')"
 echo "   Port: 1812"
 echo "   Secret: $RADIUS_SECRET"
 echo ""
-echo "2. Test VPN authentication:"
+echo "3. Test VPN authentication:"
 echo "   radtest testuser Test@123! localhost 0 testing123"
-echo ""
-echo "3. Test API authentication:"
-echo "   curl -X POST https://api.boldvpn.net/api/auth/login \\"
-echo "     -H 'Content-Type: application/json' \\"
-echo "     -d '{\"username\":\"testuser\",\"password\":\"Test@123!\"}'"
 echo ""
 echo "4. View logs:"
 echo "   tail -f /var/log/radius.log"
@@ -851,11 +801,7 @@ echo ""
 echo "5. View accounting data:"
 echo "   psql -U radiususer -d radius -c 'SELECT * FROM radacct;'"
 echo ""
-echo "6. Check password storage:"
-echo "   psql -U radiususer -d radius -c 'SELECT username, attribute, value FROM radcheck WHERE username='\"'\"'testuser'\"'\"';'"
-echo "   psql -U radiususer -d radius -c 'SELECT username, email, password_hash FROM user_details WHERE username='\"'\"'testuser'\"'\"';'"
-echo ""
-echo "[OK] FreeRADIUS + PostgreSQL + API tables ready!"
+echo "[OK] FreeRADIUS + RADIUS tables ready!"
 echo ""
 
 

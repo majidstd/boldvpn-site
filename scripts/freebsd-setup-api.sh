@@ -54,9 +54,50 @@ echo ""
 echo "Configuration saved. Starting installation..."
 echo ""
 
+# Step 0: Check Prerequisites
+echo "================================================================"
+echo "[STEP] Step 0/7: Checking Prerequisites..."
+echo "================================================================"
+echo ""
+
+# Check if PostgreSQL is running
+if ! pgrep -q postgres; then
+    echo "[X] PostgreSQL is not running!"
+    echo ""
+    echo "You must run the PostgreSQL setup script first:"
+    echo "  sudo sh scripts/freebsd-setup-postgresql.sh"
+    echo ""
+    exit 1
+fi
+
+# Check if radius database exists
+if ! su - postgres -c "psql -lqt" 2>/dev/null | cut -d \| -f 1 | grep -qw radius; then
+    echo "[X] Database 'radius' does not exist!"
+    echo ""
+    echo "You must run the PostgreSQL setup script first:"
+    echo "  sudo sh scripts/freebsd-setup-postgresql.sh"
+    echo ""
+    exit 1
+fi
+
+# Check if RADIUS tables exist
+RADIUS_TABLE_COUNT=$(su - postgres -c "psql -U radiususer -d radius -t -c \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('radcheck', 'radreply', 'radacct');\"" 2>/dev/null | tr -d ' ')
+
+if [ "$RADIUS_TABLE_COUNT" != "3" ]; then
+    echo "[X] RADIUS tables not found!"
+    echo ""
+    echo "You must run the FreeRADIUS setup script first:"
+    echo "  sudo sh scripts/freebsd-setup-radius.sh"
+    echo ""
+    exit 1
+fi
+
+echo "[OK] Prerequisites met (PostgreSQL running, database exists, RADIUS tables exist)"
+echo ""
+
 # Step 1: Install Node.js
 echo "================================================================"
-echo "[STEP] Step 1/6: Installing Node.js..."
+echo "[STEP] Step 1/7: Installing Node.js..."
 echo "================================================================"
 echo ""
 
@@ -72,7 +113,7 @@ echo ""
 
 # Step 2: Find and verify API directory
 echo "================================================================"
-echo "[STEP] Step 2/6: Locating API directory..."
+echo "[STEP] Step 2/7: Locating API directory..."
 echo "================================================================"
 echo ""
 
@@ -101,7 +142,7 @@ echo ""
 
 # Step 3: Verify API files exist
 echo "================================================================"
-echo "[STEP] Step 3/6: Verifying API files..."
+echo "[STEP] Step 3/7: Verifying API files..."
 echo "================================================================"
 echo ""
 
@@ -130,7 +171,7 @@ echo ""
 
 # Step 4: Create .env file
 echo "================================================================"
-echo "[STEP] Step 4/6: Creating .env configuration..."
+echo "[STEP] Step 4/7: Creating .env configuration..."
 echo "================================================================"
 echo ""
 
@@ -169,7 +210,7 @@ echo ""
 
 # Step 5: Install Node.js dependencies
 echo "================================================================"
-echo "[STEP] Step 5/6: Installing Node.js dependencies..."
+echo "[STEP] Step 5/7: Installing Node.js dependencies..."
 echo "================================================================"
 echo ""
 
@@ -179,9 +220,45 @@ echo "[OK] Dependencies installed"
 
 echo ""
 
-# Step 6: Create rc.d service script
+# Step 6: Run database migrations
 echo "================================================================"
-echo "[STEP] Step 6/6: Creating system service..."
+echo "[STEP] Step 6/7: Running database migrations..."
+echo "================================================================"
+echo ""
+
+echo "[i] Creating API tables (user_details, password_reset_tokens)..."
+
+# Go back to repo root to run migrations
+cd "$(dirname "$API_DIR")"
+
+if [ -f "scripts/apply-migrations.sh" ]; then
+    run_cmd sh scripts/apply-migrations.sh
+    echo "[OK] Migrations completed"
+else
+    echo "[!] Migration script not found, running migrations manually..."
+    
+    # Run migrations manually
+    export PGPASSWORD="$DB_PASSWORD"
+    
+    for migration_file in "$API_DIR/migrations"/*.sql; do
+        if [ -f "$migration_file" ]; then
+            echo "[i] Applying: $(basename "$migration_file")"
+            psql -h localhost -U radiususer -d radius -f "$migration_file"
+        fi
+    done
+    
+    unset PGPASSWORD
+    echo "[OK] Migrations completed manually"
+fi
+
+# Go back to API directory
+cd "$API_DIR"
+
+echo ""
+
+# Step 7: Create rc.d service script
+echo "================================================================"
+echo "[STEP] Step 7/7: Creating system service..."
 echo "================================================================"
 echo ""
 
