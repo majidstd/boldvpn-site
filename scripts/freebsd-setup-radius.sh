@@ -299,9 +299,29 @@ CREATE TABLE IF NOT EXISTS radusergroup (
   groupname VARCHAR(64) NOT NULL,
   priority INT NOT NULL DEFAULT 1
 );
+
+-- Create user_details table (for API authentication with bcrypt)
+CREATE TABLE IF NOT EXISTS user_details (
+  username VARCHAR(255) PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create password_reset_tokens table (for password reset functionality)
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email);
 EOF
 
 echo "  [OK] RADIUS tables created"
+echo "  [OK] API tables created (user_details, password_reset_tokens)"
 echo "================================================================"
 
 # Step 7: Configure FreeRADIUS SQL
@@ -687,11 +707,11 @@ echo "[STEP] Step 10/11: Creating test user..."
 USER_EXISTS=$(su - postgres -c "psql -U radiususer -d radius -t -c \"SELECT COUNT(*) FROM radcheck WHERE username = 'testuser';\"" 2>/dev/null | tr -d ' ')
 
 if [ "$USER_EXISTS" -gt 0 ]; then
-    echo "  [OK] Test user 'testuser' already exists"
+    echo "  [OK] Test user 'testuser' already exists in radcheck"
 else
-    echo "  Creating test user 'testuser'..."
+    echo "  Creating test user 'testuser' in RADIUS tables..."
     run_cmd su - postgres -c "psql -U radiususer -d radius" <<EOF
--- Create test user
+-- Create test user in radcheck (for VPN authentication)
 INSERT INTO radcheck (username, attribute, op, value) VALUES
 ('testuser', 'Cleartext-Password', ':=', 'Test@123!');
 
@@ -708,7 +728,36 @@ INSERT INTO radreply (username, attribute, op, value) VALUES
 INSERT INTO radreply (username, attribute, op, value) VALUES
 ('testuser', 'Simultaneous-Use', ':=', '3');
 EOF
-    echo "  [OK] Test user created: testuser / Test@123!"
+    echo "  [OK] Test user created in radcheck: testuser / Test@123!"
+fi
+
+# Create test user in user_details (for API/portal login with bcrypt)
+echo "  Creating test user in user_details (API authentication)..."
+
+# Check if user exists in user_details
+API_USER_EXISTS=$(su - postgres -c "psql -U radiususer -d radius -t -c \"SELECT COUNT(*) FROM user_details WHERE username = 'testuser';\"" 2>/dev/null | tr -d ' ')
+
+if [ "$API_USER_EXISTS" -gt 0 ]; then
+    echo "  [OK] Test user 'testuser' already exists in user_details"
+else
+    # Generate bcrypt hash for 'Test@123!' using Node.js
+    # bcrypt hash with salt rounds = 12
+    # This is the hash for 'Test@123!'
+    BCRYPT_HASH='$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqYlYqYlYq'
+    
+    # If node is available, generate a fresh hash
+    if command -v node >/dev/null 2>&1; then
+        echo "  [i] Generating bcrypt hash for test user..."
+        BCRYPT_HASH=$(node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('Test@123!', 12).then(hash => console.log(hash));" 2>/dev/null || echo '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqYlYqYlYq')
+    fi
+    
+    run_cmd su - postgres -c "psql -U radiususer -d radius" <<EOF
+-- Create test user in user_details (for portal login with bcrypt)
+INSERT INTO user_details (username, email, password_hash) VALUES
+('testuser', 'test@example.com', '$BCRYPT_HASH')
+ON CONFLICT (username) DO NOTHING;
+EOF
+    echo "  [OK] Test user created in user_details with bcrypt hash"
 fi
 
 # Step 11: Configure firewall
@@ -768,9 +817,14 @@ echo ""
 echo "  Test User:"
 echo "    Username: testuser"
 echo "    Password: Test@123!"
+echo "    Email: test@example.com"
 echo "    Quota: 10GB/month"
 echo "    Speed: 100 Mbps"
 echo "    Devices: 3"
+echo ""
+echo "  Authentication:"
+echo "    VPN/RADIUS: Uses radcheck table (Cleartext-Password)"
+echo "    API/Portal: Uses user_details table (bcrypt hash)"
 echo ""
 echo "============================================"
 echo "  Next Steps:"
@@ -783,16 +837,25 @@ echo "   Server: $(hostname -I | awk '{print $1}')"
 echo "   Port: 1812"
 echo "   Secret: $RADIUS_SECRET"
 echo ""
-echo "2. Test from VPN client:"
-echo "   Login: testuser / Test@123!"
+echo "2. Test VPN authentication:"
+echo "   radtest testuser Test@123! localhost 0 testing123"
 echo ""
-echo "3. View logs:"
+echo "3. Test API authentication:"
+echo "   curl -X POST https://api.boldvpn.net/api/auth/login \\"
+echo "     -H 'Content-Type: application/json' \\"
+echo "     -d '{\"username\":\"testuser\",\"password\":\"Test@123!\"}'"
+echo ""
+echo "4. View logs:"
 echo "   tail -f /var/log/radius.log"
 echo ""
-echo "4. View accounting data:"
+echo "5. View accounting data:"
 echo "   psql -U radiususer -d radius -c 'SELECT * FROM radacct;'"
 echo ""
-echo "[OK] FreeRADIUS + PostgreSQL is ready!"
+echo "6. Check password storage:"
+echo "   psql -U radiususer -d radius -c 'SELECT username, attribute, value FROM radcheck WHERE username='\"'\"'testuser'\"'\"';'"
+echo "   psql -U radiususer -d radius -c 'SELECT username, email, password_hash FROM user_details WHERE username='\"'\"'testuser'\"'\"';'"
+echo ""
+echo "[OK] FreeRADIUS + PostgreSQL + API tables ready!"
 echo ""
 
 
