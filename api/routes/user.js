@@ -1,192 +1,284 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
+const { pool } = require('../utils/database');
 
-const { requireAuth, validatePasswordChange } = require('../middleware/auth');
-const {
-  getUserAttributes,
-  getUserUsage,
-  getCurrentSession,
-  updateUserPassword,
-  getApiAuthData
-} = require('../utils/database');
-
-// Get user profile
-router.get('/profile', requireAuth, async (req, res) => {
+// Get user profile with plan details
+router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
 
-    // Get user attributes
-    const attributes = await getUserAttributes(username);
+    // Get user details from user_details table
+    const userResult = await pool.query(
+      'SELECT username, email, created_at FROM user_details WHERE username = $1',
+      [username]
+    );
 
-    // Get usage statistics
-    const usage = await getUserUsage(username);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-    // Get current session
-    const currentSession = await getCurrentSession(username);
+    const user = userResult.rows[0];
 
-    // Convert bytes to human readable
-    const formatBytes = (bytes) => {
-      if (bytes === 0) return '0 B';
-      const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
+    // Get user plan limits from radreply
+    const limitsResult = await pool.query(
+      'SELECT attribute, value FROM radreply WHERE username = $1',
+      [username]
+    );
 
-    // Convert seconds to human readable
-    const formatTime = (seconds) => {
-      const hours = Math.floor(seconds / 3600);
-      const minutes = Math.floor((seconds % 3600) / 60);
-      return `${hours}h ${minutes}m`;
-    };
+    // Parse limits into readable format
+    const limits = {};
+    limitsResult.rows.forEach(row => {
+      switch (row.attribute) {
+        case 'Max-Monthly-Traffic':
+          limits.monthlyBandwidth = parseInt(row.value);
+          limits.monthlyBandwidthGB = (parseInt(row.value) / 1073741824).toFixed(2);
+          break;
+        case 'WISPr-Bandwidth-Max-Down':
+          limits.maxDownSpeed = parseInt(row.value);
+          limits.maxDownSpeedMbps = (parseInt(row.value) / 1024).toFixed(0);
+          break;
+        case 'WISPr-Bandwidth-Max-Up':
+          limits.maxUpSpeed = parseInt(row.value);
+          limits.maxUpSpeedMbps = (parseInt(row.value) / 1024).toFixed(0);
+          break;
+        case 'Simultaneous-Use':
+          limits.maxDevices = parseInt(row.value);
+          break;
+      }
+    });
+
+    // Determine plan name based on limits
+    let planName = 'Free';
+    if (limits.monthlyBandwidthGB >= 100) {
+      planName = 'Premium';
+    } else if (limits.monthlyBandwidthGB >= 50) {
+      planName = 'Pro';
+    } else if (limits.monthlyBandwidthGB >= 10) {
+      planName = 'Basic';
+    }
 
     res.json({
-      username,
-      limits: {
-        maxTraffic: parseInt(attributes['Max-Monthly-Traffic']) || 0,
-        maxDownSpeed: parseInt(attributes['WISPr-Bandwidth-Max-Down']) || 0,
-        maxUpSpeed: parseInt(attributes['WISPr-Bandwidth-Max-Up']) || 0,
-        maxDevices: parseInt(attributes['Simultaneous-Use']) || 1
+      user: {
+        username: user.username,
+        email: user.email,
+        createdAt: user.created_at,
+        plan: planName
       },
-      usage: {
-        upload: formatBytes(parseInt(usage.upload_bytes) || 0),
-        download: formatBytes(parseInt(usage.download_bytes) || 0),
-        total: formatBytes((parseInt(usage.upload_bytes) || 0) + (parseInt(usage.download_bytes) || 0)),
-        sessionTime: formatTime(parseInt(usage.session_time) || 0),
-        sessionCount: parseInt(usage.session_count) || 0,
-        lastSession: usage.last_session
-      },
-      currentSession: currentSession ? {
-        startTime: currentSession.acctstarttime,
-        sessionTime: formatTime(Date.now() / 1000 - new Date(currentSession.acctstarttime).getTime() / 1000),
-        nasIp: currentSession.nasipaddress,
-        framedIp: currentSession.framedipaddress
-      } : null
+      limits
     });
 
   } catch (error) {
-    console.error('[!] Profile fetch error:', error);
+    console.error('[!] Profile error:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
   }
 });
 
-// Change password
-router.put('/password', requireAuth, validatePasswordChange, async (req, res) => {
+// Get usage statistics
+router.get('/usage', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
-    const { currentPassword, newPassword } = req.body;
 
-    // Get user's API authentication data (hashed password)
-    const userAuthData = await getApiAuthData(username);
-    if (!userAuthData) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    // Get current month usage
+    const currentMonthResult = await pool.query(`
+      SELECT 
+        COALESCE(SUM(acctinputoctets + acctoutputoctets), 0) as total_bytes,
+        COALESCE(SUM(acctinputoctets), 0) as upload_bytes,
+        COALESCE(SUM(acctoutputoctets), 0) as download_bytes,
+        COUNT(*) as session_count
+      FROM radacct 
+      WHERE username = $1 
+      AND acctstarttime >= date_trunc('month', NOW())
+    `, [username]);
 
-    // Verify current password against the stored hash
-    const isValidPassword = await bcrypt.compare(currentPassword, userAuthData.password_hash || '');
-    if (!isValidPassword) {
-      return res.status(400).json({ error: 'Current password is incorrect' });
-    }
+    // Get today's usage
+    const todayResult = await pool.query(`
+      SELECT 
+        COALESCE(SUM(acctinputoctets + acctoutputoctets), 0) as total_bytes
+      FROM radacct 
+      WHERE username = $1 
+      AND acctstarttime >= date_trunc('day', NOW())
+    `, [username]);
 
-    // Update password (updateUserPassword now handles hashing internally)
-    await updateUserPassword(username, newPassword); // Pass plain-text newPassword
+    // Get user limits
+    const limitsResult = await pool.query(
+      "SELECT value FROM radreply WHERE username = $1 AND attribute = 'Max-Monthly-Traffic'",
+      [username]
+    );
 
-    res.json({ message: 'Password changed successfully' });
+    const monthlyLimit = limitsResult.rows.length > 0 ? parseInt(limitsResult.rows[0].value) : 0;
+    const currentMonth = currentMonthResult.rows[0];
+    const today = todayResult.rows[0];
+
+    res.json({
+      currentMonth: {
+        totalBytes: parseInt(currentMonth.total_bytes),
+        totalGB: (parseInt(currentMonth.total_bytes) / 1073741824).toFixed(2),
+        uploadBytes: parseInt(currentMonth.upload_bytes),
+        uploadGB: (parseInt(currentMonth.upload_bytes) / 1073741824).toFixed(2),
+        downloadBytes: parseInt(currentMonth.download_bytes),
+        downloadGB: (parseInt(currentMonth.download_bytes) / 1073741824).toFixed(2),
+        sessionCount: parseInt(currentMonth.session_count)
+      },
+      today: {
+        totalBytes: parseInt(today.total_bytes),
+        totalGB: (parseInt(today.total_bytes) / 1073741824).toFixed(2)
+      },
+      limit: {
+        monthlyBytes: monthlyLimit,
+        monthlyGB: (monthlyLimit / 1073741824).toFixed(2),
+        percentageUsed: monthlyLimit > 0 ? ((parseInt(currentMonth.total_bytes) / monthlyLimit) * 100).toFixed(1) : 0
+      }
+    });
 
   } catch (error) {
-    console.error('[!] Password change error:', error);
-    res.status(500).json({ error: 'Password change failed' });
+    console.error('[!] Usage error:', error);
+    res.status(500).json({ error: 'Failed to fetch usage statistics' });
   }
 });
 
-// Get usage history (last 30 days)
-router.get('/usage-history', requireAuth, async (req, res) => {
-  try {
-    const { username } = req.user;
-    const days = parseInt(req.query.days, 10) || 30;
-
-    const { query } = require('../utils/database');
-    const result = await query(`
-      SELECT
-        DATE(acctstarttime) as date,
-        SUM(acctinputoctets) as upload_bytes,
-        SUM(acctoutputoctets) as download_bytes,
-        SUM(acctsessiontime) as session_time,
-        COUNT(*) as sessions
-      FROM radacct
-      WHERE username = $1
-        AND acctstarttime >= CURRENT_DATE - ($2 * INTERVAL '1 day')
-      GROUP BY DATE(acctstarttime)
-      ORDER BY date DESC
-    `, [username, days]);
-
-    // Format the results
-    const formatBytes = (bytes) => {
-      if (!bytes) return '0 B';
-      const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
-    const history = result.rows.map(row => ({
-      date: row.date,
-      upload: formatBytes(parseInt(row.upload_bytes) || 0),
-      download: formatBytes(parseInt(row.download_bytes) || 0),
-      total: formatBytes((parseInt(row.upload_bytes) || 0) + (parseInt(row.download_bytes) || 0)),
-      sessionTime: Math.round((parseInt(row.session_time) || 0) / 60), // minutes
-      sessions: parseInt(row.sessions) || 0
-    }));
-
-    res.json({ history, days: parseInt(days) });
-
-  } catch (error) {
-    console.error('[!] Usage history error:', error);
-    res.status(500).json({ error: 'Failed to fetch usage history' });
-  }
-});
-
-// Get connected devices
-router.get('/devices', requireAuth, async (req, res) => {
+// Get active sessions
+router.get('/sessions/active', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
 
-    const { query } = require('../utils/database');
-    const result = await query(`
-      SELECT
+    const result = await pool.query(`
+      SELECT 
+        radacctid as session_id,
         acctsessionid,
-        acctstarttime,
-        nasipaddress,
-        nasportid,
-        callingstationid,
-        framedipaddress,
-        acctinputoctets,
-        acctoutputoctets,
-        acctsessiontime
-      FROM radacct
-      WHERE username = $1 AND acctstoptime IS NULL
+        acctstarttime as start_time,
+        framedipaddress as ip_address,
+        acctinputoctets as upload_bytes,
+        acctoutputoctets as download_bytes,
+        EXTRACT(EPOCH FROM (NOW() - acctstarttime)) as duration_seconds
+      FROM radacct 
+      WHERE username = $1 
+      AND acctstoptime IS NULL
       ORDER BY acctstarttime DESC
     `, [username]);
 
-    const devices = result.rows.map(row => ({
-      sessionId: row.acctsessionid,
-      startTime: row.acctstarttime,
-      nasIp: row.nasipaddress,
-      port: row.nasportid,
-      macAddress: row.callingstationid,
-      ipAddress: row.framedipaddress,
-      uploadBytes: parseInt(row.acctinputoctets) || 0,
-      downloadBytes: parseInt(row.acctoutputoctets) || 0,
-      sessionTime: parseInt(row.acctsessiontime) || 0
+    const sessions = result.rows.map(session => ({
+      sessionId: session.session_id,
+      acctSessionId: session.acctsessionid,
+      startTime: session.start_time,
+      ipAddress: session.ip_address,
+      uploadBytes: parseInt(session.upload_bytes),
+      uploadMB: (parseInt(session.upload_bytes) / 1048576).toFixed(2),
+      downloadBytes: parseInt(session.download_bytes),
+      downloadMB: (parseInt(session.download_bytes) / 1048576).toFixed(2),
+      durationSeconds: parseInt(session.duration_seconds),
+      durationFormatted: formatDuration(parseInt(session.duration_seconds))
     }));
 
-    res.json({ devices, count: devices.length });
+    res.json({
+      count: sessions.length,
+      sessions
+    });
 
   } catch (error) {
-    console.error('[!] Devices fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch connected devices' });
+    console.error('[!] Active sessions error:', error);
+    res.status(500).json({ error: 'Failed to fetch active sessions' });
   }
 });
+
+// Get session history
+router.get('/sessions', authenticateToken, async (req, res) => {
+  try {
+    const { username } = req.user;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const result = await pool.query(`
+      SELECT 
+        radacctid as session_id,
+        acctstarttime as start_time,
+        acctstoptime as stop_time,
+        framedipaddress as ip_address,
+        acctinputoctets as upload_bytes,
+        acctoutputoctets as download_bytes,
+        acctsessiontime as duration_seconds
+      FROM radacct 
+      WHERE username = $1 
+      AND acctstoptime IS NOT NULL
+      ORDER BY acctstarttime DESC
+      LIMIT $2
+    `, [username, limit]);
+
+    const sessions = result.rows.map(session => ({
+      sessionId: session.session_id,
+      startTime: session.start_time,
+      stopTime: session.stop_time,
+      ipAddress: session.ip_address,
+      uploadBytes: parseInt(session.upload_bytes),
+      uploadMB: (parseInt(session.upload_bytes) / 1048576).toFixed(2),
+      downloadBytes: parseInt(session.download_bytes),
+      downloadMB: (parseInt(session.download_bytes) / 1048576).toFixed(2),
+      totalMB: ((parseInt(session.upload_bytes) + parseInt(session.download_bytes)) / 1048576).toFixed(2),
+      durationSeconds: parseInt(session.duration_seconds),
+      durationFormatted: formatDuration(parseInt(session.duration_seconds))
+    }));
+
+    res.json({
+      count: sessions.length,
+      sessions
+    });
+
+  } catch (error) {
+    console.error('[!] Session history error:', error);
+    res.status(500).json({ error: 'Failed to fetch session history' });
+  }
+});
+
+// Disconnect active session (admin/user can disconnect their own sessions)
+router.delete('/sessions/:sessionId', authenticateToken, async (req, res) => {
+  try {
+    const { username } = req.user;
+    const { sessionId } = req.params;
+
+    // Verify session belongs to user
+    const checkResult = await pool.query(
+      'SELECT radacctid FROM radacct WHERE radacctid = $1 AND username = $2 AND acctstoptime IS NULL',
+      [sessionId, username]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Active session not found' });
+    }
+
+    // Update session to mark as stopped
+    // Note: This won't actually disconnect the VPN, just marks it as stopped in accounting
+    // For real disconnect, you'd need to send a CoA (Change of Authorization) to RADIUS
+    await pool.query(`
+      UPDATE radacct 
+      SET 
+        acctstoptime = NOW(),
+        acctsessiontime = EXTRACT(EPOCH FROM (NOW() - acctstarttime))
+      WHERE radacctid = $1
+    `, [sessionId]);
+
+    res.json({ 
+      message: 'Session marked as disconnected',
+      note: 'User may need to manually disconnect VPN client'
+    });
+
+  } catch (error) {
+    console.error('[!] Disconnect session error:', error);
+    res.status(500).json({ error: 'Failed to disconnect session' });
+  }
+});
+
+// Helper function to format duration
+function formatDuration(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
+  } else {
+    return `${secs}s`;
+  }
+}
 
 module.exports = router;

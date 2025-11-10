@@ -208,6 +208,33 @@ function getPlanFromAttributes(attributes) {
   } else {
     return 'basic';
   }
-}
+});
+
+// Change password (requires authentication)
+router.put('/change-password', validatePasswordChange, async (req, res) => {
+  try {
+    const { username, currentPassword, newPassword } = req.body;
+
+    // Verify current password
+    const userAuthData = await getApiAuthData(username);
+    if (!userAuthData) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    const isValidPassword = await bcrypt.compare(currentPassword, userAuthData.password_hash || '');
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Update password (updateUserPassword handles hashing)
+    await updateUserPassword(username, newPassword);
+
+    res.json({ message: 'Password changed successfully' });
+
+  } catch (error) {
+    console.error('[!] Change password error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
 
 module.exports = router;

@@ -422,3 +422,80 @@ echo ""
 echo "[OK] BoldVPN API is ready!"
 echo ""
 
+
+echo "[OK] Service script created"
+echo ""
+
+# Enable the service
+echo "Enabling BoldVPN API service..."
+run_cmd sysrc boldvpn_api_enable="YES"
+
+echo ""
+
+# Create log file
+echo "Creating log file..."
+run_cmd touch /var/log/boldvpn-api.log
+run_cmd chmod 644 /var/log/boldvpn-api.log
+
+echo ""
+
+# Start the service
+echo "Starting BoldVPN API service..."
+run_cmd service boldvpn_api start
+
+sleep 2
+
+# Check if service is running
+echo ""
+echo "Checking service status..."
+service boldvpn_api status
+
+echo ""
+echo "================================================================"
+echo "  [OK] API SETUP COMPLETE!"
+echo "================================================================"
+echo ""
+echo "[STEP] Configuration Summary:"
+echo ""
+echo "  API Server:"
+echo "    Directory: /usr/local/boldvpn-site/api/"
+echo "    Port: $API_PORT"
+echo "    Domain: $API_DOMAIN"
+echo "    Log: /var/log/boldvpn-api.log"
+echo ""
+echo "  Database:"
+echo "    Host: localhost"
+echo "    Database: radius"
+echo "    User: radiususer"
+echo ""
+echo "  Service:"
+echo "    Status: service boldvpn_api status"
+echo "    Start: service boldvpn_api start"
+echo "    Stop: service boldvpn_api stop"
+echo "    Restart: service boldvpn_api restart"
+echo ""
+echo "================================================================"
+echo "  Next Steps:"
+echo "================================================================"
+echo ""
+echo "1. Test API endpoint:"
+echo "   curl http://localhost:$API_PORT/health"
+echo ""
+echo "2. Check logs:"
+echo "   tail -f /var/log/boldvpn-api.log"
+echo ""
+echo "3. Configure nginx/reverse proxy for HTTPS:"
+echo "   Location: https://$API_DOMAIN"
+echo "   Proxy to: http://localhost:$API_PORT"
+echo ""
+echo "4. Update customer portal API endpoint:"
+echo "   Edit portal/app.js:"
+echo "   const API_URL = 'https://$API_DOMAIN';"
+echo ""
+echo "5. Add Stripe keys to .env:"
+echo "   Edit: $API_DIR/.env"
+echo "   Update: STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET"
+echo ""
+echo "[OK] BoldVPN API is ready!"
+echo ""
+

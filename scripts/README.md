@@ -291,3 +291,61 @@ Check the main [README.md](../README.md) or open an issue on GitHub.
 **Last Updated:** November 2024  
 **Architecture:** Clean Separation of Concerns  
 **Status:** Production Ready
+
+cd /usr/local/boldvpn-site/api
+node -e "const { pool } = require('./utils/database'); pool.query('SELECT 1').then(() => console.log('OK')).catch(console.error);"
+
+# Check API logs
+tail -50 /var/log/boldvpn-api.log
+```
+
+---
+
+## 🔒 Security Best Practices
+
+1. **Change default passwords** in production
+2. **Use strong JWT_SECRET** (32+ characters, random)
+3. **Enable SSL/TLS** for PostgreSQL connections in production
+4. **Restrict database access** to localhost only
+5. **Regular backups** of the `radius` database
+6. **Monitor failed login attempts** in both RADIUS and API logs
+7. **Rotate JWT secrets** periodically
+8. **Use environment-specific .env files** (never commit to git)
+
+---
+
+## 🚀 Production Deployment Checklist
+
+- [ ] Run all 3 setup scripts in order
+- [ ] Change all default passwords
+- [ ] Generate strong JWT_SECRET
+- [ ] Configure SSL certificates (Let's Encrypt)
+- [ ] Set up database backups
+- [ ] Configure firewall rules
+- [ ] Test VPN authentication
+- [ ] Test portal authentication
+- [ ] Monitor logs for errors
+- [ ] Set up log rotation
+- [ ] Configure OPNsense Captive Portal
+- [ ] Test from actual VPN client
+
+---
+
+## 📚 Additional Resources
+
+- [FreeRADIUS Documentation](https://freeradius.org/documentation/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [OPNsense Captive Portal Guide](https://docs.opnsense.org/manual/captiveportal.html)
+- [Node.js Best Practices](https://github.com/goldbergyoni/nodebestpractices)
+
+---
+
+## 🆘 Need Help?
+
+Check the main [README.md](../README.md) or open an issue on GitHub.
+
+---
+
+**Last Updated:** November 2024  
+**Architecture:** Clean Separation of Concerns  
+**Status:** Production Ready
