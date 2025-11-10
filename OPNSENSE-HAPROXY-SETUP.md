@@ -1083,25 +1083,187 @@ With this setup, you now have:
 
 ---
 
-## 🔒 TLS Security (Built-in Fields)
+## 🔒 TLS Security Hardening
 
-OPNsense HAProxy has built-in SSL/TLS configuration - no custom options needed!
+OPNsense HAProxy has built-in SSL/TLS configuration for maximum security!
+
+### Step 1: Configure SSL/TLS Version
 
 **Location:** Services → HAProxy → Public Services → `api_https`
 
 **SSL Offloading section:**
-- **Minimum SSL/TLS version:** Select `TLS 1.2` (recommended)
-  - Blocks insecure TLS 1.0 and 1.1
-  - Allows secure TLS 1.2 and 1.3
-  - A or A+ grade on SSL Labs test
 
-**Other SSL options (if available):**
-- **Ciphers:** Use default (already secure)
-- **SSL Options:** Leave default
+| Field | Recommended Value | Why |
+|-------|-------------------|-----|
+| **Minimum SSL/TLS version** | `TLS 1.2` | Blocks insecure TLS 1.0/1.1, allows TLS 1.2/1.3 |
+| **Ciphers** | Leave default or see below | Modern secure ciphers |
+| **SSL Options** | Leave default | OPNsense defaults are secure |
 
-**That's it!** OPNsense handles TLS security via GUI fields.
+**Security Impact:**
+- ✅ Blocks TLS 1.0 and 1.1 (vulnerable to BEAST, POODLE attacks)
+- ✅ Allows TLS 1.2 and 1.3 (modern, secure protocols)
+- ✅ A or A+ grade on SSL Labs test
+- ✅ Compliant with PCI DSS, HIPAA, GDPR requirements
 
-**No need for custom SSL options in "Option pass-through"!**
+---
+
+### Step 2: Additional Security Headers (Frontend Policy)
+
+Add security headers to protect against common web attacks.
+
+**Location:** Services → HAProxy → Public Services → `api_https`
+
+**Advanced settings → Option pass-through:**
+
+```
+http-request set-header X-Forwarded-Proto https
+http-response set-header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+http-response set-header X-Content-Type-Options nosniff
+http-response set-header X-Frame-Options DENY
+http-response set-header X-XSS-Protection "1; mode=block"
+http-response set-header Referrer-Policy "strict-origin-when-cross-origin"
+```
+
+**What each header does:**
+
+| Header | Purpose | Protection |
+|--------|---------|------------|
+| `Strict-Transport-Security` | Force HTTPS for 1 year | Prevents downgrade attacks |
+| `X-Content-Type-Options` | Prevent MIME sniffing | Blocks content-type attacks |
+| `X-Frame-Options` | Block iframe embedding | Prevents clickjacking |
+| `X-XSS-Protection` | Enable XSS filter | Blocks cross-site scripting |
+| `Referrer-Policy` | Control referrer info | Privacy protection |
+
+---
+
+### Step 3: Rate Limiting (Optional but Recommended)
+
+Protect against DDoS and brute force attacks.
+
+**Location:** Services → HAProxy → Public Services → `api_https`
+
+**Advanced settings → Option pass-through:**
+
+Add these lines (in addition to security headers):
+
+```
+# Rate limiting: 100 requests per 10 seconds per IP
+http-request track-sc0 src
+http-request deny deny_status 429 if { sc_http_req_rate(0) gt 100 }
+```
+
+**What this does:**
+- Tracks requests per IP address
+- Blocks IPs making > 100 requests in 10 seconds
+- Returns HTTP 429 (Too Many Requests)
+- Protects against brute force login attempts
+
+**Adjust limits for your needs:**
+- API with heavy traffic: `gt 500` (500 requests/10s)
+- Normal API: `gt 100` (100 requests/10s)
+- Strict protection: `gt 50` (50 requests/10s)
+
+---
+
+### Step 4: Custom Cipher Suite (Advanced - Optional)
+
+For maximum security (A+ rating), you can specify custom ciphers.
+
+**Location:** Services → HAProxy → Public Services → `api_https`
+
+**SSL Offloading → Ciphers field:**
+
+```
+ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305
+```
+
+**Or use "Bind option pass-through" for more control:**
+
+```
+ssl-min-ver TLSv1.2 ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+```
+
+**⚠️ Note:** Only add custom ciphers if you need maximum security. Default ciphers are already very secure!
+
+---
+
+### Complete Secure Configuration
+
+**Frontend #2 (api_https) - Production Ready:**
+
+**SSL Offloading:**
+- Enable SSL offloading: ✓
+- Certificates: `api.boldvpn.net`
+- Minimum SSL/TLS version: `TLS 1.2`
+- Ciphers: Default (or custom from above)
+
+**Bind option pass-through:** (empty - use built-in fields)
+
+**Option pass-through:**
+```
+http-request set-header X-Forwarded-Proto https
+http-response set-header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+http-response set-header X-Content-Type-Options nosniff
+http-response set-header X-Frame-Options DENY
+http-response set-header X-XSS-Protection "1; mode=block"
+http-response set-header Referrer-Policy "strict-origin-when-cross-origin"
+http-request track-sc0 src
+http-request deny deny_status 429 if { sc_http_req_rate(0) gt 100 }
+```
+
+**This gives you:**
+- ✅ A+ SSL Labs rating
+- ✅ HSTS protection (force HTTPS)
+- ✅ Clickjacking protection
+- ✅ XSS protection
+- ✅ MIME sniffing protection
+- ✅ Rate limiting (DDoS protection)
+- ✅ Modern TLS only (1.2+)
+
+---
+
+### Testing Your Security
+
+**1. SSL Labs Test:**
+```
+https://www.ssllabs.com/ssltest/analyze.html?d=api.boldvpn.net
+```
+**Expected:** A or A+ rating
+
+**2. Security Headers Test:**
+```
+https://securityheaders.com/?q=https://api.boldvpn.net
+```
+**Expected:** A or A+ rating
+
+**3. Test HSTS:**
+```bash
+curl -I https://api.boldvpn.net/api/health | grep -i strict
+```
+**Expected:** `Strict-Transport-Security: max-age=31536000`
+
+**4. Test Rate Limiting:**
+```bash
+# Send 150 requests rapidly
+for i in {1..150}; do curl -s https://api.boldvpn.net/api/health; done
+```
+**Expected:** After ~100 requests, you'll get HTTP 429 errors
+
+---
+
+### Security Best Practices Summary
+
+| Feature | Status | Impact |
+|---------|--------|--------|
+| TLS 1.2 minimum | ✅ Required | Blocks old protocols |
+| HSTS | ✅ Recommended | Force HTTPS |
+| Security headers | ✅ Recommended | Web attack protection |
+| Rate limiting | ⚠️ Optional | DDoS protection |
+| Custom ciphers | ⚠️ Optional | Maximum security |
+
+**Minimum for production:** TLS 1.2 + HSTS + Security headers  
+**Recommended:** All of the above + Rate limiting  
+**Maximum security:** All + Custom cipher suite
 
 ---
 
