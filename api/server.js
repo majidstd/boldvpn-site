@@ -140,8 +140,16 @@ app.use('/api/user', userRoutes);
 app.use('/api/billing', billingRoutes);
 
 // Health check endpoint
-const healthCheck = require('./healthcheck');
-app.get('/api/health', healthCheck);
+// const healthCheck = require('./healthcheck'); // Removed as file does not exist
+// app.get('/api/health', healthCheck); // Removed as file does not exist
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
 // 404 handler
 app.use('*', (req, res) => {
