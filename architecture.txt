@@ -1,0 +1,9 @@
+so with all information that you worked on, let me give you to see your view for building a global vpn platform.
+now, let me tell what is all about. I am trying to build a comapany to sell commercial vpn service across the globe for censorship and those country block
+     people for free internet. I am suing opnsense for vpn solution using wireguard and for authentication when a user connects then captive portal asking for
+     login. to implement this we deployed a freebsd for this and deploy radiusd-psql to use it for radius and database. also, we build api server via node to
+     handle the backend api call. so, people when connected to vpn, captiveportal template will show them on https://login.boldvpn.net:8000 or redirect it to
+     this for login. in OPNsense, we used HAproxy to handle the api call to bsd. opnsense handles 443 and 80 traffic and use backend http talk to freebsd as it
+     is local and private network. Also, from internet people they can login to check their connect detail and etc. so, the plan is to build a complete solutio
+     at the moment, we are using wireguard mobile app, later we want to build a mobile app to have our own complete solution. any improvement or suggestion for
+     success or another other solution to achieve and make massiv money, please help for better security and making money globally. Also, tell me your architecture and security and business plan

@@ -5,6 +5,23 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { pool } = require('./utils/database');
 
+// Validate required environment variables
+const requiredEnv = ['JWT_SECRET', 'DB_PASSWORD'];
+const missing = requiredEnv.filter(key => !process.env[key]);
+
+if (missing.length > 0) {
+  console.error('[X] Missing required environment variables:', missing.join(', '));
+  console.error('[X] Please set these in your .env file');
+  process.exit(1);
+}
+
+// Validate JWT_SECRET strength
+if (process.env.JWT_SECRET.length < 32) {
+  console.error('[X] JWT_SECRET must be at least 32 characters for security');
+  console.error('[X] Current length:', process.env.JWT_SECRET.length);
+  process.exit(1);
+}
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
@@ -72,8 +89,14 @@ app.use(cors({
       callback(null, true);
     } else {
       console.warn('[!] CORS blocked origin:', origin);
-      callback(null, true); // Allow anyway during development
-      // In production, use: callback(new Error('Not allowed by CORS'));
+      
+      // In production, block unauthorized origins
+      if (process.env.NODE_ENV === 'production') {
+        callback(new Error('Not allowed by CORS'));
+      } else {
+        console.warn('[!] Allowing in development mode');
+        callback(null, true);
+      }
     }
   },
   credentials: true,

@@ -10,7 +10,18 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000, // Increased from 2s to 10s to prevent timeouts
+});
+
+// Add pool error handler
+pool.on('error', (err, client) => {
+  console.error('[!] Unexpected database pool error:', err);
+  // In production, alert admin here
+});
+
+// Log successful connections
+pool.on('connect', (client) => {
+  console.log('[i] New database connection established');
 });
 
 // Query helper function
