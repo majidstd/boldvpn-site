@@ -338,10 +338,16 @@ class BoldVPNPortal {
         // Update session info
         if (profile.currentSession) {
             const sessionInfo = document.getElementById('session-info');
+            // Use textContent to prevent XSS
+            const escapeHtml = (str) => {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            };
             sessionInfo.innerHTML = `
-                <p><strong>Connected since:</strong> ${new Date(profile.currentSession.startTime).toLocaleString()}</p>
-                <p><strong>Session time:</strong> ${profile.currentSession.sessionTime}</p>
-                <p><strong>IP Address:</strong> ${profile.currentSession.ipAddress}</p>
+                <p><strong>Connected since:</strong> ${escapeHtml(new Date(profile.currentSession.startTime).toLocaleString())}</p>
+                <p><strong>Session time:</strong> ${escapeHtml(profile.currentSession.sessionTime)}</p>
+                <p><strong>IP Address:</strong> ${escapeHtml(profile.currentSession.ipAddress || 'N/A')}</p>
             `;
         }
     }
@@ -357,16 +363,23 @@ class BoldVPNPortal {
             return;
         }
 
+        // Escape function to prevent XSS
+        const escapeHtml = (str) => {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        };
+
         container.innerHTML = devices.map(device => `
             <div class="device-item">
                 <div class="device-info">
-                    <div class="device-name">Device ${device.sessionId.slice(-4)}</div>
+                    <div class="device-name">Device ${escapeHtml(device.sessionId.slice(-4))}</div>
                     <div class="device-details">
-                        IP: ${device.ipAddress} | Connected: ${new Date(device.startTime).toLocaleString()}
+                        IP: ${escapeHtml(device.ipAddress || 'N/A')} | Connected: ${escapeHtml(new Date(device.startTime).toLocaleString())}
                     </div>
                 </div>
                 <div class="device-stats">
-                    <span>${this.formatBytes(device.uploadBytes + device.downloadBytes)} used</span>
+                    <span>${escapeHtml(this.formatBytes(device.uploadBytes + device.downloadBytes))} used</span>
                 </div>
             </div>
         `).join('');
