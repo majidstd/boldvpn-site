@@ -152,7 +152,38 @@ echo "${GREEN}[OK] Database and user configured${NC}"
 
 echo ""
 echo "================================================================"
-echo "[STEP] Step 6/6: Testing Database Connection"
+echo "[STEP] Step 6/7: Creating API Tables"
+echo "================================================================"
+echo ""
+
+# Create user_details and password_reset_tokens tables
+echo "[i] Creating API tables (user_details, password_reset_tokens)..."
+su - postgres -c "psql -U radiususer -d radius" <<'EOF'
+-- Create user_details table (for API authentication with bcrypt)
+CREATE TABLE IF NOT EXISTS user_details (
+  username VARCHAR(255) PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create password_reset_tokens table (for password reset functionality)
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email);
+EOF
+
+echo "${GREEN}[OK] API tables created${NC}"
+
+echo ""
+echo "================================================================"
+echo "[STEP] Step 7/7: Testing Database Connection"
 echo "================================================================"
 echo ""
 
@@ -164,6 +195,16 @@ else
     echo "${RED}[X] Database connection failed!${NC}"
     echo "[i] Check PostgreSQL logs: tail -50 /var/log/postgresql/postgresql.log"
     exit 1
+fi
+
+# Verify tables exist
+echo "[i] Verifying tables..."
+TABLE_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql -U radiususer -d radius -h localhost -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('user_details', 'password_reset_tokens');" 2>/dev/null | tr -d ' ')
+
+if [ "$TABLE_COUNT" = "2" ]; then
+    echo "${GREEN}[OK] API tables verified (user_details, password_reset_tokens)${NC}"
+else
+    echo "${YELLOW}[!] Warning: Expected 2 API tables, found $TABLE_COUNT${NC}"
 fi
 
 echo ""
@@ -180,13 +221,13 @@ echo "  Postgres Password: $POSTGRES_PASSWORD"
 echo ""
 echo "${YELLOW}Next Steps:${NC}"
 echo "  1. Run the FreeRADIUS setup script:"
-echo "     sudo sh scripts/freebsd-radius-setup.sh"
+echo "     sudo sh scripts/freebsd-setup-radius.sh"
 echo ""
 echo "  2. The RADIUS setup will automatically:"
-echo "     - Import the RADIUS schema"
-echo "     - Create user_details table for API"
+echo "     - Import the RADIUS schema (radcheck, radreply, radacct, etc.)"
 echo "     - Configure FreeRADIUS to use PostgreSQL"
+echo "     - Create test users in both RADIUS and API tables"
 echo ""
-echo "${GREEN}[OK] PostgreSQL is ready for FreeRADIUS!${NC}"
+echo "${GREEN}[OK] PostgreSQL + API tables ready!${NC}"
 echo ""
 
