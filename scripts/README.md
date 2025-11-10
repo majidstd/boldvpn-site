@@ -21,12 +21,15 @@ sudo sh scripts/freebsd-setup-postgresql.sh
 - Creates `radius` database
 - Creates `radiususer` with password
 - Sets up postgres superuser password
+- **Creates ALL RADIUS tables** (radcheck, radreply, radacct, etc.)
+- **Creates ALL API tables** (user_details, password_reset_tokens)
 - Tests database connectivity
 
 **Output:**
 - Database: `radius`
 - User: `radiususer`
 - Passwords: (you provide during setup)
+- **8 tables ready** (6 RADIUS + 2 API)
 
 ---
 
@@ -41,14 +44,12 @@ sudo sh scripts/freebsd-setup-radius.sh
 
 **What it does:**
 - Installs `freeradius3-pgsql` package
-- Creates RADIUS tables (radcheck, radreply, radacct, etc.)
-- **Creates API tables (user_details, password_reset_tokens)**
-- Configures FreeRADIUS SQL module
-- Creates test user in both RADIUS and API tables
+- Configures FreeRADIUS SQL module to use existing database
+- Creates test user in both radcheck (plaintext) and user_details (bcrypt)
 - Configures firewall rules
 - Starts FreeRADIUS service
 
-**Important:** This script now creates **both** RADIUS and API tables, so you don't need to run migrations separately.
+**Important:** This script uses the tables already created by the PostgreSQL setup, so you don't need to run migrations separately.
 
 ---
 
@@ -141,17 +142,18 @@ psql -U radiususer -d radius -c \
 
 **You don't need to run migrations manually!**
 
-The `freebsd-radius-setup.sh` script now creates all tables including:
-- `user_details` (with `password_hash` column)
-- `password_reset_tokens`
+The `freebsd-setup-postgresql.sh` script creates **ALL tables** from the start:
+- RADIUS tables: `radcheck`, `radreply`, `radacct`, `radgroupcheck`, `radgroupreply`, `radusergroup`
+- API tables: `user_details` (with `password_hash` column), `password_reset_tokens`
 
 The migration scripts in `api/migrations/` are only needed if:
-1. You're updating an existing installation
+1. You're updating an existing installation that doesn't have the API tables
 2. You need to add new columns/tables in the future
 
-To apply migrations manually:
+To apply migrations to an existing installation:
 ```bash
 cd /usr/local/boldvpn-site
+git pull
 sudo sh scripts/apply-migrations.sh
 ```
 

@@ -220,9 +220,9 @@ else
 fi
 echo "================================================================"
 
-# Step 6: Create/verify essential tables
+# Step 6: Verify/create essential tables (should already exist from PostgreSQL setup)
 echo ""
-echo "[STEP]  Step 6/10: Creating essential RADIUS tables..."
+echo "[STEP]  Step 6/10: Verifying database tables..."
 
 su - postgres -c "psql -U radiususer -d radius" <<EOF
 -- Create radcheck table (user credentials)
@@ -320,8 +320,8 @@ CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email);
 EOF
 
-echo "  [OK] RADIUS tables created"
-echo "  [OK] API tables created (user_details, password_reset_tokens)"
+echo "  [OK] Database tables verified/created"
+echo "  [i] If you ran freebsd-setup-postgresql.sh first, these tables already existed"
 echo "================================================================"
 
 # Step 7: Configure FreeRADIUS SQL
