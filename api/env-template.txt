@@ -28,4 +28,4 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_app_password_from_gmail
-EMAIL_FROM=BoldVPN <noreply@boldvpn.net>
+EMAIL_FROM="BoldVPN <noreply@boldvpn.net>"
