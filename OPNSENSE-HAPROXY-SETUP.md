@@ -342,6 +342,7 @@ Add one address: `0.0.0.0:443`
 | Field | Value |
 |-------|-------|
 | Certificates | Select `api.boldvpn.net` (from dropdown) |
+| Minimum SSL/TLS version | `TLS 1.2` (recommended for security) |
 | SSL Passthrough | ❌ Unchecked (we want offloading!) |
 
 **📝 SSL Offloading vs Passthrough:**
@@ -377,9 +378,11 @@ Internet (HTTPS) → OPNsense (forward encrypted) → FreeBSD (HTTPS)
 
 **Connection Mode:** Leave default
 
+**Bind option pass-through:** Leave empty (SSL settings use built-in fields above)
+
 **Advanced settings → Option pass-through:**
 
-Add this line:
+Add this line (optional):
 ```
 http-request set-header X-Forwarded-Proto https
 ```
@@ -714,8 +717,10 @@ Type: HTTP/HTTPS (SSL Offloading)
 Backend: api_backend_pool
 SSL: Yes
 Certificate: api.boldvpn.net
+Minimum SSL/TLS version: TLS 1.2 (built-in field)
 Passthrough: No
-Option: http-request set-header X-Forwarded-Proto https
+Bind option pass-through: (empty - SSL uses built-in fields)
+Option: http-request set-header X-Forwarded-Proto https (optional)
 Purpose: Handle HTTPS API traffic
 ```
 
@@ -1078,21 +1083,25 @@ With this setup, you now have:
 
 ---
 
-## 🔒 Optional: TLS Security Hardening
+## 🔒 TLS Security (Built-in Fields)
 
-For maximum security in production, you can harden the TLS configuration.
+OPNsense HAProxy has built-in SSL/TLS configuration - no custom options needed!
 
-**See:** [HAPROXY-SECURITY-HARDENING.md](HAPROXY-SECURITY-HARDENING.md)
+**Location:** Services → HAProxy → Public Services → `api_https`
 
-**Quick version:** Add to `api_https` frontend option pass-through:
+**SSL Offloading section:**
+- **Minimum SSL/TLS version:** Select `TLS 1.2` (recommended)
+  - Blocks insecure TLS 1.0 and 1.1
+  - Allows secure TLS 1.2 and 1.3
+  - A or A+ grade on SSL Labs test
 
-```
-ssl-min-ver TLSv1.2
-```
+**Other SSL options (if available):**
+- **Ciphers:** Use default (already secure)
+- **SSL Options:** Leave default
 
-This blocks insecure TLS 1.0 and 1.1, allowing only TLS 1.2 and 1.3.
+**That's it!** OPNsense handles TLS security via GUI fields.
 
-**Result:** A or A+ grade on SSL Labs test!
+**No need for custom SSL options in "Option pass-through"!**
 
 ---
 
