@@ -342,7 +342,6 @@ Add one address: `0.0.0.0:443`
 | Field | Value |
 |-------|-------|
 | Certificates | Select `api.boldvpn.net` (from dropdown) |
-| Minimum SSL/TLS version | `TLS 1.2` (recommended for security) |
 | SSL Passthrough | ❌ Unchecked (we want offloading!) |
 
 **📝 SSL Offloading vs Passthrough:**
@@ -378,11 +377,9 @@ Internet (HTTPS) → OPNsense (forward encrypted) → FreeBSD (HTTPS)
 
 **Connection Mode:** Leave default
 
-**Bind option pass-through:** Leave empty (SSL settings use built-in fields above)
-
 **Advanced settings → Option pass-through:**
 
-Add this line (optional):
+Add this line:
 ```
 http-request set-header X-Forwarded-Proto https
 ```
@@ -717,10 +714,8 @@ Type: HTTP/HTTPS (SSL Offloading)
 Backend: api_backend_pool
 SSL: Yes
 Certificate: api.boldvpn.net
-Minimum SSL/TLS version: TLS 1.2 (built-in field)
 Passthrough: No
-Bind option pass-through: (empty - SSL uses built-in fields)
-Option: http-request set-header X-Forwarded-Proto https (optional)
+Option: http-request set-header X-Forwarded-Proto https
 Purpose: Handle HTTPS API traffic
 ```
 
@@ -1083,25 +1078,21 @@ With this setup, you now have:
 
 ---
 
-## 🔒 TLS Security (Built-in Fields)
+## 🔒 Optional: TLS Security Hardening
 
-OPNsense HAProxy has built-in SSL/TLS configuration - no custom options needed!
+For maximum security in production, you can harden the TLS configuration.
 
-**Location:** Services → HAProxy → Public Services → `api_https`
+**See:** [HAPROXY-SECURITY-HARDENING.md](HAPROXY-SECURITY-HARDENING.md)
 
-**SSL Offloading section:**
-- **Minimum SSL/TLS version:** Select `TLS 1.2` (recommended)
-  - Blocks insecure TLS 1.0 and 1.1
-  - Allows secure TLS 1.2 and 1.3
-  - A or A+ grade on SSL Labs test
+**Quick version:** Add to `api_https` frontend option pass-through:
 
-**Other SSL options (if available):**
-- **Ciphers:** Use default (already secure)
-- **SSL Options:** Leave default
+```
+ssl-min-ver TLSv1.2
+```
 
-**That's it!** OPNsense handles TLS security via GUI fields.
+This blocks insecure TLS 1.0 and 1.1, allowing only TLS 1.2 and 1.3.
 
-**No need for custom SSL options in "Option pass-through"!**
+**Result:** A or A+ grade on SSL Labs test!
 
 ---
 
