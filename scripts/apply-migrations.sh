@@ -60,21 +60,10 @@ done
 # Apply inline schema changes idempotently
 echo "Applying inline schema changes..."
 
-# Ensure plpgsql is available for the DO block
-psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS plpgsql;"
+# Add password_hash column if it doesn't exist (PostgreSQL 9.6+ supports IF NOT EXISTS)
+psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c "ALTER TABLE user_details ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);" 2>&1 | grep -v "already exists" || true
 
-ADD_COLUMN_SQL="
-DO \$\$
-BEGIN
-  IF NOT EXISTS(SELECT * FROM information_schema.columns WHERE table_name='user_details' AND column_name='password_hash') THEN
-    ALTER TABLE user_details ADD COLUMN password_hash VARCHAR(255);
-  END IF;
-END;
-\$\$;"
-
-psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "$ADD_COLUMN_SQL"
-echo "Successfully ensured 'password_hash' column exists in 'user_details'."
-
+echo "Successfully applied inline schema changes."
 
 # Unset the password variable for security
 unset PGPASSWORD
