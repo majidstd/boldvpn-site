@@ -118,6 +118,28 @@ class BoldVPNPortal {
         if (this.user) {
             document.getElementById('user-greeting').textContent = this.user.username;
         }
+
+        // Start auto-refresh (every 30 seconds)
+        this.startAutoRefresh();
+    }
+
+    startAutoRefresh() {
+        // Clear any existing interval
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+        }
+
+        // Refresh dashboard data every 30 seconds
+        this.refreshInterval = setInterval(() => {
+            this.loadDashboardData();
+        }, 30000);
+    }
+
+    stopAutoRefresh() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
+        }
     }
 
     async handleLogin(e) {
@@ -464,6 +486,7 @@ class BoldVPNPortal {
         this.user = null;
         localStorage.removeItem('boldvpn_token');
         sessionStorage.removeItem('boldvpn_token');
+        this.stopAutoRefresh();
         this.showLogin();
     }
 
