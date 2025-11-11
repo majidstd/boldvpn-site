@@ -298,16 +298,28 @@ class BoldVPNPortal {
                 this.updateDashboardUI(profile);
             }
 
-            // Load connected devices
-            const devicesResponse = await fetch(`${this.apiBase}/user/devices`, {
+            // Load usage statistics
+            const usageResponse = await fetch(`${this.apiBase}/user/usage`, {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
             });
 
-            if (devicesResponse.ok) {
-                const devicesData = await devicesResponse.json();
-                this.updateDevicesUI(devicesData.devices);
+            if (usageResponse.ok) {
+                const usageData = await usageResponse.json();
+                this.updateUsageUI(usageData);
+            }
+
+            // Load active sessions
+            const sessionsResponse = await fetch(`${this.apiBase}/user/sessions/active`, {
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+
+            if (sessionsResponse.ok) {
+                const sessionsData = await sessionsResponse.json();
+                this.updateSessionsUI(sessionsData);
             }
 
         } catch (error) {
@@ -316,24 +328,33 @@ class BoldVPNPortal {
     }
 
     updateDashboardUI(profile) {
-        // Update usage stats
-        document.getElementById('data-used').textContent = profile.usage.total;
-        document.getElementById('data-limit').textContent = this.formatBytes(profile.limits.maxTraffic);
+        // Update user info
+        const userGreeting = document.getElementById('user-greeting');
+        if (userGreeting) {
+            userGreeting.textContent = profile.user.username;
+        }
 
-        // Calculate usage percentage
-        const usedBytes = this.parseBytes(profile.usage.total);
-        const limitBytes = profile.limits.maxTraffic;
-        const percentage = Math.min((usedBytes / limitBytes) * 100, 100);
+        // Update plan name
+        const planName = document.getElementById('plan-name');
+        if (planName) {
+            planName.textContent = profile.user.plan || 'Basic';
+        }
 
-        document.getElementById('data-progress').style.width = `${percentage}%`;
+        // Update speed limits
+        const speedDown = document.getElementById('speed-down');
+        const speedUp = document.getElementById('speed-up');
+        if (speedDown && profile.limits.maxDownSpeedMbps) {
+            speedDown.textContent = `${profile.limits.maxDownSpeedMbps} Mbps`;
+        }
+        if (speedUp && profile.limits.maxUpSpeedMbps) {
+            speedUp.textContent = `${profile.limits.maxUpSpeedMbps} Mbps`;
+        }
 
-        // Update speed stats
-        document.getElementById('speed-down').textContent = `${profile.limits.maxDownSpeed} Mbps`;
-        document.getElementById('speed-up').textContent = `${profile.limits.maxUpSpeed} Mbps`;
-
-        // Update devices
-        document.getElementById('devices-count').textContent = '0'; // Will be updated by devices API
-        document.getElementById('devices-limit').textContent = profile.limits.maxDevices;
+        // Update device limit
+        const devicesLimit = document.getElementById('devices-limit');
+        if (devicesLimit && profile.limits.maxDevices) {
+            devicesLimit.textContent = profile.limits.maxDevices;
+        }
 
         // Update session info
         if (profile.currentSession) {
@@ -352,11 +373,64 @@ class BoldVPNPortal {
         }
     }
 
+    updateUsageUI(usageData) {
+        // Update data used
+        const dataUsed = document.getElementById('data-used');
+        const dataLimit = document.getElementById('data-limit');
+        const dataProgress = document.getElementById('data-progress');
+
+        if (dataUsed) {
+            dataUsed.textContent = `${usageData.currentMonth.totalGB} GB`;
+        }
+        if (dataLimit) {
+            dataLimit.textContent = `${usageData.limit.monthlyGB} GB`;
+        }
+        if (dataProgress) {
+            dataProgress.style.width = `${usageData.limit.percentageUsed}%`;
+        }
+
+        // Update today's usage
+        const todayUsage = document.getElementById('today-usage');
+        if (todayUsage) {
+            todayUsage.textContent = `${usageData.today.totalGB} GB today`;
+        }
+    }
+
+    updateSessionsUI(sessionsData) {
+        const devicesCount = document.getElementById('devices-count');
+        const sessionInfo = document.getElementById('session-info');
+
+        if (devicesCount) {
+            devicesCount.textContent = sessionsData.count;
+        }
+
+        if (sessionInfo && sessionsData.sessions.length > 0) {
+            const session = sessionsData.sessions[0]; // Show first active session
+            const escapeHtml = (str) => {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            };
+            
+            sessionInfo.innerHTML = `
+                <p><strong>Connected:</strong> ${escapeHtml(session.durationFormatted)} ago</p>
+                <p><strong>IP Address:</strong> ${escapeHtml(session.ipAddress || 'N/A')}</p>
+                <p><strong>Upload:</strong> ${escapeHtml(session.uploadMB)} MB | <strong>Download:</strong> ${escapeHtml(session.downloadMB)} MB</p>
+            `;
+        } else if (sessionInfo) {
+            sessionInfo.innerHTML = '<p>No active VPN sessions</p>';
+        }
+    }
+
     updateDevicesUI(devices) {
         const container = document.getElementById('devices-container');
         const countElement = document.getElementById('devices-count');
 
-        countElement.textContent = devices.length;
+        if (countElement) {
+            countElement.textContent = devices.length;
+        }
+
+        if (!container) return;
 
         if (devices.length === 0) {
             container.innerHTML = '<p>No devices currently connected.</p>';
@@ -373,13 +447,13 @@ class BoldVPNPortal {
         container.innerHTML = devices.map(device => `
             <div class="device-item">
                 <div class="device-info">
-                    <div class="device-name">Device ${escapeHtml(device.sessionId.slice(-4))}</div>
+                    <div class="device-name">Device ${escapeHtml(device.sessionId.toString().slice(-4))}</div>
                     <div class="device-details">
-                        IP: ${escapeHtml(device.ipAddress || 'N/A')} | Connected: ${escapeHtml(new Date(device.startTime).toLocaleString())}
+                        IP: ${escapeHtml(device.ipAddress || 'N/A')} | Connected: ${escapeHtml(device.durationFormatted)}
                     </div>
                 </div>
                 <div class="device-stats">
-                    <span>${escapeHtml(this.formatBytes(device.uploadBytes + device.downloadBytes))} used</span>
+                    <span>${escapeHtml(device.uploadMB)} MB ↑ / ${escapeHtml(device.downloadMB)} MB ↓</span>
                 </div>
             </div>
         `).join('');
