@@ -42,39 +42,48 @@ fi
 
 echo ""
 echo "[1] Restoring FreeRADIUS configs..."
+RADIUS_RESTORED=0
+
 if [ -f "$BACKUP_DIR/freeradius/sites-default" ]; then
-    cp "$BACKUP_DIR/freeradius/sites-default" /usr/local/etc/raddb/sites-available/default
-    echo "[OK] sites-default restored"
+    cp -f "$BACKUP_DIR/freeradius/sites-default" /usr/local/etc/raddb/sites-available/default
+    echo "[OK] sites-default restored (forced overwrite)"
+    RADIUS_RESTORED=1
 fi
 
 if [ -f "$BACKUP_DIR/freeradius/sql-module" ]; then
-    cp "$BACKUP_DIR/freeradius/sql-module" /usr/local/etc/raddb/mods-available/sql
-    echo "[OK] sql-module restored"
+    cp -f "$BACKUP_DIR/freeradius/sql-module" /usr/local/etc/raddb/mods-available/sql
+    echo "[OK] sql-module restored (forced overwrite)"
+    RADIUS_RESTORED=1
 fi
 
 if [ -f "$BACKUP_DIR/freeradius/clients.conf" ]; then
-    cp "$BACKUP_DIR/freeradius/clients.conf" /usr/local/etc/raddb/
-    echo "[OK] clients.conf restored"
+    cp -f "$BACKUP_DIR/freeradius/clients.conf" /usr/local/etc/raddb/
+    echo "[OK] clients.conf restored (forced overwrite)"
+    RADIUS_RESTORED=1
 fi
 
 if [ -f "$BACKUP_DIR/freeradius/radiusd.conf" ]; then
-    cp "$BACKUP_DIR/freeradius/radiusd.conf" /usr/local/etc/raddb/
-    echo "[OK] radiusd.conf restored"
+    cp -f "$BACKUP_DIR/freeradius/radiusd.conf" /usr/local/etc/raddb/
+    echo "[OK] radiusd.conf restored (forced overwrite)"
+    RADIUS_RESTORED=1
 fi
 
 echo ""
 echo "[2] Restoring PostgreSQL configs..."
 PG_VERSION=$(ls /var/db/postgres/ | grep data | head -1)
+PG_RESTORED=0
 
 if [ -n "$PG_VERSION" ]; then
     if [ -f "$BACKUP_DIR/postgresql/postgresql.conf" ]; then
-        cp "$BACKUP_DIR/postgresql/postgresql.conf" "/var/db/postgres/$PG_VERSION/"
-        echo "[OK] postgresql.conf restored"
+        cp -f "$BACKUP_DIR/postgresql/postgresql.conf" "/var/db/postgres/$PG_VERSION/"
+        echo "[OK] postgresql.conf restored (forced overwrite)"
+        PG_RESTORED=1
     fi
     
     if [ -f "$BACKUP_DIR/postgresql/pg_hba.conf" ]; then
-        cp "$BACKUP_DIR/postgresql/pg_hba.conf" "/var/db/postgres/$PG_VERSION/"
-        echo "[OK] pg_hba.conf restored"
+        cp -f "$BACKUP_DIR/postgresql/pg_hba.conf" "/var/db/postgres/$PG_VERSION/"
+        echo "[OK] pg_hba.conf restored (forced overwrite)"
+        PG_RESTORED=1
     fi
 else
     echo "[!] PostgreSQL data directory not found"
@@ -99,18 +108,32 @@ fi
 
 echo ""
 echo "[4] Restarting services..."
-read -p "Restart FreeRADIUS? (yes/no): " RESTART_RADIUS
-if [ "$RESTART_RADIUS" = "yes" ]; then
-    service radiusd restart
-    echo "[OK] FreeRADIUS restarted"
+echo "[!] Services MUST be restarted for config changes to take effect"
+echo ""
+
+if [ "$RADIUS_RESTORED" = "1" ]; then
+    echo "[i] FreeRADIUS config was restored - restart required"
+    read -p "Restart FreeRADIUS now? (yes/no): " RESTART_RADIUS
+    if [ "$RESTART_RADIUS" = "yes" ]; then
+        service radiusd restart
+        echo "[OK] FreeRADIUS restarted"
+    else
+        echo "[!] WARNING: FreeRADIUS NOT restarted - old config still active!"
+    fi
 fi
 
-read -p "Restart PostgreSQL? (yes/no): " RESTART_PG
-if [ "$RESTART_PG" = "yes" ]; then
-    service postgresql restart
-    echo "[OK] PostgreSQL restarted"
+if [ "$PG_RESTORED" = "1" ]; then
+    echo "[i] PostgreSQL config was restored - restart required"
+    read -p "Restart PostgreSQL now? (yes/no): " RESTART_PG
+    if [ "$RESTART_PG" = "yes" ]; then
+        service postgresql restart
+        echo "[OK] PostgreSQL restarted"
+    else
+        echo "[!] WARNING: PostgreSQL NOT restarted - old config still active!"
+    fi
 fi
 
+echo ""
 read -p "Restart API? (yes/no): " RESTART_API
 if [ "$RESTART_API" = "yes" ]; then
     service boldvpn_api restart
