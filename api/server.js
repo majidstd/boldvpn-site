@@ -30,6 +30,10 @@ const billingRoutes = require('./routes/billing');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - Express is behind HAProxy
+// This allows Express to see real client IP from X-Forwarded-For header
+app.set('trust proxy', 1);
+
 // Database configuration
 // The database pool is now managed in ./utils/database.js
 
@@ -45,19 +49,24 @@ app.use(helmet({
   },
 }));
 
-// Rate limiting
+// Health check rate limiting (lenient for HAProxy, but still protected)
+const healthLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 120, // 120 requests per minute (allows HAProxy polling every 5 seconds)
+  message: 'Too many health check requests',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/health', healthLimiter);
+
+// General API rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  // Skip rate limiting for trusted IPs (HAProxy/OPNsense health checks)
-  skip: (req) => {
-    const trustedIPs = ['192.168.50.1', '127.0.0.1', '::1'];
-    const clientIP = req.ip || req.connection.remoteAddress;
-    return trustedIPs.includes(clientIP);
-  }
 });
 
 app.use('/api/', limiter);
