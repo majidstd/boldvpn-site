@@ -52,8 +52,12 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  // Skip rate limiting for health check endpoint
-  skip: (req) => req.path === '/api/health'
+  // Skip rate limiting for trusted IPs (HAProxy/OPNsense health checks)
+  skip: (req) => {
+    const trustedIPs = ['192.168.50.1', '127.0.0.1', '::1'];
+    const clientIP = req.ip || req.connection.remoteAddress;
+    return trustedIPs.includes(clientIP);
+  }
 });
 
 app.use('/api/', limiter);
