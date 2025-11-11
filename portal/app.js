@@ -66,9 +66,19 @@ class BoldVPNPortal {
 
         if (logoutBtn) logoutBtn.addEventListener('click', () => this.logout());
         if (changePasswordBtn) changePasswordBtn.addEventListener('click', () => this.showPasswordModal());
+        const editProfileBtn = document.getElementById('edit-profile-btn');
+        if (editProfileBtn) editProfileBtn.addEventListener('click', () => this.showProfileSection());
         if (viewUsageBtn) viewUsageBtn.addEventListener('click', () => this.toggleUsageHistory());
         if (manageDevicesBtn) manageDevicesBtn.addEventListener('click', () => this.toggleDevicesList());
-        if (billingBtn) billingBtn.addEventListener('click', () => this.showBilling());
+        if (billingBtn) billingBtn.addEventListener('click', () => this.showBillingSection());
+
+        // Profile section buttons
+        const profileBackToDashboardBtn = document.getElementById('profile-back-to-dashboard-btn');
+        if (profileBackToDashboardBtn) profileBackToDashboardBtn.addEventListener('click', () => this.showDashboard());
+
+        // Profile form
+        const profileForm = document.getElementById('profile-form');
+        if (profileForm) profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
 
         // Modal close
         const passwordModalClose = document.getElementById('password-modal-close');
@@ -819,8 +829,209 @@ class BoldVPNPortal {
         }
     }
 
+    showBillingSection() {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('register-section').style.display = 'none';
+        document.getElementById('forgot-password-section').style.display = 'none';
+        document.getElementById('reset-password-confirm-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'none';
+        document.getElementById('billing-section').style.display = 'block';
+        this.loadBillingData();
+    }
+
+    async loadBillingData() {
+        if (!this.user) return;
+
+        try {
+            // Fetch user profile to get current plan
+            const profileResponse = await fetch(`${this.apiBase}/user/profile`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            const profile = await profileResponse.json();
+            this.updateBillingUI(profile);
+
+            // Fetch available plans
+            const plansResponse = await fetch(`${this.apiBase}/billing/plans`, { // Assuming this endpoint exists
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            const plans = await plansResponse.json();
+            this.renderPlanOptions(plans);
+
+            // Fetch billing history
+            const historyResponse = await fetch(`${this.apiBase}/billing/history`, { // Assuming this endpoint exists
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            const history = await historyResponse.json();
+            this.renderBillingHistory(history);
+
+        } catch (error) {
+            console.error('Error loading billing data:', error);
+            this.showAlert('Failed to load billing information.', 'error');
+        }
+    }
+
+    updateBillingUI(profile) {
+        document.getElementById('current-plan-name').textContent = profile.user.plan || 'Basic';
+        document.getElementById('current-plan-traffic').textContent = `${profile.limits.maxTrafficGB} GB`;
+        document.getElementById('current-plan-devices').textContent = profile.limits.maxDevices;
+    }
+
+    renderPlanOptions(plans) {
+        const container = document.getElementById('plan-options-container');
+        if (!container) return;
+
+        container.innerHTML = plans.map(plan => `
+            <div class="plan-option-card">
+                <h4>${plan.name}</h4>
+                <p>${plan.description}</p>
+                <p>Price: $${plan.price}/month</p>
+                <button class="btn btn-primary btn-sm select-plan-btn" data-plan-id="${plan.id}" data-plan-name="${plan.name}">Select Plan</button>
+            </div>
+        `).join('');
+
+        container.querySelectorAll('.select-plan-btn').forEach(button => {
+            button.addEventListener('click', (e) => this.handleChangePlan(e.target.dataset.planId, e.target.dataset.planName));
+        });
+    }
+
+    async handleChangePlan(planId, planName) {
+        if (!confirm(`Are you sure you want to change your plan to ${planName}?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBase}/billing/change-plan`, { // Assuming this endpoint exists
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({ planId })
+            });
+
+            if (response.ok) {
+                this.showAlert(`Plan successfully changed to ${planName}.`, 'success');
+                this.loadBillingData(); // Refresh billing data
+                this.loadDashboardData(); // Refresh dashboard data
+                this.togglePlanOptions(); // Hide plan options
+            } else {
+                const data = await response.json();
+                this.showAlert(data.error || 'Failed to change plan.', 'error');
+            }
+        } catch (error) {
+            console.error('Error changing plan:', error);
+            this.showAlert('Network error. Failed to change plan.', 'error');
+        }
+    }
+
+    renderBillingHistory(history) {
+        const container = document.getElementById('billing-history-container');
+        if (!container) return;
+
+        if (history.length === 0) {
+            container.innerHTML = '<p>No billing history available.</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Plan</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${history.map(item => `
+                        <tr>
+                            <td>${new Date(item.date).toLocaleDateString()}</td>
+                            <td>${item.planName}</td>
+                            <td>$${item.amount.toFixed(2)}</td>
+                            <td>${item.status}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    togglePlanOptions() {
+        const planOptionsCard = document.getElementById('plan-options-card');
+        planOptionsCard.style.display = planOptionsCard.style.display === 'none' ? 'block' : 'none';
+    }
+
     showBilling() {
         this.showAlert('Billing & Plans feature coming soon!', 'info');
+    }
+
+    showProfileSection() {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('register-section').style.display = 'none';
+        document.getElementById('forgot-password-section').style.display = 'none';
+        document.getElementById('reset-password-confirm-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'none';
+        document.getElementById('billing-section').style.display = 'none';
+        document.getElementById('profile-section').style.display = 'block';
+        this.loadProfileData();
+    }
+
+    async loadProfileData() {
+        if (!this.user) return;
+
+        try {
+            const response = await fetch(`${this.apiBase}/user/profile`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+
+            if (response.ok) {
+                const profile = await response.json();
+                document.getElementById('profile-username').value = profile.user.username;
+                document.getElementById('profile-email').value = profile.user.email;
+            } else {
+                console.error('Failed to load profile data:', response.statusText);
+                this.showAlert('Failed to load profile data.', 'error', 'profile-error');
+            }
+        } catch (error) {
+            console.error('Error loading profile data:', error);
+            this.showAlert('Network error loading profile data.', 'error', 'profile-error');
+        }
+    }
+
+    async handleProfileUpdate(e) {
+        e.preventDefault();
+
+        const email = document.getElementById('profile-email').value;
+
+        this.setLoading('update-profile-btn', true);
+        this.clearErrors('profile-form');
+        this.hideAlert('profile-message');
+
+        try {
+            const response = await fetch(`${this.apiBase}/user/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showAlert('Profile updated successfully!', 'success', 'profile-message');
+                this.user.email = email; // Update local user object
+            } else {
+                this.showError('profile-error', data.error || 'Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Profile update error:', error);
+            this.showError('profile-error', 'Network error. Please try again.');
+        } finally {
+            this.setLoading('update-profile-btn', false);
+        }
     }
 
     showForgotPassword() {
