@@ -10,7 +10,8 @@ class BoldVPNPortal {
         this.tokenKey = (typeof Config !== 'undefined' && Config.TOKEN_KEY)
             ? Config.TOKEN_KEY
             : 'boldvpn_token';
-        this.token = localStorage.getItem(this.tokenKey);
+        // Check both localStorage and sessionStorage
+        this.token = localStorage.getItem(this.tokenKey) || sessionStorage.getItem(this.tokenKey);
         this.user = null;
         this.refreshInterval = null;
         this.usageChart = null; // To store the Chart.js instance
