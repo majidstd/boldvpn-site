@@ -46,7 +46,8 @@ if [ -z "$TOKEN" ]; then
 fi
 
 echo "${GREEN}✓${NC} Login successful"
-echo "Token: ${TOKEN:0:20}..."
+TOKEN_PREVIEW=$(echo "$TOKEN" | cut -c1-20)
+echo "Token: ${TOKEN_PREVIEW}..."
 
 echo ""
 echo "[3] Testing GET /api/user/profile..."
