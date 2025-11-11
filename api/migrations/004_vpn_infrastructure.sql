@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS vpn_servers (
 -- User devices/configs table (FIXED: removed user_id)
 CREATE TABLE IF NOT EXISTS user_devices (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL REFERENCES user_details(username) ON DELETE CASCADE,
     device_name VARCHAR(100) NOT NULL,
     server_id INTEGER REFERENCES vpn_servers(id) ON DELETE SET NULL,
     private_key TEXT NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS user_devices (
 -- User preferences table (FIXED: removed user_id)
 CREATE TABLE IF NOT EXISTS user_preferences (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
+    username VARCHAR(255) NOT NULL UNIQUE REFERENCES user_details(username) ON DELETE CASCADE,
     preferred_server_id INTEGER REFERENCES vpn_servers(id) ON DELETE SET NULL,
     auto_connect BOOLEAN DEFAULT FALSE,
     killswitch_enabled BOOLEAN DEFAULT TRUE,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 -- Connection logs (for better analytics)
 CREATE TABLE IF NOT EXISTS connection_logs (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL REFERENCES user_details(username) ON DELETE CASCADE,
     server_id INTEGER REFERENCES vpn_servers(id) ON DELETE SET NULL,
     device_id INTEGER REFERENCES user_devices(id) ON DELETE SET NULL,
     connected_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS connection_logs (
 -- Notifications table (FIXED: removed user_id)
 CREATE TABLE IF NOT EXISTS notifications (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL REFERENCES user_details(username) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     type VARCHAR(50) NOT NULL,
@@ -198,3 +198,4 @@ GRANT USAGE, SELECT ON SEQUENCE user_preferences_id_seq TO radiususer;
 GRANT USAGE, SELECT ON SEQUENCE connection_logs_id_seq TO radiususer;
 GRANT USAGE, SELECT ON SEQUENCE notifications_id_seq TO radiususer;
 GRANT USAGE, SELECT ON SEQUENCE announcements_id_seq TO radiususer;
+
