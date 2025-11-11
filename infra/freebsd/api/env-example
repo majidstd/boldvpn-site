@@ -1,0 +1,31 @@
+# Copy this file to .env and fill in your values
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=radius
+DB_USER=radiususer
+DB_PASSWORD=<REDACTED>
+
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# Frontend Configuration
+FRONTEND_URL=http://localhost:3000
+
+# JWT Configuration
+JWT_SECRET=<REDACTED>
+JWT_EXPIRE=24h
+
+# Stripe Configuration (for billing - get from https://stripe.com)
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+# Email Configuration (for password reset)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password_from_gmail
+EMAIL_FROM="BoldVPN <noreply@boldvpn.net>"

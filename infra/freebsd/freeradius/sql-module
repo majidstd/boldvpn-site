@@ -1,0 +1,30 @@
+sql {
+    driver = "rlm_sql_postgresql"
+    dialect = "postgresql"
+    
+    server = "localhost"
+    port = 5432
+    login = "radiususer"
+    password = "RadiusSecret@#"
+    radius_db = "radius"
+    
+    read_clients = no
+    
+    authcheck_table = "radcheck"
+    authreply_table = "radreply"
+    groupcheck_table = "radgroupcheck"
+    groupreply_table = "radgroupreply"
+    usergroup_table = "radusergroup"
+    
+    pool {
+        start = 5
+        min = 4
+        max = 10
+        spare = 3
+        uses = 0
+        lifetime = 0
+        idle_timeout = 60
+    }
+    
+    $INCLUDE ${modconfdir}/${.:name}/main/${dialect}/queries.conf
+}
