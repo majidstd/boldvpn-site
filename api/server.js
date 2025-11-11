@@ -161,10 +161,14 @@ app.use('/api/billing', billingRoutes);
 // app.get('/api/health', healthCheck); // Removed as file does not exist
 
 app.get('/api/health', (req, res) => {
+  // Log IP for testing (remove in production)
+  console.log('[Health Check] IP:', req.ip, 'X-Forwarded-For:', req.get('X-Forwarded-For'));
+  
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    clientIP: req.ip // Show client IP in response for testing
   });
 });
 
