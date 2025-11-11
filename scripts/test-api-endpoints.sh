@@ -118,3 +118,4 @@ echo "  - DELETE /api/user/sessions/:id"
 echo "  - PUT  /api/auth/change-password"
 echo ""
 
+
