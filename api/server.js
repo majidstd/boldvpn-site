@@ -49,10 +49,10 @@ app.use(helmet({
   },
 }));
 
-// Health check rate limiting (very lenient for HAProxy health checks)
+// Health check rate limiting (very lenient for HAProxy/monitoring)
 const healthLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 300, // 300 requests per minute (5 per second - HAProxy can poll aggressively)
+  max: 10000, // 10000 requests per minute (allows aggressive polling from HAProxy)
   message: 'Too many health check requests',
   standardHeaders: true,
   legacyHeaders: false,
