@@ -49,10 +49,10 @@ app.use(helmet({
   },
 }));
 
-// Health check rate limiting (lenient for HAProxy, but still protected)
+// Health check rate limiting (very lenient for HAProxy health checks)
 const healthLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 120, // 120 requests per minute (allows HAProxy polling every 5 seconds)
+  max: 300, // 300 requests per minute (5 per second - HAProxy can poll aggressively)
   message: 'Too many health check requests',
   standardHeaders: true,
   legacyHeaders: false,
@@ -61,6 +61,8 @@ const healthLimiter = rateLimit({
 app.use('/api/health', healthLimiter);
 
 // General API rate limiting
+// Note: Rate limits reset automatically after windowMs expires
+// OR restart API service to clear all rate limit counters
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
