@@ -31,13 +31,10 @@ async function generateWireGuardKeys() {
       presharedKey: presharedKey.trim()
     };
   } catch (error) {
-    // Fallback to Node.js crypto if wg command not available
-    console.warn('[!] WireGuard tools not available, using fallback key generation');
-    return {
-      privateKey: crypto.randomBytes(32).toString('base64'),
-      publicKey: crypto.randomBytes(32).toString('base64'),
-      presharedKey: crypto.randomBytes(32).toString('base64')
-    };
+    // CRITICAL: Don't use fake keys - fail loudly
+    console.error('[!] WireGuard tools not installed on FreeBSD server');
+    console.error('[!] Install with: pkg install wireguard-tools');
+    throw new Error('WireGuard tools not installed. Please run: pkg install wireguard-tools');
   }
 }
 
