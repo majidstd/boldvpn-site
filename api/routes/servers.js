@@ -8,6 +8,26 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { pool } = require('../utils/database');
 
+// Admin check middleware
+const requireAdmin = async (req, res, next) => {
+  try {
+    const { username } = req.user;
+    const result = await pool.query(
+      'SELECT is_admin FROM user_details WHERE username = $1',
+      [username]
+    );
+    
+    if (result.rows.length === 0 || !result.rows[0].is_admin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('[!] Admin check error:', error);
+    res.status(500).json({ error: 'Authorization check failed' });
+  }
+};
+
 /**
  * Get all available VPN servers
  * Public endpoint - no auth required
@@ -155,9 +175,9 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
 });
 
 /**
- * Update server health status (admin only - add auth middleware later)
+ * Update server health status (admin only)
  */
-router.post('/:serverId/health', authenticateToken, async (req, res) => {
+router.post('/:serverId/health', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { serverId } = req.params;
     const { load, latency, currentConnections, status } = req.body;
