@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS vpn_servers (
 -- User devices/configs table
 CREATE TABLE IF NOT EXISTS user_devices (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+-   user_id INTEGER NOT NULL,
     username VARCHAR(255) NOT NULL,
     device_name VARCHAR(100) NOT NULL,
     server_id INTEGER REFERENCES vpn_servers(id) ON DELETE SET NULL,
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS user_devices (
 -- User preferences table
 CREATE TABLE IF NOT EXISTS user_preferences (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+-   user_id INTEGER NOT NULL,
     username VARCHAR(255) NOT NULL UNIQUE,
     preferred_server_id INTEGER REFERENCES vpn_servers(id) ON DELETE SET NULL,
     auto_connect BOOLEAN DEFAULT FALSE,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS connection_logs (
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+-   user_id INTEGER NOT NULL,
     username VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
@@ -177,8 +177,8 @@ INSERT INTO vpn_servers (
 ON CONFLICT (name) DO NOTHING;
 
 -- Create default preferences for existing users
-INSERT INTO user_preferences (user_id, username)
-SELECT id, username FROM user_details
+INSERT INTO user_preferences (username)
+SELECT username FROM user_details
 ON CONFLICT (username) DO NOTHING;
 
 -- Add admin flag to user_details

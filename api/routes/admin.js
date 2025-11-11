@@ -176,12 +176,12 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
  */
 router.get('/users/:userId', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId: username } = req.params;  // ✅ Actually username, not ID
 
     // User info
     const userQuery = await pool.query(
-      'SELECT * FROM user_details WHERE id = $1',
-      [userId]
+      'SELECT * FROM user_details WHERE username = $1',
+      [username]
     );
 
     if (userQuery.rows.length === 0) {
@@ -234,13 +234,8 @@ router.put('/users/:userId/limits', authenticateToken, requireAdmin, async (req,
     const { userId } = req.params;
     const { monthlyTraffic, maxDevices, downloadSpeed, uploadSpeed } = req.body;
 
-    // Get username
-    const userQuery = await pool.query('SELECT username FROM user_details WHERE id = $1', [userId]);
-    if (userQuery.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const username = userQuery.rows[0].username;
+    // Get username (userId param is actually username)
+    const username = userId;
 
     // Delete existing limits
     await pool.query('DELETE FROM radreply WHERE username = $1', [username]);
@@ -281,15 +276,8 @@ router.put('/users/:userId/limits', authenticateToken, requireAdmin, async (req,
  */
 router.put('/users/:userId/status', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId: username } = req.params;  // ✅ Actually username, not ID
     const { enabled } = req.body;
-
-    const userQuery = await pool.query('SELECT username FROM user_details WHERE id = $1', [userId]);
-    if (userQuery.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const username = userQuery.rows[0].username;
 
     if (enabled) {
       // Remove Auth-Type := Reject

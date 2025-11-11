@@ -31,13 +31,9 @@ async function generateWireGuardKeys() {
       presharedKey: presharedKey.trim()
     };
   } catch (error) {
-    // Fallback to Node.js crypto if wg command not available
-    console.warn('[!] WireGuard tools not available, using fallback key generation');
-    return {
-      privateKey: crypto.randomBytes(32).toString('base64'),
-      publicKey: crypto.randomBytes(32).toString('base64'),
-      presharedKey: crypto.randomBytes(32).toString('base64')
-    };
+    // ❌ CRITICAL: Don't use fake keys - fail loudly
+    console.error('[!] WireGuard tools not available. Install with: pkg install wireguard-tools');
+    throw new Error('WireGuard tools not installed on server. Please install: pkg install wireguard-tools');
   }
 }
 
@@ -203,26 +199,17 @@ router.post('/', authenticateToken, async (req, res) => {
     // Get next available IP
     const assignedIP = await getNextAvailableIP(serverId);
 
-    // Get user_id
-    const userResult = await pool.query(
-      'SELECT id FROM user_details WHERE username = $1',
-      [username]
-    );
-
-    const userId = userResult.rows[0].id;
-
     // Create device
     const insertQuery = `
       INSERT INTO user_devices (
-        user_id, username, device_name, server_id,
+        username, device_name, server_id,
         private_key, public_key, preshared_key, assigned_ip,
         created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
       RETURNING *
     `;
 
     const values = [
-      userId,
       username,
       deviceName,
       serverId,
