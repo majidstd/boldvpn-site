@@ -140,6 +140,68 @@
                 </div>
             </div>
 
+            <!-- Forgot Password Request -->
+            <div id="forgot-password-section" class="auth-section" style="display: none;">
+                <div class="auth-card">
+                    <h2>Forgot Password</h2>
+                    <p class="auth-subtitle">Enter your email to receive a reset link</p>
+
+                    <form id="forgot-password-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="forgot-email">Email</label>
+                            <input type="email" id="forgot-email" name="email" required>
+                            <div class="error-message" id="forgot-email-error"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="forgot-password-btn">
+                            <span class="btn-text">Send Reset Link</span>
+                            <div class="btn-spinner" style="display: none;"></div>
+                        </button>
+                    </form>
+
+                    <div class="auth-links">
+                        <p><a href="#" id="forgot-to-login-link">Back to Login</a></p>
+                    </div>
+
+                    <div id="forgot-password-message" class="alert alert-info" style="display: none;"></div>
+                    <div id="forgot-password-error" class="alert alert-error" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Password Reset Confirmation -->
+            <div id="reset-password-confirm-section" class="auth-section" style="display: none;">
+                <div class="auth-card">
+                    <h2>Reset Password</h2>
+                    <p class="auth-subtitle">Enter your new password</p>
+
+                    <form id="reset-password-confirm-form" class="auth-form">
+                        <input type="hidden" id="reset-token" name="token">
+                        <div class="form-group">
+                            <label for="reset-new-password">New Password</label>
+                            <input type="password" id="reset-new-password" name="newPassword" required>
+                            <div class="error-message" id="reset-new-password-error"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reset-confirm-new-password">Confirm New Password</label>
+                            <input type="password" id="reset-confirm-new-password" name="confirmNewPassword" required>
+                            <div class="error-message" id="reset-confirm-new-password-error"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="reset-password-confirm-btn">
+                            <span class="btn-text">Set New Password</span>
+                            <div class="btn-spinner" style="display: none;"></div>
+                        </button>
+                    </form>
+
+                    <div class="auth-links">
+                        <p><a href="#" id="reset-to-login-link">Back to Login</a></p>
+                    </div>
+
+                    <div id="reset-password-confirm-message" class="alert alert-info" style="display: none;"></div>
+                    <div id="reset-password-confirm-error" class="alert alert-error" style="display: none;"></div>
+                </div>
+            </div>
+
             <!-- Dashboard -->
             <div id="dashboard-section" class="dashboard-section" style="display: none;">
                 <div class="dashboard-header">
@@ -262,6 +324,7 @@
         </footer>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
     <script src="config.js"></script>
     <script src="app.js"></script>
     

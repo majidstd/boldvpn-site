@@ -13,6 +13,7 @@ class BoldVPNPortal {
         this.token = localStorage.getItem(this.tokenKey);
         this.user = null;
         this.refreshInterval = null;
+        this.usageChart = null; // To store the Chart.js instance
 
         this.init();
     }
@@ -39,7 +40,22 @@ class BoldVPNPortal {
 
         if (registerLink) registerLink.addEventListener('click', (e) => this.showRegister(e));
         if (loginLink) loginLink.addEventListener('click', (e) => this.showLogin(e));
-        if (forgotPasswordLink) forgotPasswordLink.addEventListener('click', (e) => this.showForgotPassword(e));
+        if (forgotPasswordLink) forgotPasswordLink.addEventListener('click', (e) => this.showForgotPasswordRequest(e));
+
+        // New links for forgot password flow
+        const forgotToLoginLink = document.getElementById('forgot-to-login-link');
+        const resetToLoginLink = document.getElementById('reset-to-login-link');
+
+        if (forgotToLoginLink) forgotToLoginLink.addEventListener('click', (e) => this.showLogin(e));
+        if (resetToLoginLink) resetToLoginLink.addEventListener('click', (e) => this.showLogin(e));
+
+        // New forms for forgot password flow
+        const forgotPasswordForm = document.getElementById('forgot-password-form');
+        const resetPasswordConfirmForm = document.getElementById('reset-password-confirm-form');
+
+        if (forgotPasswordForm) forgotPasswordForm.addEventListener('submit', (e) => this.handleForgotPasswordRequest(e));
+        if (resetPasswordConfirmForm) resetPasswordConfirmForm.addEventListener('submit', (e) => this.handlePasswordResetConfirm(e));
+
 
         // Dashboard buttons
         const logoutBtn = document.getElementById('logout-btn');
@@ -68,7 +84,14 @@ class BoldVPNPortal {
     }
 
     checkAuth() {
-        if (this.token) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('token');
+
+        if (resetToken) {
+            this.showResetPasswordConfirm(resetToken);
+            // Clear the token from the URL to prevent re-use on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (this.token) {
             // Verify token with server
             this.verifyToken();
         } else {
@@ -107,13 +130,40 @@ class BoldVPNPortal {
     showRegister() {
         document.getElementById('login-section').style.display = 'none';
         document.getElementById('register-section').style.display = 'block';
+        document.getElementById('forgot-password-section').style.display = 'none';
+        document.getElementById('reset-password-confirm-section').style.display = 'none';
         document.getElementById('dashboard-section').style.display = 'none';
+    }
+
+    showForgotPasswordRequest(e) {
+        if (e) e.preventDefault();
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('register-section').style.display = 'none';
+        document.getElementById('forgot-password-section').style.display = 'block';
+        document.getElementById('reset-password-confirm-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'none';
+        this.clearErrors('forgot-password-form');
+        this.hideAlert('forgot-password-message');
+    }
+
+    showResetPasswordConfirm(token) {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('register-section').style.display = 'none';
+        document.getElementById('forgot-password-section').style.display = 'none';
+        document.getElementById('reset-password-confirm-section').style.display = 'block';
+        document.getElementById('dashboard-section').style.display = 'none';
+        document.getElementById('reset-token').value = token; // Set the token in the hidden input
+        this.clearErrors('reset-password-confirm-form');
+        this.hideAlert('reset-password-confirm-message');
     }
 
     showDashboard() {
         document.getElementById('login-section').style.display = 'none';
         document.getElementById('register-section').style.display = 'none';
+        document.getElementById('forgot-password-section').style.display = 'none';
+        document.getElementById('reset-password-confirm-section').style.display = 'none';
         document.getElementById('dashboard-section').style.display = 'block';
+
 
         if (this.user) {
             document.getElementById('user-greeting').textContent = this.user.username;
@@ -481,6 +531,84 @@ class BoldVPNPortal {
         `).join('');
     }
 
+    async handleForgotPasswordRequest(e) {
+        e.preventDefault();
+
+        const email = document.getElementById('forgot-email').value;
+
+        this.setLoading('forgot-password-btn', true);
+        this.clearErrors('forgot-password-form');
+        this.hideAlert('forgot-password-message');
+
+        try {
+            const response = await fetch(`${this.apiBase}/auth/reset-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showAlert('If an account with that email exists, a password reset link has been sent.', 'info', 'forgot-password-message');
+                document.getElementById('forgot-password-form').reset();
+            } else {
+                this.showError('forgot-password-error', data.error || 'Failed to send reset link');
+            }
+        } catch (error) {
+            console.error('Forgot password request error:', error);
+            this.showError('forgot-password-error', 'Network error. Please try again.');
+        } finally {
+            this.setLoading('forgot-password-btn', false);
+        }
+    }
+
+    async handlePasswordResetConfirm(e) {
+        e.preventDefault();
+
+        const token = document.getElementById('reset-token').value;
+        const password = document.getElementById('reset-new-password').value;
+        const confirmPassword = document.getElementById('reset-confirm-new-password').value;
+
+        this.setLoading('reset-password-confirm-btn', true);
+        this.clearErrors('reset-password-confirm-form');
+        this.hideAlert('reset-password-confirm-message');
+
+        if (password !== confirmPassword) {
+            this.showFieldError('reset-confirm-new-password-error', 'Passwords do not match');
+            this.setLoading('reset-password-confirm-btn', false);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBase}/auth/reset-password-confirm`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showAlert('Your password has been reset successfully. You can now log in.', 'success', 'reset-password-confirm-message');
+                document.getElementById('reset-password-confirm-form').reset();
+                // Optionally, redirect to login after a short delay
+                setTimeout(() => this.showLogin(), 3000);
+            } else {
+                this.showError('reset-password-confirm-error', data.error || 'Failed to reset password');
+            }
+        } catch (error) {
+            console.error('Password reset confirmation error:', error);
+            this.showError('reset-password-confirm-error', 'Network error. Please try again.');
+        } finally {
+            this.setLoading('reset-password-confirm-btn', false);
+        }
+    }
+
     logout() {
         this.token = null;
         this.user = null;
@@ -500,20 +628,203 @@ class BoldVPNPortal {
 
     toggleUsageHistory() {
         const usageHistory = document.getElementById('usage-history');
-        usageHistory.style.display = usageHistory.style.display === 'none' ? 'block' : 'none';
+        if (usageHistory.style.display === 'none') {
+            usageHistory.style.display = 'block';
+            this.loadUsageHistory();
+        } else {
+            usageHistory.style.display = 'none';
+            if (this.usageChart) {
+                this.usageChart.destroy(); // Destroy chart when hidden
+                this.usageChart = null;
+            }
+        }
+    }
+
+    async loadUsageHistory() {
+        if (!this.user) return;
+
+        try {
+            const response = await fetch(`${this.apiBase}/user/usage/history`, {
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+
+            if (response.ok) {
+                const historyData = await response.json();
+                this.renderUsageChart(historyData);
+            } else {
+                console.error('Failed to load usage history:', response.statusText);
+                this.showError('usage-history-error', 'Failed to load usage history.');
+            }
+        } catch (error) {
+            console.error('Error loading usage history:', error);
+            this.showError('usage-history-error', 'Network error loading usage history.');
+        }
+    }
+
+    renderUsageChart(historyData) {
+        const ctx = document.getElementById('usage-chart');
+        if (!ctx) return;
+
+        // Destroy existing chart if it exists
+        if (this.usageChart) {
+            this.usageChart.destroy();
+        }
+
+        // Assuming historyData is an array of objects like { date: 'YYYY-MM-DD', totalBytes: N }
+        const labels = historyData.map(item => item.date);
+        const data = historyData.map(item => this.formatBytesToGB(item.totalBytes)); // Convert bytes to GB for display
+
+        this.usageChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Daily Data Usage (GB)',
+                    data: data,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Data Used (GB)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    formatBytesToGB(bytes) {
+        if (bytes === 0) return 0;
+        return (bytes / (1024 * 1024 * 1024)).toFixed(2); // Convert to GB
     }
 
     toggleDevicesList() {
         const devicesList = document.getElementById('devices-list');
-        devicesList.style.display = devicesList.style.display === 'none' ? 'block' : 'none';
+        if (devicesList.style.display === 'none') {
+            devicesList.style.display = 'block';
+            this.loadDevices();
+        } else {
+            devicesList.style.display = 'none';
+        }
+    }
+
+    async loadDevices() {
+        if (!this.user) return;
+
+        try {
+            const response = await fetch(`${this.apiBase}/user/devices`, { // Assuming this endpoint exists
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+
+            if (response.ok) {
+                const devicesData = await response.json();
+                this.updateDevicesUI(devicesData);
+            } else {
+                console.error('Failed to load devices:', response.statusText);
+                this.showError('devices-list-error', 'Failed to load connected devices.');
+            }
+        } catch (error) {
+            console.error('Error loading devices:', error);
+            this.showError('devices-list-error', 'Network error loading connected devices.');
+        }
+    }
+
+    updateDevicesUI(devicesData) {
+        const container = document.getElementById('devices-container');
+        const countElement = document.getElementById('devices-count');
+
+        if (countElement) {
+            countElement.textContent = devicesData.length;
+        }
+
+        if (!container) return;
+
+        if (devicesData.length === 0) {
+            container.innerHTML = '<p>No devices currently connected.</p>';
+            return;
+        }
+
+        // Escape function to prevent XSS
+        const escapeHtml = (str) => {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        };
+
+        container.innerHTML = devicesData.map(device => `
+            <div class="device-item">
+                <div class="device-info">
+                    <div class="device-name">Device ${escapeHtml(device.acctsessionid.toString().slice(-4))}</div>
+                    <div class="device-details">
+                        IP: ${escapeHtml(device.framedipaddress || 'N/A')} | Connected: ${escapeHtml(new Date(device.acctstarttime).toLocaleString())}
+                    </div>
+                </div>
+                <div class="device-stats">
+                    <span>${this.formatBytes(device.acctinputoctets)} ↑ / ${this.formatBytes(device.acctoutputoctets)} ↓</span>
+                </div>
+                <button class="btn btn-danger btn-sm disconnect-device-btn" data-session-id="${escapeHtml(device.acctsessionid)}">Disconnect</button>
+            </div>
+        `).join('');
+
+        // Add event listeners for disconnect buttons
+        container.querySelectorAll('.disconnect-device-btn').forEach(button => {
+            button.addEventListener('click', (e) => this.handleDisconnectDevice(e.target.dataset.sessionId));
+        });
+    }
+
+    async handleDisconnectDevice(sessionId) {
+        if (!confirm('Are you sure you want to disconnect this device?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBase}/user/sessions/disconnect`, { // Assuming this endpoint exists
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({ sessionId })
+            });
+
+            if (response.ok) {
+                this.showAlert('Device disconnected successfully.', 'success');
+                this.loadDevices(); // Refresh the list
+            } else {
+                const data = await response.json();
+                this.showAlert(data.error || 'Failed to disconnect device.', 'error');
+            }
+        } catch (error) {
+            console.error('Error disconnecting device:', error);
+            this.showAlert('Network error. Failed to disconnect device.', 'error');
+        }
     }
 
     showBilling() {
-        alert('Billing & Plans feature coming soon!');
+        this.showAlert('Billing & Plans feature coming soon!', 'info');
     }
 
     showForgotPassword() {
-        alert('Password reset feature coming soon!');
+        this.showAlert('Password reset feature coming soon!', 'info');
     }
 
     // Utility methods
@@ -553,9 +864,25 @@ class BoldVPNPortal {
         alerts.forEach(alert => alert.style.display = 'none');
     }
 
-    showAlert(message, type = 'info') {
-        // Simple alert for now - could be improved with toast notifications
-        alert(message);
+    showAlert(message, type = 'info', elementId = 'global-alert') {
+        let alertElement = document.getElementById(elementId);
+        if (!alertElement) {
+            // Create a global alert element if it doesn't exist
+            alertElement = document.createElement('div');
+            alertElement.id = 'global-alert';
+            alertElement.className = 'alert';
+            document.querySelector('.container').prepend(alertElement); // Prepend to main container
+        }
+        alertElement.textContent = message;
+        alertElement.className = `alert alert-${type}`;
+        alertElement.style.display = 'block';
+    }
+
+    hideAlert(elementId = 'global-alert') {
+        const alertElement = document.getElementById(elementId);
+        if (alertElement) {
+            alertElement.style.display = 'none';
+        }
     }
 
     formatBytes(bytes) {
