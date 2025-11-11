@@ -176,7 +176,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
  */
 router.get('/users/:userId', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { userId: username } = req.params;  // ✅ Actually username, not ID
+    const { userId: username } = req.params;
 
     // User info
     const userQuery = await pool.query(
@@ -231,11 +231,8 @@ router.get('/users/:userId', authenticateToken, requireAdmin, async (req, res) =
  */
 router.put('/users/:userId/limits', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId: username } = req.params;
     const { monthlyTraffic, maxDevices, downloadSpeed, uploadSpeed } = req.body;
-
-    // Get username (userId param is actually username)
-    const username = userId;
 
     // Delete existing limits
     await pool.query('DELETE FROM radreply WHERE username = $1', [username]);
@@ -276,7 +273,7 @@ router.put('/users/:userId/limits', authenticateToken, requireAdmin, async (req,
  */
 router.put('/users/:userId/status', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { userId: username } = req.params;  // ✅ Actually username, not ID
+    const { userId: username } = req.params;
     const { enabled } = req.body;
 
     if (enabled) {
