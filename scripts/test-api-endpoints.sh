@@ -23,7 +23,7 @@ PASSWORD="Test@123!"
 
 echo "[1] Testing API health..."
 HEALTH=$(curl -s ${API_URL}/api/health)
-if echo "$HEALTH" | grep -q "ok"; then
+if echo "$HEALTH" | grep -qi "ok"; then
     echo "${GREEN}✓${NC} API is healthy"
 else
     echo "${RED}✗${NC} API health check failed"
