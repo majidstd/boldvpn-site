@@ -10,6 +10,9 @@ sql {
     
     read_clients = no
     
+    # SQL-User-Name mapping
+    sql_user_name = "%{User-Name}"
+    
     authcheck_table = "radcheck"
     authreply_table = "radreply"
     groupcheck_table = "radgroupcheck"
