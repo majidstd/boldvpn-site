@@ -26,6 +26,11 @@ if (process.env.JWT_SECRET.length < 32) {
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const billingRoutes = require('./routes/billing');
+const serversRoutes = require('./routes/servers');
+const devicesRoutes = require('./routes/devices');
+const statsRoutes = require('./routes/stats');
+const adminRoutes = require('./routes/admin');
+const realtimeRoutes = require('./routes/realtime');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -155,6 +160,11 @@ pool.connect((err, client, release) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/servers', serversRoutes);
+app.use('/api/devices', devicesRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/realtime', realtimeRoutes);
 
 // Health check endpoint
 // const healthCheck = require('./healthcheck'); // Removed as file does not exist
