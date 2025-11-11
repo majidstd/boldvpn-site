@@ -301,9 +301,22 @@ CREATE TABLE IF NOT EXISTS radusergroup (
   groupname VARCHAR(64) NOT NULL,
   priority INT NOT NULL DEFAULT 1
 );
+
+-- Create nas table (RADIUS clients)
+CREATE TABLE IF NOT EXISTS nas (
+  id SERIAL PRIMARY KEY,
+  nasname VARCHAR(128) NOT NULL UNIQUE,
+  shortname VARCHAR(32),
+  type VARCHAR(30) DEFAULT 'other',
+  ports INT,
+  secret VARCHAR(60) NOT NULL,
+  server VARCHAR(64),
+  community VARCHAR(50),
+  description VARCHAR(200)
+);
 EOF
 
-echo "  [OK] RADIUS tables created"
+echo "  [OK] RADIUS tables created (including nas table)"
 echo "  [i] API tables will be created by freebsd-setup-api.sh"
 echo "================================================================"
 
@@ -362,33 +375,32 @@ QUERIES_CONF="$QUERIES_DIR/queries.conf"
 mkdir -p "$QUERIES_DIR"
 
 if [ ! -f "$QUERIES_CONF" ]; then
-    echo "  Creating simple queries.conf..."
+    echo "  Creating complete queries.conf with accounting..."
     cat > "$QUERIES_CONF" <<'QUERIES_EOF'
 # -*- text -*-
-# Simple PostgreSQL queries for FreeRADIUS
-# Only includes essential queries for basic authentication
+# PostgreSQL queries for FreeRADIUS with full accounting support
 
 safe_characters = "@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_: /"
 
 # Authorization queries
 authorize_check_query = "SELECT id, username, attribute, value, op FROM radcheck WHERE username = '%{User-Name}' ORDER BY id"
-
 authorize_reply_query = "SELECT id, username, attribute, value, op FROM radreply WHERE username = '%{User-Name}' ORDER BY id"
-
-# Group queries (optional, can be empty)
 group_membership_query = "SELECT groupname FROM radusergroup WHERE username = '%{User-Name}' ORDER BY priority"
 
-# Accounting queries (empty for now, can be added later)
-accounting_start_query = ""
-accounting_stop_query = ""
-accounting_update_query = ""
-accounting_on_query = ""
-accounting_off_query = ""
+# Accounting queries - writes VPN session data to radacct table
+accounting_start_query = "INSERT INTO radacct (acctsessionid, acctuniqueid, username, realm, nasipaddress, nasportid, nasporttype, acctstarttime, acctupdatetime, acctstoptime, acctsessiontime, acctauthentic, connectinfo_start, connectinfo_stop, acctinputoctets, acctoutputoctets, calledstationid, callingstationid, acctterminatecause, servicetype, framedprotocol, framedipaddress) VALUES ('%{Acct-Session-Id}', '%{Acct-Unique-Session-Id}', '%{User-Name}', NULLIF('%{Realm}', ''), '%{NAS-IP-Address}', '%{%{NAS-Port-ID}:-%{NAS-Port}}', '%{NAS-Port-Type}', TO_TIMESTAMP(%{integer:Event-Timestamp}), TO_TIMESTAMP(%{integer:Event-Timestamp}), NULL, 0, '%{Acct-Authentic}', '%{Connect-Info}', '', 0, 0, '%{Called-Station-Id}', '%{Calling-Station-Id}', '', '%{Service-Type}', '%{Framed-Protocol}', NULLIF('%{Framed-IP-Address}', '')::inet)"
+
+accounting_update_query = "UPDATE radacct SET acctupdatetime = TO_TIMESTAMP(%{integer:Event-Timestamp}), acctsessiontime = %{%{Acct-Session-Time}:-0}, acctinputoctets = (('%{%{Acct-Input-Gigawords}:-0}'::bigint << 32) + '%{%{Acct-Input-Octets}:-0}'::bigint), acctoutputoctets = (('%{%{Acct-Output-Gigawords}:-0}'::bigint << 32) + '%{%{Acct-Output-Octets}:-0}'::bigint) WHERE acctsessionid = '%{Acct-Session-Id}' AND username = '%{User-Name}' AND nasipaddress = '%{NAS-IP-Address}'"
+
+accounting_stop_query = "UPDATE radacct SET acctstoptime = TO_TIMESTAMP(%{integer:Event-Timestamp}), acctsessiontime = %{%{Acct-Session-Time}:-0}, acctinputoctets = (('%{%{Acct-Input-Gigawords}:-0}'::bigint << 32) + '%{%{Acct-Input-Octets}:-0}'::bigint), acctoutputoctets = (('%{%{Acct-Output-Gigawords}:-0}'::bigint << 32) + '%{%{Acct-Output-Octets}:-0}'::bigint), acctterminatecause = '%{Acct-Terminate-Cause}', connectinfo_stop = '%{Connect-Info}' WHERE acctsessionid = '%{Acct-Session-Id}' AND username = '%{User-Name}' AND nasipaddress = '%{NAS-IP-Address}'"
+
+simul_count_query = "SELECT COUNT(*) FROM radacct WHERE username = '%{User-Name}' AND acctstoptime IS NULL"
+simul_verify_query = "SELECT radacctid, acctsessionid, username, nasipaddress, nasportid, framedipaddress, callingstationid, framedprotocol FROM radacct WHERE username = '%{User-Name}' AND acctstoptime IS NULL"
 
 # Post-auth query (empty for now)
 post-auth_query = ""
 QUERIES_EOF
-    echo "  [OK] Simple queries.conf created"
+    echo "  [OK] Complete queries.conf created with accounting support"
 else
     echo "  [i] queries.conf already exists, checking if it needs fixing..."
     # Check if the existing file has errors (references to undefined variables)
@@ -427,7 +439,7 @@ QUERIES_EOF
     fi
 fi
 
-# Create SQL module configuration with queries.conf
+# Create SQL module configuration with accounting section
     cat > /usr/local/etc/raddb/mods-available/sql <<EOF
 sql {
     driver = "rlm_sql_postgresql"
@@ -441,11 +453,18 @@ sql {
     
     read_clients = no
     
+    # SQL-User-Name mapping (critical for accounting)
+    sql_user_name = "%{User-Name}"
+    
     authcheck_table = "radcheck"
     authreply_table = "radreply"
     groupcheck_table = "radgroupcheck"
     groupreply_table = "radgroupreply"
     usergroup_table = "radusergroup"
+    
+    # Accounting tables
+    acct_table1 = "radacct"
+    acct_table2 = "radacct"
     
     pool {
         start = 5
@@ -458,6 +477,23 @@ sql {
     }
     
     \$INCLUDE \${modconfdir}/\${.:name}/main/\${dialect}/queries.conf
+    
+    # Accounting configuration
+    accounting {
+        reference = "%{tolower:type.%{Acct-Status-Type}.query}"
+        
+        type {
+            start {
+                query = "\${....accounting_start_query}"
+            }
+            interim-update {
+                query = "\${....accounting_update_query}"
+            }
+            stop {
+                query = "\${....accounting_stop_query}"
+            }
+        }
+    }
 }
 EOF
 
@@ -715,6 +751,15 @@ EOF
 fi
 
 echo "  [i] API user will be created by freebsd-setup-api.sh"
+
+# Add OPNsense to nas table
+echo "  Adding OPNsense to nas table..."
+su - postgres -c "psql -U radiususer -d radius" <<EOF
+INSERT INTO nas (nasname, shortname, secret, description) 
+VALUES ('$OPNSENSE_IP', 'OPNsense', '$RADIUS_SECRET', 'OPNsense Captive Portal')
+ON CONFLICT (nasname) DO NOTHING;
+EOF
+echo "  [OK] OPNsense added to nas table"
 
 # Step 11: Configure firewall
 echo ""
