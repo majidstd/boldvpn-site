@@ -151,4 +151,3 @@ echo "  2. Test services:"
 echo "     - radtest testuser Test@123! localhost 0 testing123"
 echo "     - curl http://localhost:3000/api/health"
 echo ""
-
