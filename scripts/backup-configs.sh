@@ -112,7 +112,15 @@ echo ""
 echo "[5] Committing to git..."
 cd "$REPO_DIR"
 git add infra/freebsd/
-git commit -m "backup: Update FreeBSD configuration backups - $(date +%Y-%m-%d)" || echo "[!] No changes to commit"
+
+if git diff --cached --quiet; then
+    echo "[!] No changes to commit"
+else
+    git commit -m "backup: Update FreeBSD configuration backups - $(date +%Y-%m-%d)"
+    echo ""
+    echo "[6] Pushing to GitHub..."
+    git push && echo "[OK] Pushed to GitHub" || echo "[!] Push failed - check git status"
+fi
 
 echo ""
 echo "================================================================"
@@ -120,9 +128,5 @@ echo "  Backup Complete"
 echo "================================================================"
 echo ""
 echo "Configs backed up to: $BACKUP_DIR"
-echo ""
-echo "To push to git:"
-echo "  cd $REPO_DIR"
-echo "  git push"
 echo ""
 
