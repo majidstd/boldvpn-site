@@ -208,7 +208,7 @@ function getPlanFromAttributes(attributes) {
   } else {
     return 'basic';
   }
-});
+}
 
 // Change password (requires authentication)
 router.put('/change-password', validatePasswordChange, async (req, res) => {
