@@ -61,11 +61,11 @@ const healthLimiter = rateLimit({
 app.use('/api/health', healthLimiter);
 
 // General API rate limiting
-// Note: Rate limits reset automatically after windowMs expires
+// Note: Rate limits reset automatically after 1 minute
 // OR restart API service to clear all rate limit counters
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per minute
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -73,10 +73,10 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// Auth rate limiting (more lenient for development/testing)
+// Auth rate limiting
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit each IP to 20 auth requests per windowMs (increased from 5)
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 10 auth attempts per minute
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
