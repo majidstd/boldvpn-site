@@ -122,7 +122,6 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
 
     let query = `
       SELECT 
-        u.id,
         u.username,
         u.email,
         u.created_at,
@@ -143,7 +142,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     query += `
-      GROUP BY u.id, u.username, u.email, u.created_at
+      GROUP BY u.username, u.email, u.created_at
       ORDER BY u.created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
@@ -153,7 +152,6 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
     const result = await pool.query(query, params);
 
     const users = result.rows.map(user => ({
-      id: user.id,
       username: user.username,
       email: user.email,
       deviceCount: parseInt(user.device_count),
