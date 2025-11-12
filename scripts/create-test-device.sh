@@ -1,19 +1,23 @@
 #!/bin/sh
-# Create a test device and show where it appears in WireGuard
-# Usage: ./scripts/create-test-device.sh [username] [password] [device_name]
+# Create a test device (peer) on WireGuard server
+# Usage: ./scripts/create-test-device.sh [username] [password] [device_name] [server_id]
+
+set -e
 
 API_URL="${API_URL:-http://localhost:3000/api}"
 USERNAME="${1:-testuser}"
 PASSWORD="${2}"
 DEVICE_NAME="${3:-TestDevice-$(date +%s)}"
+SERVER_ID="${4:-1}"
 
 if [ -z "$PASSWORD" ]; then
-    echo "Usage: $0 [username] [password] [device_name]"
-    echo "Example: $0 testuser mypassword MyTestDevice"
+    echo "Usage: $0 [username] [password] [device_name] [server_id]"
+    echo "Example: $0 testuser mypassword MyLaptop 1"
     exit 1
 fi
 
 echo "🔐 Logging in as $USERNAME..."
+
 LOGIN_RESPONSE=$(curl -s -X POST "$API_URL/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\"}")
@@ -21,53 +25,48 @@ LOGIN_RESPONSE=$(curl -s -X POST "$API_URL/auth/login" \
 TOKEN=$(echo "$LOGIN_RESPONSE" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$TOKEN" ]; then
-    echo "❌ Login failed: $LOGIN_RESPONSE"
+    echo "❌ Login failed!"
+    echo "$LOGIN_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$LOGIN_RESPONSE"
     exit 1
 fi
 
 echo "✅ Login successful!"
 echo ""
-echo "📱 Creating device: $DEVICE_NAME..."
+echo "📱 Creating peer: $DEVICE_NAME on server ID $SERVER_ID..."
 echo ""
 
-# Create device
 CREATE_RESPONSE=$(curl -s -X POST "$API_URL/devices" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"deviceName\":\"$DEVICE_NAME\",\"serverId\":1}")
+  -d "{\"deviceName\":\"$DEVICE_NAME\",\"serverId\":$SERVER_ID}")
 
-echo "=== API Response ==="
-echo "$CREATE_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$CREATE_RESPONSE"
-echo ""
-
-# Check if successful
 if echo "$CREATE_RESPONSE" | grep -q '"message":"Device added successfully"'; then
     DEVICE_ID=$(echo "$CREATE_RESPONSE" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
     ASSIGNED_IP=$(echo "$CREATE_RESPONSE" | grep -o '"assignedIP":"[^"]*' | cut -d'"' -f4)
     PUBLIC_KEY=$(echo "$CREATE_RESPONSE" | grep -o '"publicKey":"[^"]*' | cut -d'"' -f4)
     
-    echo "✅ Device created successfully!"
+    echo "✅ Peer created successfully!"
     echo ""
-    echo "📋 Device Details:"
+    echo "📋 Peer Details:"
     echo "   Device ID: $DEVICE_ID"
     echo "   Device Name: $DEVICE_NAME"
     echo "   Assigned IP: $ASSIGNED_IP"
-    echo "   Public Key: $PUBLIC_KEY"
+    echo "   Public Key: ${PUBLIC_KEY:0:50}..."
     echo ""
-    echo "🔍 Now check OPNsense WireGuard:"
-    echo "   1. Go to VPN → WireGuard → Clients"
-    echo "   2. Look for peer/client with name: $USERNAME"
-    echo "   3. Check if it has IP: $ASSIGNED_IP"
-    echo "   4. Check if public key matches: $PUBLIC_KEY"
+    echo "🔍 Verify in OPNsense:"
+    echo "   VPN → WireGuard → Clients"
+    echo "   Look for peer named: $USERNAME"
+    echo "   IP should be: $ASSIGNED_IP"
     echo ""
-    echo "📥 To download config:"
+    echo "📥 Download config:"
     echo "   curl -X GET \"$API_URL/devices/$DEVICE_ID/config\" -H \"Authorization: Bearer $TOKEN\" -o wireguard.conf"
     echo ""
-    echo "📱 To get QR code:"
+    echo "📱 Get QR code:"
     echo "   curl -X GET \"$API_URL/devices/$DEVICE_ID/qrcode\" -H \"Authorization: Bearer $TOKEN\" -o qrcode.png"
 else
-    echo "❌ Device creation failed!"
+    echo "❌ Peer creation failed!"
     echo ""
-    echo "Check the error message above."
+    echo "$CREATE_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$CREATE_RESPONSE"
+    exit 1
 fi
 
