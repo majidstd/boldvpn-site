@@ -331,7 +331,7 @@ class BoldVPNPortal {
                     <h2>Profile Settings</h2>
                 </div>
 
-                <div class="content-container">
+                <div class="content-container form-container">
                     <form id="profile-form" class="auth-form">
                         <div class="form-group">
                             <label for="profile-username">Username</label>
@@ -358,7 +358,7 @@ class BoldVPNPortal {
                     <h2>Change Password</h2>
                 </div>
 
-                <div class="content-container">
+                <div class="content-container form-container">
                     <form id="password-form" class="auth-form">
                         <div class="form-group">
                             <label for="current-password">Current Password</label>

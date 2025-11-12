@@ -366,6 +366,11 @@ body > *:not(#vanta-background) {
     margin: 0 32px 32px 32px;
 }
 
+/* Form Container - constrain width for forms */
+.form-container {
+    max-width: 500px;
+}
+
 /* Dashboard Grid */
 .dashboard-grid {
     display: grid;
