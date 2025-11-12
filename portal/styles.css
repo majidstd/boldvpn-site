@@ -254,21 +254,20 @@ body > *:not(#vanta-background) {
     display: grid;
     grid-template-columns: 260px 1fr;
     min-height: calc(100vh - 64px);
-    gap: 32px;
-    padding: 32px;
+    gap: 0;
+    padding: 0;
     background: var(--bg);
 }
 
 /* Sidebar */
 .portal-sidebar {
     background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--border-radius);
+    border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     position: sticky;
-    top: 96px;
-    height: calc(100vh - 128px);
+    top: 64px;
+    height: calc(100vh - 64px);
     overflow-y: auto;
 }
 
@@ -319,9 +318,11 @@ body > *:not(#vanta-background) {
 }
 
 .nav-item.active {
-    background: var(--primary);
+    background: rgba(14, 165, 233, 0.15);
     border-color: var(--primary);
-    color: #fff;
+    color: var(--primary);
+    border-left: 3px solid var(--primary);
+    padding-left: 13px;
 }
 
 .nav-item span {
@@ -339,9 +340,10 @@ body > *:not(#vanta-background) {
 
 /* Main Content */
 .portal-content {
-    background: transparent;
+    background: var(--card);
     overflow-y: auto;
     padding: 0;
+    min-height: calc(100vh - 64px);
 }
 
 .content-section {
@@ -364,9 +366,7 @@ body > *:not(#vanta-background) {
 
 /* Content Container - with border */
 .content-container {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--border-radius);
+    background: transparent;
     padding: 32px;
     margin: 0;
 }
@@ -374,6 +374,7 @@ body > *:not(#vanta-background) {
 /* Content Section - no extra border */
 .content-section {
     padding: 32px;
+    background: transparent;
 }
 
 /* Form Container - constrain width for forms */
