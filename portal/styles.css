@@ -261,7 +261,7 @@ body > *:not(#vanta-background) {
 
 /* Sidebar */
 .portal-sidebar {
-    background: var(--card);
+    background: var(--panel);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -309,20 +309,23 @@ body > *:not(#vanta-background) {
     color: var(--muted);
     font-size: 14px;
     transition: all 0.2s ease;
+    border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
+    margin-right: -1px;
+    position: relative;
 }
 
 .nav-item:hover {
-    background: rgba(14, 165, 233, 0.1);
-    border-color: rgba(14, 165, 233, 0.3);
+    background: rgba(14, 165, 233, 0.05);
     color: var(--text);
 }
 
 .nav-item.active {
-    background: rgba(14, 165, 233, 0.15);
-    border-color: var(--primary);
+    background: var(--card);
     color: var(--primary);
-    border-left: 3px solid var(--primary);
-    padding-left: 13px;
+    border: 1px solid var(--border);
+    border-right: 1px solid var(--card);
+    z-index: 1;
+    font-weight: 600;
 }
 
 .nav-item span {
