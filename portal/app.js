@@ -177,13 +177,64 @@ class BoldVPNPortal {
         document.getElementById('reset-password-confirm-section').style.display = 'none';
         document.getElementById('dashboard-section').style.display = 'block';
 
-
         if (this.user) {
             document.getElementById('user-greeting').textContent = this.user.username;
         }
 
+        // Show overview section by default
+        this.showSection('overview');
+
         // Start auto-refresh (every 30 seconds)
         this.startAutoRefresh();
+    }
+
+    showSection(sectionName) {
+        // Hide all content sections
+        const contentSections = document.querySelectorAll('.content-section');
+        contentSections.forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Remove active class from all nav items
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // Show selected section
+        const targetSection = document.getElementById(`content-${sectionName}`);
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
+
+        // Mark nav item as active
+        const activeNav = document.querySelector(`[data-section="${sectionName}"]`);
+        if (activeNav) {
+            activeNav.classList.add('active');
+        }
+
+        // Load section-specific data
+        switch(sectionName) {
+            case 'overview':
+                this.loadDashboardData();
+                break;
+            case 'devices':
+                this.loadDevices();
+                this.loadServers();
+                break;
+            case 'usage':
+                this.loadUsageHistory();
+                break;
+            case 'billing':
+                this.loadBillingData();
+                break;
+            case 'profile':
+                this.loadProfileData();
+                break;
+            case 'password':
+                // Password form is already in DOM
+                break;
+        }
     }
 
     startAutoRefresh() {
