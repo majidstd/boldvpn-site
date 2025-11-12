@@ -264,7 +264,10 @@ body > *:not(#vanta-background) {
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 64px);
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
 }
 
 .sidebar-header {
