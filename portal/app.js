@@ -579,7 +579,154 @@ class BoldVPNPortal {
     }
 
     addDevice() {
-        alert('Add device feature - opens modal dialog');
+        // Fetch available servers first
+        this.showAddDeviceModal();
+    }
+
+    async showAddDeviceModal() {
+        try {
+            // Fetch servers
+            const serversResponse = await fetch(`${this.apiBase}/servers`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            
+            let servers = [];
+            if (serversResponse.ok) {
+                servers = await serversResponse.json();
+            }
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add New Device</h3>
+                        <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    <form id="add-device-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="device-name">Device Name</label>
+                            <input type="text" id="device-name" name="deviceName" required 
+                                   placeholder="e.g., My Laptop, iPhone, etc.">
+                        </div>
+                        ${servers.length > 0 ? `
+                        <div class="form-group">
+                            <label for="device-server">Server Location</label>
+                            <select id="device-server" name="serverId" required>
+                                <option value="">Select a server</option>
+                                ${servers.map(s => `
+                                    <option value="${s.id}">${s.location || s.name}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        ` : ''}
+                        <div id="add-device-error" class="alert alert-error" style="display: none;"></div>
+                        <div style="display: flex; gap: 12px; margin-top: 8px;">
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                                <span class="btn-text">Add Device</span>
+                                <div class="spinner" style="display: none;"></div>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+
+            // Handle form submission
+            document.getElementById('add-device-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.handleAddDevice(e, modal);
+            });
+        } catch (error) {
+            console.error('Error showing add device modal:', error);
+            this.showAlert('Failed to load server list. Please try again.', 'error');
+        }
+    }
+
+    async handleAddDevice(e, modal) {
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const spinner = submitBtn.querySelector('.spinner');
+        const errorDiv = document.getElementById('add-device-error');
+        
+        const deviceName = document.getElementById('device-name').value.trim();
+        const serverId = document.getElementById('device-server')?.value;
+
+        // Show loading state
+        submitBtn.classList.add('loading');
+        btnText.style.display = 'none';
+        spinner.style.display = 'inline-block';
+        errorDiv.style.display = 'none';
+
+        try {
+            const response = await fetch(`${this.apiBase}/devices`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({
+                    deviceName,
+                    serverId: serverId || undefined
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                modal.remove();
+                // Show success message
+                this.showAlert('Device added successfully!', 'success');
+                // Reload devices list
+                if (this.currentSection === 'devices') {
+                    this.loadDevices();
+                } else {
+                    this.navigateTo('devices');
+                }
+            } else {
+                errorDiv.textContent = data.error || 'Failed to add device';
+                errorDiv.style.display = 'block';
+            }
+        } catch (error) {
+            errorDiv.textContent = 'Network error. Please try again.';
+            errorDiv.style.display = 'block';
+        } finally {
+            // Reset loading state
+            submitBtn.classList.remove('loading');
+            btnText.style.display = 'inline';
+            spinner.style.display = 'none';
+        }
+    }
+
+    showAlert(message, type = 'info') {
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alert.style.position = 'fixed';
+        alert.style.top = '80px';
+        alert.style.right = '20px';
+        alert.style.zIndex = '1001';
+        alert.style.minWidth = '300px';
+        alert.style.animation = 'slideUp 0.3s ease';
+        
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            alert.style.opacity = '0';
+            alert.style.transition = 'opacity 0.3s';
+            setTimeout(() => alert.remove(), 300);
+        }, 3000);
     }
 
     async downloadConfig(deviceId) {

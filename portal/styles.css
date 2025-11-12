@@ -390,6 +390,7 @@ body>*:not(#vanta-background) {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -680,7 +681,9 @@ body>*:not(#vanta-background) {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .btn.loading {
@@ -721,6 +724,7 @@ body>*:not(#vanta-background) {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
