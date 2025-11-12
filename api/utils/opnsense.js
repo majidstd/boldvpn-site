@@ -232,7 +232,7 @@ async function addWireGuardPeer(peerName, publicKey, assignedIP, presharedKey = 
     const response = await makeRequest('POST', '/wireguard/client/addClient', clientData);
 
     if (response.result === 'saved' || response.uuid) {
-      console.log(`[OK] WireGuard client added for ${username}, UUID: ${response.uuid}`);
+      console.log(`[OK] WireGuard client added: ${peerName}, UUID: ${response.uuid}`);
       
       // Apply configuration changes
       await makeRequest('POST', '/wireguard/service/reconfigure');
