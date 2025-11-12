@@ -23,8 +23,7 @@
     box-sizing: border-box;
 }
 
-html,
-body {
+html, body {
     font-family: var(--font-family);
     background: linear-gradient(180deg, #05080f 0%, var(--bg) 100%);
     color: var(--text);
@@ -44,7 +43,7 @@ body {
     opacity: 0.3;
 }
 
-body>*:not(#vanta-background) {
+body > *:not(#vanta-background) {
     position: relative;
     z-index: 1;
 }
@@ -320,25 +319,14 @@ body>*:not(#vanta-background) {
     color: var(--text);
 }
 
-.sidebar-nav .nav-item.active {
-    background: var(--bg);
-    color: var(--text);
+.nav-item.active {
+    background: var(--card);
+    color: var(--primary);
+    border: 1px solid var(--border);
+    border-right: 1px solid var(--card);
+    z-index: 1;
     font-weight: 600;
-    position: relative;
-    border-color: var(--border);
-    border-right-color: var(--bg);
 }
-
-.sidebar-nav .nav-item.active::after {
-    content: '';
-    position: absolute;
-    right: -1px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: var(--bg);
-}
-
 
 .nav-item span {
     font-size: 1.2em;
@@ -551,7 +539,7 @@ body>*:not(#vanta-background) {
     color: var(--primary);
 }
 
-.device-row>div:last-child {
+.device-row > div:last-child {
     display: flex;
     gap: 8px;
 }
@@ -598,7 +586,7 @@ body>*:not(#vanta-background) {
         padding: 15px;
     }
 
-    .device-row>div:last-child {
+    .device-row > div:last-child {
         margin-top: 10px;
         padding-top: 10px;
         border-top: 1px solid var(--border);
@@ -618,59 +606,3 @@ body>*:not(#vanta-background) {
     font-size: 14px;
     margin: 0;
 }
-/* === Collapsible Sidebar Styles === */
-
-.portal-grid-container.sidebar-collapsed {
-    grid-template-columns: 80px 1fr;
-}
-
-#portal-sidebar {
-    transition: width 0.3s ease;
-}
-
-.portal-grid-container.sidebar-collapsed #portal-sidebar {
-    width: 80px;
-}
-
-.sidebar-nav .nav-item span,
-.sidebar-header .brand span,
-#sidebar-toggle span {
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-.portal-grid-container.sidebar-collapsed .sidebar-nav .nav-item span,
-.portal-grid-container.sidebar-collapsed .sidebar-header .brand span,
-.portal-grid-container.sidebar-collapsed #sidebar-toggle span {
-    opacity: 0;
-    visibility: hidden;
-    width: 0;
-    white-space: nowrap;
-}
-
-.sidebar-nav .nav-item,
-.sidebar-header .brand {
-    justify-content: center;
-}
-
-.portal-grid-container:not(.sidebar-collapsed) .sidebar-nav .nav-item,
-.portal-grid-container:not(.sidebar-collapsed) .sidebar-header .brand {
-    justify-content: flex-start;
-}
-
-#sidebar-toggle {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-#sidebar-toggle svg {
-    transition: transform 0.3s ease;
-}
-
-.portal-grid-container.sidebar-collapsed #sidebar-toggle svg {
-    transform: rotate(180deg);
-}
-
-
