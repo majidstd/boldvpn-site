@@ -68,23 +68,23 @@ async function getWireGuardServerUUID() {
   try {
     const response = await makeRequest('GET', '/wireguard/server/get');
     
+    console.log('[DEBUG] Server response:', JSON.stringify(response).substring(0, 200));
+    
     // Find first enabled server
     if (response && response.server && response.server.servers && response.server.servers.server) {
       const servers = response.server.servers.server;
-      const serverUUID = Object.keys(servers)[0]; // Get first server UUID
+      const serverUUIDs = Object.keys(servers);
+      
+      if (serverUUIDs.length === 0) {
+        throw new Error('No WireGuard servers configured in OPNsense');
+      }
+      
+      const serverUUID = serverUUIDs[0];
+      console.log('[OK] Found WireGuard server UUID:', serverUUID);
       return serverUUID;
     }
     
-    // Fallback - check from service/show
-    const serviceResponse = await makeRequest('GET', '/wireguard/service/show');
-    if (serviceResponse && serviceResponse.rows && serviceResponse.rows.length > 0) {
-      // Find interface type row
-      const interfaceRow = serviceResponse.rows.find(row => row.type === 'interface');
-      if (interfaceRow) {
-        return interfaceRow.name; // This might be the UUID or name
-      }
-    }
-    
+    console.error('[!] Unexpected server response structure:', response);
     throw new Error('No WireGuard server found in OPNsense');
   } catch (error) {
     console.error('[!] Failed to get server UUID:', error.message);
