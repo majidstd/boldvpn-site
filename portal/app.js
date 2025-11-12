@@ -58,26 +58,26 @@ class BoldVPNPortal {
         if (resetPasswordConfirmForm) resetPasswordConfirmForm.addEventListener('submit', (e) => this.handlePasswordResetConfirm(e));
 
 
+        // Sidebar navigation
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = e.currentTarget.getAttribute('data-section');
+                this.showSection(section);
+            });
+        });
+
         // Dashboard buttons
         const logoutBtn = document.getElementById('logout-btn');
-        const changePasswordBtn = document.getElementById('change-password-btn');
-        const viewUsageBtn = document.getElementById('view-usage-btn');
-        const manageDevicesBtn = document.getElementById('manage-devices-btn');
-        const billingBtn = document.getElementById('billing-btn');
         const addDeviceBtn = document.getElementById('add-device-btn');
+        const changePlanBtn = document.getElementById('change-plan-btn');
+        const passwordForm = document.getElementById('password-form');
 
         if (logoutBtn) logoutBtn.addEventListener('click', () => this.logout());
-        if (changePasswordBtn) changePasswordBtn.addEventListener('click', () => this.showPasswordModal());
-        const editProfileBtn = document.getElementById('edit-profile-btn');
-        if (editProfileBtn) editProfileBtn.addEventListener('click', () => this.showProfileSection());
-        if (viewUsageBtn) viewUsageBtn.addEventListener('click', () => this.toggleUsageHistory());
-        if (manageDevicesBtn) manageDevicesBtn.addEventListener('click', () => this.toggleDevicesList());
-        if (billingBtn) billingBtn.addEventListener('click', () => this.showBillingSection());
         if (addDeviceBtn) addDeviceBtn.addEventListener('click', () => this.addDevice());
-
-        // Profile section buttons
-        const profileBackToDashboardBtn = document.getElementById('profile-back-to-dashboard-btn');
-        if (profileBackToDashboardBtn) profileBackToDashboardBtn.addEventListener('click', () => this.showDashboard());
+        if (changePlanBtn) changePlanBtn.addEventListener('click', () => this.showPlanOptions());
+        if (passwordForm) passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
 
         // Profile form
         const profileForm = document.getElementById('profile-form');
