@@ -87,10 +87,18 @@ class BoldVPNPortal {
 
     async handleLogin(e) {
         e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const btnText = submitBtn.textContent;
+        const errorDiv = document.getElementById('login-error');
+        
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('remember-me').checked;
-        const errorDiv = document.getElementById('login-error');
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="spinner"></div> Signing in...';
 
         try {
             const response = await fetch(`${this.apiBase}/auth/login`, {
@@ -110,11 +118,15 @@ class BoldVPNPortal {
             } else {
                 errorDiv.textContent = data.error || 'Login failed';
                 errorDiv.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = btnText;
             }
         } catch (error) {
             console.error('Login error:', error);
             errorDiv.textContent = 'Network error. Please try again.';
             errorDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = btnText;
         }
     }
 
@@ -440,25 +452,27 @@ class BoldVPNPortal {
                 }
 
                 container.innerHTML = `
-                    <div class="devices-table-header">
-                        <div>Device Name</div>
-                        <div>Server</div>
-                        <div>IP Address</div>
-                        <div>Added</div>
-                        <div>Actions</div>
-                    </div>
-                    ${devices.map(device => `
-                        <div class="device-row">
-                            <div><strong>${this.escapeHtml(device.deviceName)}</strong></div>
-                            <div>${device.server?.location || 'N/A'}</div>
-                            <div><code>${device.assignedIP || 'N/A'}</code></div>
-                            <div>${new Date(device.createdAt).toLocaleDateString()}</div>
-                            <div>
-                                <button class="btn btn-sm btn-primary" onclick="boldVPNPortal.downloadConfig(${device.id})">Download</button>
-                                <button class="btn btn-sm btn-danger" onclick="boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
-                            </div>
+                    <div class="devices-table">
+                        <div class="devices-table-header">
+                            <div>Device Name</div>
+                            <div>Server</div>
+                            <div>IP Address</div>
+                            <div>Added</div>
+                            <div>Actions</div>
                         </div>
-                    `).join('')}
+                        ${devices.map(device => `
+                            <div class="device-row">
+                                <div><strong>${this.escapeHtml(device.deviceName)}</strong></div>
+                                <div>${device.server?.location || 'N/A'}</div>
+                                <div><code>${device.assignedIP || 'N/A'}</code></div>
+                                <div>${new Date(device.createdAt).toLocaleDateString()}</div>
+                                <div>
+                                    <button class="btn btn-sm btn-primary" onclick="boldVPNPortal.downloadConfig(${device.id})">Download</button>
+                                    <button class="btn btn-sm btn-danger" onclick="boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
                 `;
             } else {
                 container.innerHTML = '<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices</p>';
@@ -584,14 +598,18 @@ class BoldVPNPortal {
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
+                this.showAlert('Configuration downloaded successfully', 'success');
+            } else {
+                this.showAlert('Failed to download configuration', 'error');
             }
         } catch (error) {
             console.error('Download error:', error);
+            this.showAlert('Network error. Please try again.', 'error');
         }
     }
 
     async removeDevice(deviceId, deviceName) {
-        if (!confirm(`Remove device "${deviceName}"?`)) return;
+        if (!confirm(`Remove device "${deviceName}"? This action cannot be undone.`)) return;
 
         try {
             const response = await fetch(`${this.apiBase}/devices/${deviceId}`, {
@@ -600,11 +618,15 @@ class BoldVPNPortal {
             });
 
             if (response.ok) {
-                alert('Device removed successfully');
+                this.showAlert('Device removed successfully', 'success');
                 this.loadDevices();
+            } else {
+                const data = await response.json();
+                this.showAlert(data.error || 'Failed to remove device', 'error');
             }
         } catch (error) {
             console.error('Remove error:', error);
+            this.showAlert('Network error. Please try again.', 'error');
         }
     }
 
