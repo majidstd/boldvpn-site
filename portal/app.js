@@ -777,32 +777,21 @@ class BoldVPNPortal {
         const devicesList = document.getElementById('devices-list');
         if (devicesList.style.display === 'none') {
             devicesList.style.display = 'block';
-            this.loadDevices();
+            // Load VPN devices (device management)
+            this.loadVPNDevices();
+            // Also load available servers
+            this.loadServers();
         } else {
             devicesList.style.display = 'none';
         }
     }
 
-    async loadDevices() {
-        if (!this.user) return;
-
-        try {
-            const response = await fetch(`${this.apiBase}/user/devices`, { // Assuming this endpoint exists
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-
-            if (response.ok) {
-                const devicesData = await response.json();
-                this.updateDevicesUI(devicesData);
-            } else {
-                console.error('Failed to load devices:', response.statusText);
-                this.showError('devices-list-error', 'Failed to load connected devices.');
-            }
-        } catch (error) {
-            console.error('Error loading devices:', error);
-            this.showError('devices-list-error', 'Network error loading connected devices.');
+    async loadVPNDevices() {
+        // This loads VPN device configurations (for device management section)
+        // The other loadDevices() at line 1167 handles this
+        // This function is kept for backward compatibility but redirects to the correct one
+        if (typeof this.loadDevices === 'function') {
+            await this.loadDevices();
         }
     }
 
