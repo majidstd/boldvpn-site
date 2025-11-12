@@ -1274,40 +1274,127 @@ class BoldVPNPortal {
     }
 
     async addDevice() {
-        const deviceName = prompt('Enter device name (e.g., My iPhone):');
-        if (!deviceName) return;
-
+        // Load servers first
         const servers = await this.loadServers();
         if (servers.length === 0) {
             alert('No servers available. Please contact support.');
             return;
         }
 
-        // For MVP: use first available server
-        const serverId = servers[0].id;
+        // Create modal for device creation
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3>Add New Device</h3>
+                    <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+                </div>
+                <form id="add-device-form" class="modal-form">
+                    <div class="form-group">
+                        <label for="new-device-name">Device Name</label>
+                        <input type="text" id="new-device-name" name="deviceName" 
+                               placeholder="e.g., My iPhone, Work Laptop" required>
+                        <small style="color: #666;">Choose a name to identify this device</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-device-server">VPN Server</label>
+                        <select id="new-device-server" name="serverId" required>
+                            <option value="">Select a server...</option>
+                            ${servers.map(server => `
+                                <option value="${server.id}">
+                                    ${server.location} ${server.flag_emoji || ''} 
+                                    ${server.status === 'active' ? '' : '(Unavailable)'}
+                                </option>
+                            `).join('')}
+                        </select>
+                        <small style="color: #666;">Choose the VPN server location</small>
+                    </div>
+                    <div id="add-device-error" class="alert alert-error" style="display: none; margin-top: 15px;"></div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()" style="flex: 1;">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">
+                            Create Device
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
 
-        try {
-            const response = await fetch(`${this.apiBase}/devices`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
-                },
-                body: JSON.stringify({ deviceName, serverId })
-            });
+        document.body.appendChild(modal);
 
-            const data = await response.json();
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
 
-            if (response.ok) {
-                alert(`Device "${deviceName}" added successfully! Click Download Config to get your VPN configuration.`);
-                this.loadDevices();
-            } else {
-                alert(data.error || 'Failed to add device');
+        // Handle form submission
+        const form = modal.querySelector('#add-device-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const deviceName = modal.querySelector('#new-device-name').value.trim();
+            const serverId = parseInt(modal.querySelector('#new-device-server').value);
+            const errorDiv = modal.querySelector('#add-device-error');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            if (!deviceName || !serverId) {
+                errorDiv.textContent = 'Please fill in all fields';
+                errorDiv.style.display = 'block';
+                return;
             }
-        } catch (error) {
-            console.error('Add device error:', error);
-            alert('Network error. Please try again.');
-        }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+            errorDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(`${this.apiBase}/devices`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.token}`
+                    },
+                    body: JSON.stringify({ deviceName, serverId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    modal.remove();
+                    this.showAlert(`Device "${deviceName}" added successfully! You can now download the configuration or scan the QR code.`, 'success');
+                    await this.loadDevices();
+                    // Scroll to devices list
+                    const devicesList = document.getElementById('devices-list');
+                    if (devicesList) {
+                        devicesList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                } else {
+                    // Show detailed error message
+                    let errorMsg = data.error || 'Failed to add device';
+                    if (data.details) {
+                        errorMsg += `: ${data.details}`;
+                    }
+                    if (data.message) {
+                        errorMsg = data.message;
+                    }
+                    errorDiv.textContent = errorMsg;
+                    errorDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Device';
+                }
+            } catch (error) {
+                console.error('Add device error:', error);
+                errorDiv.textContent = 'Network error. Please check your connection and try again.';
+                errorDiv.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Device';
+            }
+        });
     }
 
     async showQRCode(deviceId, deviceName) {
