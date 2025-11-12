@@ -118,6 +118,10 @@ async function getWireGuardServerSubnet() {
       const serverUUID = serverUUIDs[0];
       const serverConfig = servers[serverUUID];
       
+      // Debug: Log the entire server config structure
+      console.log('[DEBUG] Server config tunneladdress:', JSON.stringify(serverConfig.tunneladdress));
+      console.log('[DEBUG] Tunneladdress type:', typeof serverConfig.tunneladdress);
+      
       // Extract tunneladdress - handle different formats
       let tunnelAddress = null;
       
