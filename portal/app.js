@@ -71,10 +71,12 @@ class BoldVPNPortal {
         const logoutBtn = document.getElementById('logout-btn');
         const addDeviceBtn = document.getElementById('add-device-btn');
         const changePlanBtn = document.getElementById('change-plan-btn');
+        const passwordForm = document.getElementById('password-form');
 
         if (logoutBtn) logoutBtn.addEventListener('click', () => this.logout());
         if (addDeviceBtn) addDeviceBtn.addEventListener('click', () => this.addDevice());
         if (changePlanBtn) changePlanBtn.addEventListener('click', () => this.showPlanOptions());
+        if (passwordForm) passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
 
 
         // Profile form
