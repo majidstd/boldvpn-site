@@ -250,7 +250,8 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    // Check if device name already exists for this user
+    // Check if device name already exists for this user (only check active devices)
+    // Inactive devices can be reused
     const existingDevice = await pool.query(
       'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = true',
       [username, deviceName]
@@ -258,6 +259,33 @@ router.post('/', authenticateToken, async (req, res) => {
 
     if (existingDevice.rows.length > 0) {
       return res.status(409).json({ error: 'Device name already exists' });
+    }
+
+    // If there's an inactive device with the same name, we can reuse it
+    // But first, check if it still exists in OPNsense and clean it up if needed
+    const inactiveDevice = await pool.query(
+      'SELECT id, opnsense_peer_id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = false',
+      [username, deviceName]
+    );
+
+    if (inactiveDevice.rows.length > 0) {
+      // Clean up any remaining OPNsense peer if it exists
+      const inactiveDev = inactiveDevice.rows[0];
+      if (inactiveDev.opnsense_peer_id) {
+        try {
+          await opnsense.removeWireGuardPeer(inactiveDev.opnsense_peer_id);
+          console.log(`[OK] Cleaned up inactive device's OPNsense peer: ${inactiveDev.opnsense_peer_id}`);
+        } catch (error) {
+          // Peer might already be deleted, that's okay
+          console.log(`[i] Could not remove OPNsense peer (may already be deleted): ${error.message}`);
+        }
+      }
+      // Delete the inactive device record so we can create a fresh one
+      await pool.query(
+        'DELETE FROM user_devices WHERE id = $1',
+        [inactiveDev.id]
+      );
+      console.log(`[OK] Removed inactive device record: ${inactiveDev.id}`);
     }
 
     // Check device limit from radreply
