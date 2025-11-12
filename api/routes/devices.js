@@ -40,16 +40,19 @@ async function generateWireGuardKeys() {
 
 /**
  * Get next available IP address for user
+ * Uses SELECT FOR UPDATE to prevent race conditions
  */
-async function getNextAvailableIP(serverId) {
+async function getNextAvailableIP(serverId, client) {
+  // Use transaction lock to prevent concurrent IP assignment
   const query = `
     SELECT assigned_ip FROM user_devices
     WHERE server_id = $1
     ORDER BY assigned_ip DESC
     LIMIT 1
+    FOR UPDATE
   `;
   
-  const result = await pool.query(query, [serverId]);
+  const result = await client.query(query, [serverId]);
   
   if (result.rows.length === 0) {
     // Start from 10.8.0.2 (10.8.0.1 is usually the server)
@@ -194,66 +197,74 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const server = serverResult.rows[0];
 
-    // Generate WireGuard keys
-    const keys = await generateWireGuardKeys();
+    // Use database transaction to prevent race conditions
+    const client = await pool.connect();
+    let device;
+    let keys;
+    let assignedIP;
 
-    // Get next available IP
-    const assignedIP = await getNextAvailableIP(serverId);
+    try {
+      await client.query('BEGIN');
 
-    // Create device
-    const insertQuery = `
-      INSERT INTO user_devices (
-        username, device_name, server_id,
-        private_key, public_key, preshared_key, assigned_ip,
-        created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-      RETURNING *
-    `;
+      // Generate WireGuard keys
+      keys = await generateWireGuardKeys();
 
-    const values = [
-      username,
-      deviceName,
-      serverId,
-      keys.privateKey,
-      keys.publicKey,
-      keys.presharedKey,
-      assignedIP
-    ];
+      // Get next available IP with row lock
+      assignedIP = await getNextAvailableIP(serverId, client);
 
-    const result = await pool.query(insertQuery, values);
-    const device = result.rows[0];
+      // Create device
+      const insertQuery = `
+        INSERT INTO user_devices (
+          username, device_name, server_id,
+          private_key, public_key, preshared_key, assigned_ip,
+          created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        RETURNING *
+      `;
 
-    // *** CRITICAL: Push peer to OPNsense firewall ***
-    // MVP: Skip OPNsense integration if not configured
-    if (process.env.OPNSENSE_API_KEY && process.env.OPNSENSE_API_SECRET) {
-      try {
-        const peerResult = await opnsense.addWireGuardPeer(
-          username,
-          keys.publicKey,
-          assignedIP,
-          keys.presharedKey
-        );
-        
-        // Store OPNsense peer ID for later removal
-        if (peerResult.success) {
-          await pool.query(
-            'UPDATE user_devices SET opnsense_peer_id = $1 WHERE id = $2',
-            [peerResult.peerId, device.id]
-          );
-          console.log(`[OK] WireGuard peer added to OPNsense for ${username}`);
-        }
-      } catch (opnsenseError) {
-        // For MVP: Don't fail if OPNsense integration fails
-        // Just log and continue - admin will add peer manually
-        console.warn('[!] OPNsense integration failed:', opnsenseError.message);
-        console.warn('[!] Config generated. Add peer manually to OPNsense:');
-        console.warn(`[!]   PublicKey = ${keys.publicKey}`);
-        console.warn(`[!]   AllowedIPs = ${assignedIP}/32`);
+      const values = [
+        username,
+        deviceName,
+        serverId,
+        keys.privateKey,
+        keys.publicKey,
+        keys.presharedKey,
+        assignedIP
+      ];
+
+      const result = await client.query(insertQuery, values);
+      device = result.rows[0];
+
+      // *** CRITICAL: Push peer to OPNsense BEFORE committing transaction ***
+      // This prevents garbage data if OPNsense fails
+      const peerResult = await opnsense.addWireGuardPeer(
+        username,
+        keys.publicKey,
+        assignedIP,
+        keys.presharedKey
+      );
+      
+      if (!peerResult.success) {
+        throw new Error('OPNsense did not return success');
       }
-    } else {
-      console.warn('[!] OPNsense API not configured. Peer must be added manually.');
-      console.warn(`[!]   PublicKey = ${keys.publicKey}`);
-      console.warn(`[!]   AllowedIPs = ${assignedIP}/32`);
+
+      // Store OPNsense peer ID
+      await client.query(
+        'UPDATE user_devices SET opnsense_peer_id = $1 WHERE id = $2',
+        [peerResult.peerId, device.id]
+      );
+
+      // Only commit if everything succeeded
+      await client.query('COMMIT');
+      console.log(`[OK] Device created and peer added to OPNsense for ${username}`);
+
+    } catch (error) {
+      // Rollback transaction on any failure
+      await client.query('ROLLBACK');
+      console.error('[!] Device creation failed:', error.message);
+      throw error;
+    } finally {
+      client.release();
     }
 
     // Generate config file
