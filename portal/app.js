@@ -28,9 +28,11 @@ class BoldVPNPortal {
         // Auth forms
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
+        const passwordForm = document.getElementById('password-form');
 
         if (loginForm) loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         if (registerForm) registerForm.addEventListener('submit', (e) => this.handleRegister(e));
+        if (passwordForm) passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
 
         // Navigation links
         const registerLink = document.getElementById('register-link');
@@ -70,12 +72,10 @@ class BoldVPNPortal {
         const logoutBtn = document.getElementById('logout-btn');
         const addDeviceBtn = document.getElementById('add-device-btn');
         const changePlanBtn = document.getElementById('change-plan-btn');
-        const passwordForm = document.getElementById('password-form');
 
         if (logoutBtn) logoutBtn.addEventListener('click', () => this.logout());
         if (addDeviceBtn) addDeviceBtn.addEventListener('click', () => this.addDevice());
         if (changePlanBtn) changePlanBtn.addEventListener('click', () => this.showPlanOptions());
-        if (passwordForm) passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
 
         // Profile form
         const profileForm = document.getElementById('profile-form');
