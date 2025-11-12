@@ -118,20 +118,48 @@ async function getWireGuardServerSubnet() {
       const serverUUID = serverUUIDs[0];
       const serverConfig = servers[serverUUID];
       
-      // Extract tunneladdress (e.g., "10.11.0.1/24")
+      // Extract tunneladdress - handle different formats
+      let tunnelAddress = null;
+      
       if (serverConfig.tunneladdress) {
-        const tunnelAddress = serverConfig.tunneladdress;
-        // Convert to subnet format (e.g., "10.11.0.1/24" -> "10.11.0.0/24")
-        const parts = tunnelAddress.split('/');
-        if (parts.length === 2) {
-          const ipParts = parts[0].split('.');
-          const subnet = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/${parts[1]}`;
-          console.log(`[OK] OPNsense WireGuard subnet: ${subnet}`);
-          return subnet;
+        // Handle object format: {"value": "10.11.0.1/24", "selected": 1}
+        if (typeof serverConfig.tunneladdress === 'object') {
+          // Check if it's an object with value property
+          if (serverConfig.tunneladdress.value) {
+            tunnelAddress = serverConfig.tunneladdress.value;
+          } else {
+            // Try to get first value if it's an object with keys
+            const keys = Object.keys(serverConfig.tunneladdress);
+            if (keys.length > 0) {
+              const firstKey = keys[0];
+              const firstValue = serverConfig.tunneladdress[firstKey];
+              if (typeof firstValue === 'object' && firstValue.value) {
+                tunnelAddress = firstValue.value;
+              } else if (typeof firstValue === 'string') {
+                tunnelAddress = firstValue;
+              }
+            }
+          }
+        } else if (typeof serverConfig.tunneladdress === 'string') {
+          tunnelAddress = serverConfig.tunneladdress;
         }
       }
       
-      throw new Error('WireGuard server tunneladdress not found in OPNsense');
+      if (!tunnelAddress) {
+        console.error('[!] Tunnel address structure:', JSON.stringify(serverConfig.tunneladdress));
+        throw new Error('WireGuard server tunneladdress not found or invalid format in OPNsense');
+      }
+      
+      // Convert to subnet format (e.g., "10.11.0.1/24" -> "10.11.0.0/24")
+      const parts = tunnelAddress.split('/');
+      if (parts.length === 2) {
+        const ipParts = parts[0].split('.');
+        const subnet = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/${parts[1]}`;
+        console.log(`[OK] OPNsense WireGuard subnet: ${subnet} (from tunneladdress: ${tunnelAddress})`);
+        return subnet;
+      }
+      
+      throw new Error(`Invalid tunneladdress format: ${tunnelAddress}`);
     }
     
     throw new Error('No WireGuard server found in OPNsense');
