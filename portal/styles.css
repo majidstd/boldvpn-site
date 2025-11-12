@@ -335,23 +335,35 @@ body > *:not(#vanta-background) {
 .portal-content {
     background: var(--bg);
     overflow-y: auto;
-    padding: 32px;
+    padding: 0;
 }
 
 .content-section {
-    max-width: 1200px;
+    max-width: 100%;
+    height: 100%;
 }
 
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    padding: 32px 32px 24px 32px;
+    margin: 0;
 }
 
 .section-header h2 {
     font-size: 28px;
     margin: 0;
+}
+
+/* Overview Container - matches sidebar border */
+.overview-container,
+.content-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    margin: 0 32px 32px 32px;
 }
 
 /* Dashboard Grid */
@@ -362,16 +374,26 @@ body > *:not(#vanta-background) {
 }
 
 .dashboard-card {
-    background: var(--card);
+    background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
     padding: 24px;
+    transition: all 0.2s ease;
+}
+
+.dashboard-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
 }
 
 .dashboard-card h3 {
     font-size: 18px;
     margin: 0 0 16px;
     color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* Usage Stats */

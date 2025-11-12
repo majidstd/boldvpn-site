@@ -224,56 +224,58 @@ class BoldVPNPortal {
                     <h2>Welcome back, ${this.user?.username || 'User'}!</h2>
                 </div>
 
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>Data Usage</h3>
-                        <div class="usage-stats">
-                            <div class="usage-item">
-                                <span class="usage-label">Used:</span>
-                                <span class="usage-value" id="data-used">0 MB</span>
-                            </div>
-                            <div class="usage-item">
-                                <span class="usage-label">Limit:</span>
-                                <span class="usage-value" id="data-limit">50 GB</span>
-                            </div>
-                            <div class="usage-progress">
-                                <div class="progress-bar" id="data-progress" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-card">
-                        <h3>Connection Speed</h3>
-                        <div class="speed-stats">
-                            <div class="speed-item">
-                                <span class="speed-label">Download:</span>
-                                <span class="speed-value" id="speed-down">0 Mbps</span>
-                            </div>
-                            <div class="speed-item">
-                                <span class="speed-label">Upload:</span>
-                                <span class="speed-value" id="speed-up">0 Mbps</span>
+                <div class="overview-container">
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <h3>📊 Data Usage</h3>
+                            <div class="usage-stats">
+                                <div class="usage-item">
+                                    <span class="usage-label">Used:</span>
+                                    <span class="usage-value" id="data-used">Loading...</span>
+                                </div>
+                                <div class="usage-item">
+                                    <span class="usage-label">Limit:</span>
+                                    <span class="usage-value" id="data-limit">Loading...</span>
+                                </div>
+                                <div class="usage-progress">
+                                    <div class="progress-bar" id="data-progress" style="width: 0%"></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="dashboard-card">
-                        <h3>Connected Devices</h3>
-                        <div class="devices-stats">
-                            <div class="devices-count">
-                                <span class="devices-number" id="devices-count">0</span>
-                                <span class="devices-label">Devices</span>
-                            </div>
-                            <div class="devices-limit">
-                                <span>of <span id="devices-limit">2</span> allowed</span>
+                        <div class="dashboard-card">
+                            <h3>⚡ Connection Speed</h3>
+                            <div class="speed-stats">
+                                <div class="speed-item">
+                                    <span class="speed-label">Download:</span>
+                                    <span class="speed-value" id="speed-down">Loading...</span>
+                                </div>
+                                <div class="speed-item">
+                                    <span class="speed-label">Upload:</span>
+                                    <span class="speed-value" id="speed-up">Loading...</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="dashboard-card">
-                        <h3>Subscription Status</h3>
-                        <div class="subscription-info">
-                            <p><strong>Status:</strong> <span id="subscription-status" class="status-active">Active</span></p>
-                            <p><strong>Plan:</strong> <span id="subscription-plan">${this.user?.plan || 'Basic'}</span></p>
+                        <div class="dashboard-card">
+                            <h3>📱 Connected Devices</h3>
+                            <div class="devices-stats">
+                                <div class="devices-count">
+                                    <span class="devices-number" id="devices-count">0</span>
+                                    <span class="devices-label">Devices</span>
+                                </div>
+                                <div class="devices-limit">
+                                    <span>of <span id="devices-limit">--</span> allowed</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <h3>✓ Subscription Status</h3>
+                            <div class="subscription-info">
+                                <p><strong>Status:</strong> <span id="subscription-status" class="status-active">Active</span></p>
+                                <p><strong>Plan:</strong> <span id="subscription-plan">${this.user?.plan || 'Basic'}</span></p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -291,7 +293,7 @@ class BoldVPNPortal {
                     <button id="add-device-btn" class="btn btn-primary">+ Add Device</button>
                 </div>
 
-                <div class="dashboard-card">
+                <div class="content-container">
                     <div id="devices-container">
                         <p style="text-align: center; color: var(--muted); padding: 40px;">
                             Loading devices...
@@ -312,7 +314,7 @@ class BoldVPNPortal {
                     <h2>Usage History</h2>
                 </div>
 
-                <div class="dashboard-card">
+                <div class="content-container">
                     <h3>Data Usage (Last 30 Days)</h3>
                     <canvas id="usage-chart" style="max-height: 400px;"></canvas>
                 </div>
@@ -329,7 +331,7 @@ class BoldVPNPortal {
                     <h2>Profile Settings</h2>
                 </div>
 
-                <div class="dashboard-card">
+                <div class="content-container">
                     <form id="profile-form" class="auth-form">
                         <div class="form-group">
                             <label for="profile-username">Username</label>
@@ -356,7 +358,7 @@ class BoldVPNPortal {
                     <h2>Change Password</h2>
                 </div>
 
-                <div class="dashboard-card">
+                <div class="content-container">
                     <form id="password-form" class="auth-form">
                         <div class="form-group">
                             <label for="current-password">Current Password</label>
@@ -387,17 +389,19 @@ class BoldVPNPortal {
                     <h2>Billing & Plans</h2>
                 </div>
 
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>Current Plan</h3>
-                        <p><strong>Plan:</strong> ${this.user?.plan || 'Basic'}</p>
-                        <p><strong>Status:</strong> <span class="status-active">Active</span></p>
-                        <button class="btn btn-primary" style="margin-top: 10px;">Upgrade Plan</button>
-                    </div>
+                <div class="content-container">
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <h3>Current Plan</h3>
+                            <p><strong>Plan:</strong> ${this.user?.plan || 'Basic'}</p>
+                            <p><strong>Status:</strong> <span class="status-active">Active</span></p>
+                            <button class="btn btn-primary" style="margin-top: 10px;">Upgrade Plan</button>
+                        </div>
 
-                    <div class="dashboard-card">
-                        <h3>Billing History</h3>
-                        <p style="color: var(--muted);">No billing history available.</p>
+                        <div class="dashboard-card">
+                            <h3>Billing History</h3>
+                            <p style="color: var(--muted);">No billing history available.</p>
+                        </div>
                     </div>
                 </div>
             </div>
