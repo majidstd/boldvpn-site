@@ -58,26 +58,26 @@ class BoldVPNPortal {
         if (resetPasswordConfirmForm) resetPasswordConfirmForm.addEventListener('submit', (e) => this.handlePasswordResetConfirm(e));
 
 
-        // Sidebar navigation
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                const section = e.currentTarget.getAttribute('data-section');
-                this.showSection(section);
-            });
-        });
-
         // Dashboard buttons
         const logoutBtn = document.getElementById('logout-btn');
+        const changePasswordBtn = document.getElementById('change-password-btn');
+        const viewUsageBtn = document.getElementById('view-usage-btn');
+        const manageDevicesBtn = document.getElementById('manage-devices-btn');
+        const billingBtn = document.getElementById('billing-btn');
         const addDeviceBtn = document.getElementById('add-device-btn');
-        const changePlanBtn = document.getElementById('change-plan-btn');
-        const passwordForm = document.getElementById('password-form');
 
         if (logoutBtn) logoutBtn.addEventListener('click', () => this.logout());
+        if (changePasswordBtn) changePasswordBtn.addEventListener('click', () => this.showPasswordModal());
+        const editProfileBtn = document.getElementById('edit-profile-btn');
+        if (editProfileBtn) editProfileBtn.addEventListener('click', () => this.showProfileSection());
+        if (viewUsageBtn) viewUsageBtn.addEventListener('click', () => this.toggleUsageHistory());
+        if (manageDevicesBtn) manageDevicesBtn.addEventListener('click', () => this.toggleDevicesList());
+        if (billingBtn) billingBtn.addEventListener('click', () => this.showBillingSection());
         if (addDeviceBtn) addDeviceBtn.addEventListener('click', () => this.addDevice());
-        if (changePlanBtn) changePlanBtn.addEventListener('click', () => this.showPlanOptions());
-        if (passwordForm) passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
 
+        // Profile section buttons
+        const profileBackToDashboardBtn = document.getElementById('profile-back-to-dashboard-btn');
+        if (profileBackToDashboardBtn) profileBackToDashboardBtn.addEventListener('click', () => this.showDashboard());
 
         // Profile form
         const profileForm = document.getElementById('profile-form');
@@ -177,64 +177,13 @@ class BoldVPNPortal {
         document.getElementById('reset-password-confirm-section').style.display = 'none';
         document.getElementById('dashboard-section').style.display = 'block';
 
+
         if (this.user) {
             document.getElementById('user-greeting').textContent = this.user.username;
         }
 
-        // Show overview section by default
-        this.showSection('overview');
-
         // Start auto-refresh (every 30 seconds)
         this.startAutoRefresh();
-    }
-
-    showSection(sectionName) {
-        // Hide all content sections
-        const contentSections = document.querySelectorAll('.content-section');
-        contentSections.forEach(section => {
-            section.classList.remove('active');
-        });
-
-        // Remove active class from all nav items
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.classList.remove('active');
-        });
-
-        // Show selected section
-        const targetSection = document.getElementById(`content-${sectionName}`);
-        if (targetSection) {
-            targetSection.classList.add('active');
-        }
-
-        // Mark nav item as active
-        const activeNav = document.querySelector(`[data-section="${sectionName}"]`);
-        if (activeNav) {
-            activeNav.classList.add('active');
-        }
-
-        // Load section-specific data
-        switch(sectionName) {
-            case 'overview':
-                this.loadDashboardData();
-                break;
-            case 'devices':
-                this.loadDevices();
-                this.loadServers();
-                break;
-            case 'usage':
-                this.loadUsageHistory();
-                break;
-            case 'billing':
-                this.loadBillingData();
-                break;
-            case 'profile':
-                this.loadProfileData();
-                break;
-            case 'password':
-                // Password form is already in DOM
-                break;
-        }
     }
 
     startAutoRefresh() {
@@ -824,6 +773,27 @@ class BoldVPNPortal {
         return (bytes / (1024 * 1024 * 1024)).toFixed(2); // Convert to GB
     }
 
+    toggleDevicesList() {
+        const devicesList = document.getElementById('devices-list');
+        if (devicesList.style.display === 'none') {
+            devicesList.style.display = 'block';
+            // Load VPN devices (device management)
+            this.loadVPNDevices();
+            // Also load available servers
+            this.loadServers();
+        } else {
+            devicesList.style.display = 'none';
+        }
+    }
+
+    async loadVPNDevices() {
+        // This loads VPN device configurations (for device management section)
+        // The other loadDevices() at line 1167 handles this
+        // This function is kept for backward compatibility but redirects to the correct one
+        if (typeof this.loadDevices === 'function') {
+            await this.loadDevices();
+        }
+    }
 
     updateDevicesUI(devicesData) {
         const container = document.getElementById('devices-container');
@@ -896,6 +866,15 @@ class BoldVPNPortal {
         }
     }
 
+    showBillingSection() {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('register-section').style.display = 'none';
+        document.getElementById('forgot-password-section').style.display = 'none';
+        document.getElementById('reset-password-confirm-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'none';
+        document.getElementById('billing-section').style.display = 'block';
+        this.loadBillingData();
+    }
 
     async loadBillingData() {
         if (!this.user) return;
@@ -1024,6 +1003,16 @@ class BoldVPNPortal {
         this.showAlert('Billing & Plans feature coming soon!', 'info');
     }
 
+    showProfileSection() {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('register-section').style.display = 'none';
+        document.getElementById('forgot-password-section').style.display = 'none';
+        document.getElementById('reset-password-confirm-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'none';
+        document.getElementById('billing-section').style.display = 'none';
+        document.getElementById('profile-section').style.display = 'block';
+        this.loadProfileData();
+    }
 
     async loadProfileData() {
         if (!this.user) return;
