@@ -73,7 +73,7 @@ if echo "$CREATE_RESPONSE" | grep -q '"message":"Device added successfully"'; th
     echo ""
     echo "🔍 Verify in OPNsense:"
     echo "   VPN → WireGuard → Clients"
-    echo "   Look for peer named: $USERNAME"
+    echo "   Look for peer named: $USERNAME-$DEVICE_NAME"
     echo "   IP should be: $ASSIGNED_IP"
     echo ""
     echo "📥 Download config:"
