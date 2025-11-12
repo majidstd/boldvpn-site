@@ -1,10 +1,10 @@
 /**
  * OPNsense API Integration
  * Manage WireGuard peers on OPNsense firewall
+ * Using native Node.js https module - no external dependencies
  */
 
 const https = require('https');
-const axios = require('axios');
 
 // OPNsense API configuration
 const OPNSENSE_CONFIG = {
@@ -15,18 +15,51 @@ const OPNSENSE_CONFIG = {
   wireguardInterface: process.env.WIREGUARD_INTERFACE || 'wg0'
 };
 
-// Create axios instance with authentication
-const opnsenseClient = axios.create({
-  baseURL: `https://${OPNSENSE_CONFIG.host}:${OPNSENSE_CONFIG.port}/api`,
-  auth: {
-    username: OPNSENSE_CONFIG.apiKey,
-    password: OPNSENSE_CONFIG.apiSecret
-  },
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false // For self-signed certs
-  }),
-  timeout: 10000
-});
+/**
+ * Make HTTPS request to OPNsense API
+ */
+function makeRequest(method, path, data = null) {
+  return new Promise((resolve, reject) => {
+    const auth = Buffer.from(`${OPNSENSE_CONFIG.apiKey}:${OPNSENSE_CONFIG.apiSecret}`).toString('base64');
+    
+    const options = {
+      hostname: OPNSENSE_CONFIG.host,
+      port: OPNSENSE_CONFIG.port,
+      path: `/api${path}`,
+      method: method,
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      },
+      rejectUnauthorized: false // For self-signed certs
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const jsonData = JSON.parse(body);
+          resolve(jsonData);
+        } catch (error) {
+          resolve(body);
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.setTimeout(10000, () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+
+    if (data) {
+      req.write(JSON.stringify(data));
+    }
+
+    req.end();
+  });
+}
 
 /**
  * Add WireGuard peer to OPNsense
@@ -46,10 +79,9 @@ async function addWireGuardPeer(username, publicKey, assignedIP, presharedKey = 
     };
 
     // Add peer via OPNsense API
-    // Endpoint: /api/wireguard/client/addPeer
-    const response = await opnsenseClient.post('/wireguard/client/addPeer', peerData);
+    const response = await makeRequest('POST', '/wireguard/client/addPeer', peerData);
 
-    if (response.data.result === 'saved') {
+    if (response.result === 'saved') {
       console.log(`[OK] WireGuard peer added for ${username}`);
       
       // Restart WireGuard service to apply changes
@@ -57,10 +89,10 @@ async function addWireGuardPeer(username, publicKey, assignedIP, presharedKey = 
       
       return {
         success: true,
-        peerId: response.data.uuid
+        peerId: response.uuid
       };
     } else {
-      throw new Error('Failed to add peer: ' + JSON.stringify(response.data));
+      throw new Error('Failed to add peer: ' + JSON.stringify(response));
     }
 
   } catch (error) {
@@ -74,9 +106,9 @@ async function addWireGuardPeer(username, publicKey, assignedIP, presharedKey = 
  */
 async function removeWireGuardPeer(peerId) {
   try {
-    const response = await opnsenseClient.post(`/wireguard/client/delPeer/${peerId}`);
+    const response = await makeRequest('POST', `/wireguard/client/delPeer/${peerId}`);
 
-    if (response.data.result === 'deleted') {
+    if (response.result === 'deleted') {
       console.log(`[OK] WireGuard peer ${peerId} removed`);
       
       // Restart WireGuard service
@@ -98,8 +130,8 @@ async function removeWireGuardPeer(peerId) {
  */
 async function getWireGuardPeers() {
   try {
-    const response = await opnsenseClient.get('/wireguard/client/get');
-    return response.data.peers || [];
+    const response = await makeRequest('GET', '/wireguard/client/get');
+    return response.peers || [];
   } catch (error) {
     console.error('[!] OPNsense get peers error:', error.message);
     return [];
@@ -111,11 +143,11 @@ async function getWireGuardPeers() {
  */
 async function getWireGuardStatus() {
   try {
-    const response = await opnsenseClient.get('/wireguard/service/show');
+    const response = await makeRequest('GET', '/wireguard/service/show');
     return {
-      running: response.data.running === '1',
-      peers: response.data.peers || [],
-      interface: response.data.interface || 'wg0'
+      running: response.running === '1',
+      peers: response.peers || [],
+      interface: response.interface || 'wg0'
     };
   } catch (error) {
     console.error('[!] OPNsense status error:', error.message);
@@ -128,7 +160,7 @@ async function getWireGuardStatus() {
  */
 async function restartWireGuard() {
   try {
-    await opnsenseClient.post('/wireguard/service/restart');
+    await makeRequest('POST', '/wireguard/service/restart');
     console.log('[OK] WireGuard service restarted');
     return { success: true };
   } catch (error) {
@@ -143,11 +175,11 @@ async function restartWireGuard() {
  */
 async function updateWireGuardPeer(peerId, enabled) {
   try {
-    const response = await opnsenseClient.post(`/wireguard/client/setPeer/${peerId}`, {
+    const response = await makeRequest('POST', `/wireguard/client/setPeer/${peerId}`, {
       peer: { enabled: enabled ? '1' : '0' }
     });
 
-    if (response.data.result === 'saved') {
+    if (response.result === 'saved') {
       await restartWireGuard();
       return { success: true };
     }
@@ -164,11 +196,11 @@ async function updateWireGuardPeer(peerId, enabled) {
  */
 async function getActivePeers() {
   try {
-    const response = await opnsenseClient.get('/wireguard/service/showconf');
+    const response = await makeRequest('GET', '/wireguard/service/showconf');
     
     // Parse active connections
     const activePeers = [];
-    const peers = response.data.peers || [];
+    const peers = response.peers || [];
     
     peers.forEach(peer => {
       if (peer.latest_handshake && peer.latest_handshake > 0) {
@@ -196,10 +228,10 @@ async function getActivePeers() {
  */
 async function healthCheck() {
   try {
-    const response = await opnsenseClient.get('/core/firmware/status');
+    const response = await makeRequest('GET', '/core/firmware/status');
     return {
       healthy: true,
-      version: response.data.product_version || 'unknown'
+      version: response.product_version || 'unknown'
     };
   } catch (error) {
     console.error('[!] OPNsense health check failed:', error.message);
@@ -220,4 +252,5 @@ module.exports = {
   restartWireGuard,
   healthCheck
 };
+
 
