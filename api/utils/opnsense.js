@@ -205,8 +205,12 @@ async function verifySubnetMatch(dbSubnet) {
 
 /**
  * Add WireGuard peer to OPNsense
+ * @param {string} peerName - Name for the peer (usually device name or username)
+ * @param {string} publicKey - Public key of the peer
+ * @param {string} assignedIP - Assigned IP address
+ * @param {string} presharedKey - Preshared key (optional)
  */
-async function addWireGuardPeer(username, publicKey, assignedIP, presharedKey = null) {
+async function addWireGuardPeer(peerName, publicKey, assignedIP, presharedKey = null) {
   try {
     // Get server UUID dynamically
     const serverUUID = await getWireGuardServerUUID();
@@ -215,7 +219,7 @@ async function addWireGuardPeer(username, publicKey, assignedIP, presharedKey = 
     const clientData = {
       client: {
         enabled: '1',
-        name: username,
+        name: peerName, // Use peerName (device name) instead of username
         pubkey: publicKey,
         psk: presharedKey || '',
         tunneladdress: `${assignedIP}/32`,
@@ -300,21 +304,21 @@ async function getWireGuardPeers() {
 }
 
 /**
- * Find WireGuard peer by username (name field in OPNsense)
+ * Find WireGuard peer by name (searches for username-deviceName pattern)
  * Returns peer info if found, null otherwise
  */
-async function findPeerByUsername(username) {
+async function findPeerByName(peerName) {
   try {
     const peers = await getWireGuardPeers();
     
     // Search for peer with matching name
     for (const peer of peers) {
       // Handle different response formats
-      const peerName = peer.name || peer.client?.name || peer.client_name;
-      if (peerName === username) {
+      const pName = peer.name || peer.client?.name || peer.client_name;
+      if (pName === peerName) {
         return {
           uuid: peer.uuid || peer.client?.uuid,
-          name: peerName,
+          name: pName,
           enabled: peer.enabled || peer.client?.enabled,
           tunneladdress: peer.tunneladdress || peer.client?.tunneladdress,
           pubkey: peer.pubkey || peer.client?.pubkey
@@ -324,8 +328,38 @@ async function findPeerByUsername(username) {
     
     return null;
   } catch (error) {
-    console.error('[!] Find peer by username error:', error.message);
+    console.error('[!] Find peer by name error:', error.message);
     return null;
+  }
+}
+
+/**
+ * Find WireGuard peer by username (searches for peers starting with username-)
+ * Returns array of matching peers
+ */
+async function findPeersByUsername(username) {
+  try {
+    const peers = await getWireGuardPeers();
+    const matchingPeers = [];
+    
+    // Search for peers with name starting with username-
+    for (const peer of peers) {
+      const pName = peer.name || peer.client?.name || peer.client_name;
+      if (pName && pName.startsWith(`${username}-`)) {
+        matchingPeers.push({
+          uuid: peer.uuid || peer.client?.uuid,
+          name: pName,
+          enabled: peer.enabled || peer.client?.enabled,
+          tunneladdress: peer.tunneladdress || peer.client?.tunneladdress,
+          pubkey: peer.pubkey || peer.client?.pubkey
+        });
+      }
+    }
+    
+    return matchingPeers;
+  } catch (error) {
+    console.error('[!] Find peers by username error:', error.message);
+    return [];
   }
 }
 
@@ -439,7 +473,8 @@ module.exports = {
   addWireGuardPeer,
   removeWireGuardPeer,
   getWireGuardPeers,
-  findPeerByUsername,
+  findPeerByName,
+  findPeersByUsername,
   getWireGuardStatus,
   getActivePeers,
   updateWireGuardPeer,
