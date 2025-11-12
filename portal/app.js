@@ -296,11 +296,14 @@ class BoldVPNPortal {
     }
 
     renderDevices(container) {
+        // Store reference to this for use in inline handlers
+        const portal = this;
+        
         container.innerHTML = `
             <div class="content-section">
                 <div class="section-header">
                     <h2>Manage Devices</h2>
-                    <button id="add-device-btn" class="btn btn-primary" type="button">+ Add Device</button>
+                    <button id="add-device-btn" class="btn btn-primary" type="button" onclick="window.boldVPNPortal.addDevice(); return false;">+ Add Device</button>
                 </div>
 
                 <div class="content-container">
@@ -316,14 +319,17 @@ class BoldVPNPortal {
         // Bind event listener - use event delegation for reliability
         const contentArea = document.getElementById('content-area');
         if (contentArea) {
-            contentArea.addEventListener('click', (e) => {
-                if (e.target && e.target.id === 'add-device-btn') {
+            // Remove old listener if exists
+            contentArea.removeEventListener('click', portal.handleAddDeviceClick);
+            portal.handleAddDeviceClick = (e) => {
+                if (e.target && (e.target.id === 'add-device-btn' || e.target.closest('#add-device-btn'))) {
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('Add Device button clicked via delegation');
-                    this.addDevice();
+                    portal.addDevice();
                 }
-            });
+            };
+            contentArea.addEventListener('click', portal.handleAddDeviceClick);
         }
         
         // Also bind directly as fallback
@@ -331,11 +337,15 @@ class BoldVPNPortal {
             const addBtn = document.getElementById('add-device-btn');
             if (addBtn) {
                 console.log('Direct binding Add Device button');
-                addBtn.addEventListener('click', (e) => {
+                // Remove old listener
+                const newBtn = addBtn.cloneNode(true);
+                addBtn.parentNode.replaceChild(newBtn, addBtn);
+                
+                newBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('Add Device button clicked (direct)');
-                    this.addDevice();
+                    portal.addDevice();
                 });
             } else {
                 console.error('Add Device button not found!');
