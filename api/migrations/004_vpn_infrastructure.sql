@@ -199,3 +199,4 @@ GRANT USAGE, SELECT ON SEQUENCE connection_logs_id_seq TO radiususer;
 GRANT USAGE, SELECT ON SEQUENCE notifications_id_seq TO radiususer;
 GRANT USAGE, SELECT ON SEQUENCE announcements_id_seq TO radiususer;
 
+
