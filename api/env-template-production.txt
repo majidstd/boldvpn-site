@@ -18,7 +18,7 @@ FRONTEND_URL=https://boldvpn.net
 
 # OPNsense API Configuration (REQUIRED for device management)
 OPNSENSE_HOST=192.168.50.1
-OPNSENSE_PORT=443
+OPNSENSE_PORT=8443
 OPNSENSE_API_KEY=your_api_key_from_opnsense_gui
 OPNSENSE_API_SECRET=your_api_secret_from_opnsense_gui
 WIREGUARD_INTERFACE=wg0

@@ -9,7 +9,7 @@ const https = require('https');
 // OPNsense API configuration
 const OPNSENSE_CONFIG = {
   host: process.env.OPNSENSE_HOST || 'firewall.boldvpn.net',
-  port: process.env.OPNSENSE_PORT || 443,
+  port: process.env.OPNSENSE_PORT || 8443,
   apiKey: process.env.OPNSENSE_API_KEY,
   apiSecret: process.env.OPNSENSE_API_SECRET,
   wireguardInterface: process.env.WIREGUARD_INTERFACE || 'wg0'
