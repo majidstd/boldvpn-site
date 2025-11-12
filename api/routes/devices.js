@@ -223,11 +223,10 @@ router.post('/', authenticateToken, async (req, res) => {
     const result = await pool.query(insertQuery, values);
     const device = result.rows[0];
 
-    // *** OPNsense Integration (Disabled for MVP) ***
-    // For MVP: Manually add peers to OPNsense or use script
-    // Auto-provisioning can be added later when API is available
-    try {
-      if (process.env.OPNSENSE_AUTO_PROVISION === 'true') {
+    // *** CRITICAL: Push peer to OPNsense firewall ***
+    // MVP: Skip OPNsense integration if not configured
+    if (process.env.OPNSENSE_API_KEY && process.env.OPNSENSE_API_SECRET) {
+      try {
         const peerResult = await opnsense.addWireGuardPeer(
           username,
           keys.publicKey,
@@ -235,6 +234,7 @@ router.post('/', authenticateToken, async (req, res) => {
           keys.presharedKey
         );
         
+        // Store OPNsense peer ID for later removal
         if (peerResult.success) {
           await pool.query(
             'UPDATE user_devices SET opnsense_peer_id = $1 WHERE id = $2',
@@ -242,15 +242,18 @@ router.post('/', authenticateToken, async (req, res) => {
           );
           console.log(`[OK] WireGuard peer added to OPNsense for ${username}`);
         }
-      } else {
-        console.log(`[i] Device created for ${username}. Peer must be manually added to OPNsense.`);
-        console.log(`[i] Public Key: ${keys.publicKey}`);
-        console.log(`[i] IP: ${assignedIP}`);
+      } catch (opnsenseError) {
+        // For MVP: Don't fail if OPNsense integration fails
+        // Just log and continue - admin will add peer manually
+        console.warn('[!] OPNsense integration failed:', opnsenseError.message);
+        console.warn('[!] Config generated. Add peer manually to OPNsense:');
+        console.warn(`[!]   PublicKey = ${keys.publicKey}`);
+        console.warn(`[!]   AllowedIPs = ${assignedIP}/32`);
       }
-    } catch (opnsenseError) {
-      console.error(`[!] OPNsense error (non-fatal): ${opnsenseError.message}`);
-      console.log(`[i] Device created, but peer not added to OPNsense automatically.`);
-      console.log(`[i] Manually add peer: Public Key: ${keys.publicKey}, IP: ${assignedIP}`);
+    } else {
+      console.warn('[!] OPNsense API not configured. Peer must be added manually.');
+      console.warn(`[!]   PublicKey = ${keys.publicKey}`);
+      console.warn(`[!]   AllowedIPs = ${assignedIP}/32`);
     }
 
     // Generate config file
@@ -398,16 +401,15 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
 
     const opnsensePeerId = deviceQuery.rows[0].opnsense_peer_id;
 
-    // Remove from OPNsense (if auto-provisioning enabled)
-    if (opnsensePeerId && process.env.OPNSENSE_AUTO_PROVISION === 'true') {
+    // Remove from OPNsense first
+    if (opnsensePeerId) {
       try {
         await opnsense.removeWireGuardPeer(opnsensePeerId);
         console.log(`[OK] Removed peer ${opnsensePeerId} from OPNsense`);
       } catch (opnsenseError) {
         console.error('[!] Failed to remove from OPNsense:', opnsenseError.message);
+        // Continue anyway - mark as inactive in DB
       }
-    } else {
-      console.log(`[i] Device removed from database. Manually remove peer from OPNsense if needed.`);
     }
 
     // Soft delete (mark as inactive)
