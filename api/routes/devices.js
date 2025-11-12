@@ -283,7 +283,10 @@ router.post('/', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('[!] Add device error:', error);
-    res.status(500).json({ error: 'Failed to add device' });
+    res.status(500).json({ 
+      error: 'Failed to add device',
+      details: error.message 
+    });
   }
 });
 
