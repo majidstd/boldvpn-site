@@ -64,6 +64,7 @@ class BoldVPNPortal {
         const viewUsageBtn = document.getElementById('view-usage-btn');
         const manageDevicesBtn = document.getElementById('manage-devices-btn');
         const billingBtn = document.getElementById('billing-btn');
+        const addDeviceBtn = document.getElementById('add-device-btn');
 
         if (logoutBtn) logoutBtn.addEventListener('click', () => this.logout());
         if (changePasswordBtn) changePasswordBtn.addEventListener('click', () => this.showPasswordModal());
@@ -72,6 +73,7 @@ class BoldVPNPortal {
         if (viewUsageBtn) viewUsageBtn.addEventListener('click', () => this.toggleUsageHistory());
         if (manageDevicesBtn) manageDevicesBtn.addEventListener('click', () => this.toggleDevicesList());
         if (billingBtn) billingBtn.addEventListener('click', () => this.showBillingSection());
+        if (addDeviceBtn) addDeviceBtn.addEventListener('click', () => this.addDevice());
 
         // Profile section buttons
         const profileBackToDashboardBtn = document.getElementById('profile-back-to-dashboard-btn');
@@ -404,6 +406,10 @@ class BoldVPNPortal {
                 const sessionsData = await sessionsResponse.json();
                 this.updateSessionsUI(sessionsData);
             }
+
+            // *** NEW: Load devices and enhanced stats ***
+            this.loadDevices();
+            this.loadEnhancedStats();
 
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
@@ -1111,6 +1117,207 @@ class BoldVPNPortal {
         const match = str.match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB|TB)$/i);
         if (!match) return 0;
         return parseFloat(match[1]) * units[match[2].toUpperCase()];
+    }
+
+    // ============================================
+    // NEW FEATURES: Device Management & Servers
+    // ============================================
+
+    async loadDevices() {
+        try {
+            const response = await fetch(`${this.apiBase}/devices`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+
+            if (response.ok) {
+                const devices = await response.json();
+                this.renderDevices(devices);
+            }
+        } catch (error) {
+            console.error('Failed to load devices:', error);
+        }
+    }
+
+    async loadServers() {
+        try {
+            const response = await fetch(`${this.apiBase}/servers`);
+            if (response.ok) {
+                const servers = await response.json();
+                this.renderServers(servers);
+                return servers;
+            }
+        } catch (error) {
+            console.error('Failed to load servers:', error);
+            return [];
+        }
+    }
+
+    async loadEnhancedStats() {
+        try {
+            const response = await fetch(`${this.apiBase}/stats/overview`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+
+            if (response.ok) {
+                const stats = await response.json();
+                this.updateEnhancedStatsUI(stats);
+            }
+        } catch (error) {
+            console.error('Failed to load enhanced stats:', error);
+        }
+    }
+
+    renderDevices(devices) {
+        const container = document.getElementById('devices-container');
+        if (!container) return;
+
+        if (devices.length === 0) {
+            container.innerHTML = '<p>No devices configured. Add your first device to get started!</p>';
+            return;
+        }
+
+        container.innerHTML = devices.map(device => `
+            <div class="device-card">
+                <div class="device-info">
+                    <h4>${this.escapeHtml(device.deviceName)}</h4>
+                    <p>Server: ${device.server ? this.escapeHtml(device.server.location) : 'Not configured'}</p>
+                    <p>IP: ${device.assignedIP}</p>
+                    <p>Added: ${new Date(device.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div class="device-actions">
+                    <button class="btn btn-primary" onclick="boldVPNPortal.downloadConfig(${device.id})">Download Config</button>
+                    <button class="btn btn-secondary" onclick="boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    renderServers(servers) {
+        const container = document.getElementById('servers-container');
+        if (!container) return;
+
+        container.innerHTML = servers.map(server => `
+            <div class="server-card ${server.isPremium ? 'premium' : ''}">
+                <div class="server-info">
+                    <h4>${server.location}</h4>
+                    <p>Load: ${server.load.toFixed(1)}%</p>
+                    <p>Latency: ${server.latency}ms</p>
+                    <p>Status: <span class="status-${server.status}">${server.status}</span></p>
+                </div>
+                ${!server.isPremium ? 
+                    `<button class="btn btn-primary" onclick="boldVPNPortal.selectServer(${server.id})">Select</button>` : 
+                    `<span class="premium-badge">Premium</span>`
+                }
+            </div>
+        `).join('');
+    }
+
+    updateEnhancedStatsUI(stats) {
+        // Update device count
+        const devicesCount = document.getElementById('devices-count');
+        const devicesLimit = document.getElementById('devices-limit');
+        if (devicesCount) devicesCount.textContent = stats.devices.total;
+        if (devicesLimit) devicesLimit.textContent = stats.devices.maxAllowed;
+
+        // Update active connections
+        const connectionsCount = document.getElementById('connections-count');
+        if (connectionsCount) connectionsCount.textContent = stats.connections.active;
+
+        // Update usage percentage with warning
+        const usagePercent = parseFloat(stats.usage.limits.percentageUsed);
+        if (usagePercent >= 80) {
+            this.showAlert(`Warning: You've used ${usagePercent}% of your monthly data limit!`, 'warning');
+        }
+    }
+
+    async addDevice() {
+        const deviceName = prompt('Enter device name (e.g., My iPhone):');
+        if (!deviceName) return;
+
+        const servers = await this.loadServers();
+        if (servers.length === 0) {
+            alert('No servers available. Please contact support.');
+            return;
+        }
+
+        // For MVP: use first available server
+        const serverId = servers[0].id;
+
+        try {
+            const response = await fetch(`${this.apiBase}/devices`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({ deviceName, serverId })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(`Device "${deviceName}" added successfully! Click Download Config to get your VPN configuration.`);
+                this.loadDevices();
+            } else {
+                alert(data.error || 'Failed to add device');
+            }
+        } catch (error) {
+            console.error('Add device error:', error);
+            alert('Network error. Please try again.');
+        }
+    }
+
+    async downloadConfig(deviceId) {
+        try {
+            const response = await fetch(`${this.apiBase}/devices/${deviceId}/config`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'wireguard-config.conf';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                alert('Failed to download configuration');
+            }
+        } catch (error) {
+            console.error('Download config error:', error);
+            alert('Network error. Please try again.');
+        }
+    }
+
+    async removeDevice(deviceId, deviceName) {
+        if (!confirm(`Remove device "${deviceName}"? This cannot be undone.`)) return;
+
+        try {
+            const response = await fetch(`${this.apiBase}/devices/${deviceId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+
+            if (response.ok) {
+                alert(`Device "${deviceName}" removed successfully`);
+                this.loadDevices();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to remove device');
+            }
+        } catch (error) {
+            console.error('Remove device error:', error);
+            alert('Network error. Please try again.');
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 

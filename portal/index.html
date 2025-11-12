@@ -286,9 +286,15 @@
 
                 <!-- Devices List (Hidden by default) -->
                 <div id="devices-list" class="devices-list" style="display: none;">
-                    <h3>Connected Devices</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>My VPN Devices</h3>
+                        <button id="add-device-btn" class="btn btn-primary">+ Add Device</button>
+                    </div>
                     <div id="devices-container" class="devices-container">
                         <!-- Devices will be populated by JavaScript -->
+                    </div>
+                    <div id="servers-container" class="servers-container" style="margin-top: 20px;">
+                        <!-- Available servers will show here -->
                     </div>
                 </div>
             </div>
