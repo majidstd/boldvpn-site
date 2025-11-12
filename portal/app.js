@@ -224,8 +224,7 @@ class BoldVPNPortal {
                     <h2>Welcome back, ${this.user?.username || 'User'}!</h2>
                 </div>
 
-                <div class="overview-container">
-                    <div class="dashboard-grid">
+                <div class="dashboard-grid">
                         <div class="dashboard-card">
                             <h3>📊 Data Usage</h3>
                             <div class="usage-stats">
@@ -278,7 +277,6 @@ class BoldVPNPortal {
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
         `;
         
