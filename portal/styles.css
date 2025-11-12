@@ -93,6 +93,8 @@ body > *:not(#vanta-background) {
     align-items: center;
     justify-content: center;
     padding: 40px 20px;
+    max-width: 1120px;
+    margin: 0 auto;
 }
 
 .auth-section {
@@ -255,7 +257,8 @@ body > *:not(#vanta-background) {
     gap: 0;
     background: var(--card);
     border: 1px solid var(--border);
-    margin: 32px;
+    margin: 32px auto;
+    max-width: 1400px;
     border-radius: var(--border-radius);
     overflow: hidden;
 }
