@@ -278,10 +278,54 @@ async function removeWireGuardPeer(peerId) {
 async function getWireGuardPeers() {
   try {
     const response = await makeRequest('GET', '/wireguard/client/get');
+    
+    // OPNsense returns peers in different formats, normalize it
+    if (response.client && response.client.clients && response.client.clients.client) {
+      const clients = response.client.clients.client;
+      // If it's an object with UUIDs as keys, convert to array
+      if (typeof clients === 'object' && !Array.isArray(clients)) {
+        return Object.keys(clients).map(uuid => ({
+          uuid,
+          ...clients[uuid]
+        }));
+      }
+      return Array.isArray(clients) ? clients : [];
+    }
+    
     return response.peers || [];
   } catch (error) {
     console.error('[!] OPNsense get peers error:', error.message);
     return [];
+  }
+}
+
+/**
+ * Find WireGuard peer by username (name field in OPNsense)
+ * Returns peer info if found, null otherwise
+ */
+async function findPeerByUsername(username) {
+  try {
+    const peers = await getWireGuardPeers();
+    
+    // Search for peer with matching name
+    for (const peer of peers) {
+      // Handle different response formats
+      const peerName = peer.name || peer.client?.name || peer.client_name;
+      if (peerName === username) {
+        return {
+          uuid: peer.uuid || peer.client?.uuid,
+          name: peerName,
+          enabled: peer.enabled || peer.client?.enabled,
+          tunneladdress: peer.tunneladdress || peer.client?.tunneladdress,
+          pubkey: peer.pubkey || peer.client?.pubkey
+        };
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[!] Find peer by username error:', error.message);
+    return null;
   }
 }
 
@@ -395,6 +439,7 @@ module.exports = {
   addWireGuardPeer,
   removeWireGuardPeer,
   getWireGuardPeers,
+  findPeerByUsername,
   getWireGuardStatus,
   getActivePeers,
   updateWireGuardPeer,

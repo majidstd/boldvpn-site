@@ -250,8 +250,42 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
+    // *** CRITICAL: Sync with OPNsense before creating device ***
+    // Check if peer exists in OPNsense for this username
+    const opnsensePeer = await opnsense.findPeerByUsername(username);
+    
+    if (opnsensePeer) {
+      console.log(`[i] Found peer in OPNsense for ${username}, syncing database...`);
+      
+      // Check if we have this device in database
+      const dbDevice = await pool.query(
+        'SELECT id, opnsense_peer_id, is_active FROM user_devices WHERE username = $1 AND device_name = $2',
+        [username, deviceName]
+      );
+      
+      if (dbDevice.rows.length > 0) {
+        const dev = dbDevice.rows[0];
+        // If OPNsense peer exists but DB says inactive, mark as active and update peer ID
+        if (!dev.is_active || dev.opnsense_peer_id !== opnsensePeer.uuid) {
+          await pool.query(
+            'UPDATE user_devices SET is_active = true, opnsense_peer_id = $1 WHERE id = $2',
+            [opnsensePeer.uuid, dev.id]
+          );
+          console.log(`[OK] Synced database: device ${dev.id} now active with peer ${opnsensePeer.uuid}`);
+        }
+        return res.status(409).json({ 
+          error: 'Device name already exists',
+          deviceId: dev.id,
+          message: 'This device already exists. Please use a different name or remove the existing device first.'
+        });
+      } else {
+        // OPNsense has peer but DB doesn't - mark as orphaned (user deleted from OPNsense manually)
+        // We'll create a new one, but log this
+        console.log(`[!] Orphaned peer in OPNsense for ${username} - will create new device`);
+      }
+    }
+    
     // Check if device name already exists for this user (only check active devices)
-    // Inactive devices can be reused
     const existingDevice = await pool.query(
       'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = true',
       [username, deviceName]
@@ -261,8 +295,7 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(409).json({ error: 'Device name already exists' });
     }
 
-    // If there's an inactive device with the same name, we can reuse it
-    // But first, check if it still exists in OPNsense and clean it up if needed
+    // If there's an inactive device with the same name, clean it up
     const inactiveDevice = await pool.query(
       'SELECT id, opnsense_peer_id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = false',
       [username, deviceName]
@@ -273,8 +306,12 @@ router.post('/', authenticateToken, async (req, res) => {
       const inactiveDev = inactiveDevice.rows[0];
       if (inactiveDev.opnsense_peer_id) {
         try {
-          await opnsense.removeWireGuardPeer(inactiveDev.opnsense_peer_id);
-          console.log(`[OK] Cleaned up inactive device's OPNsense peer: ${inactiveDev.opnsense_peer_id}`);
+          // Check if peer still exists in OPNsense
+          const peerExists = await opnsense.findPeerByUsername(username);
+          if (peerExists && peerExists.uuid === inactiveDev.opnsense_peer_id) {
+            await opnsense.removeWireGuardPeer(inactiveDev.opnsense_peer_id);
+            console.log(`[OK] Cleaned up inactive device's OPNsense peer: ${inactiveDev.opnsense_peer_id}`);
+          }
         } catch (error) {
           // Peer might already be deleted, that's okay
           console.log(`[i] Could not remove OPNsense peer (may already be deleted): ${error.message}`);
