@@ -81,17 +81,6 @@ class BoldVPNPortal {
         const profileForm = document.getElementById('profile-form');
         if (profileForm) profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
 
-        // Modal close
-        const passwordModalClose = document.getElementById('password-modal-close');
-        if (passwordModalClose) passwordModalClose.addEventListener('click', () => this.hidePasswordModal());
-
-        // Close modal on outside click
-        const passwordModal = document.getElementById('password-modal');
-        if (passwordModal) {
-            passwordModal.addEventListener('click', (e) => {
-                if (e.target === passwordModal) this.hidePasswordModal();
-            });
-        }
     }
 
     checkAuth() {
