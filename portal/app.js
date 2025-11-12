@@ -300,7 +300,7 @@ class BoldVPNPortal {
             <div class="content-section">
                 <div class="section-header">
                     <h2>Manage Devices</h2>
-                    <button id="add-device-btn" class="btn btn-primary">+ Add Device</button>
+                    <button id="add-device-btn" class="btn btn-primary" type="button">+ Add Device</button>
                 </div>
 
                 <div class="content-container">
@@ -313,7 +313,15 @@ class BoldVPNPortal {
             </div>
         `;
 
-        document.getElementById('add-device-btn').addEventListener('click', () => this.addDevice());
+        // Bind event listener after DOM is ready
+        const addBtn = document.getElementById('add-device-btn');
+        if (addBtn) {
+            addBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.addDevice();
+            });
+        }
         this.loadDevices();
     }
 
@@ -579,6 +587,10 @@ class BoldVPNPortal {
     }
 
     addDevice() {
+        // Prevent multiple modals
+        if (document.querySelector('.modal')) {
+            return;
+        }
         // Fetch available servers first
         this.showAddDeviceModal();
     }
@@ -598,17 +610,21 @@ class BoldVPNPortal {
             // Create modal
             const modal = document.createElement('div');
             modal.className = 'modal';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.setAttribute('aria-labelledby', 'modal-title');
+            
             modal.innerHTML = `
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3>Add New Device</h3>
-                        <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                        <h3 id="modal-title">Add New Device</h3>
+                        <button class="modal-close" type="button" aria-label="Close modal">&times;</button>
                     </div>
                     <form id="add-device-form" class="auth-form">
                         <div class="form-group">
                             <label for="device-name">Device Name</label>
                             <input type="text" id="device-name" name="deviceName" required 
-                                   placeholder="e.g., My Laptop, iPhone, etc.">
+                                   placeholder="e.g., My Laptop, iPhone, etc." autofocus>
                         </div>
                         ${servers.length > 0 ? `
                         <div class="form-group">
@@ -627,7 +643,7 @@ class BoldVPNPortal {
                                 <span class="btn-text">Add Device</span>
                                 <div class="spinner" style="display: none;"></div>
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                            <button type="button" class="btn btn-secondary" id="cancel-add-device">
                                 Cancel
                             </button>
                         </div>
@@ -637,15 +653,32 @@ class BoldVPNPortal {
 
             document.body.appendChild(modal);
 
+            // Close handlers
+            const closeModal = () => modal.remove();
+            
+            modal.querySelector('.modal-close').addEventListener('click', closeModal);
+            modal.querySelector('#cancel-add-device').addEventListener('click', closeModal);
+            
             // Close on backdrop click
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.remove();
+                if (e.target === modal) closeModal();
             });
 
+            // Close on Escape key
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+
             // Handle form submission
-            document.getElementById('add-device-form').addEventListener('submit', async (e) => {
+            const form = document.getElementById('add-device-form');
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 await this.handleAddDevice(e, modal);
+                document.removeEventListener('keydown', handleEscape);
             });
         } catch (error) {
             console.error('Error showing add device modal:', error);
