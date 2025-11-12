@@ -22,15 +22,21 @@ function makeRequest(method, path, data = null) {
   return new Promise((resolve, reject) => {
     const auth = Buffer.from(`${OPNSENSE_CONFIG.apiKey}:${OPNSENSE_CONFIG.apiSecret}`).toString('base64');
     
+    const headers = {
+      'Authorization': `Basic ${auth}`
+    };
+    
+    // Only add Content-Type for requests with body
+    if (data) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
     const options = {
       hostname: OPNSENSE_CONFIG.host,
       port: OPNSENSE_CONFIG.port,
       path: `/api${path}`,
       method: method,
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json'
-      },
+      headers: headers,
       rejectUnauthorized: false // For self-signed certs
     };
 
