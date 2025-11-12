@@ -12,6 +12,30 @@ const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
 const opnsense = require('../utils/opnsense');
+const QRCode = require('qrcode');
+
+/**
+ * Country code to IP octet mapping
+ * US = 1, CA = 11, rest sequential starting from 12
+ */
+const COUNTRY_CODE_MAP = {
+  'US': 1,
+  'CA': 11
+  // Rest will be sequential: NL=12, DE=13, etc.
+};
+
+let countryCodeCounter = 12; // Start after CA
+
+function getCountryOctet(countryCode) {
+  if (COUNTRY_CODE_MAP[countryCode]) {
+    return COUNTRY_CODE_MAP[countryCode];
+  }
+  // For new countries, assign sequentially
+  if (!COUNTRY_CODE_MAP[countryCode]) {
+    COUNTRY_CODE_MAP[countryCode] = countryCodeCounter++;
+  }
+  return COUNTRY_CODE_MAP[countryCode];
+}
 
 /**
  * Generate WireGuard key pair
@@ -43,10 +67,37 @@ async function generateWireGuardKeys() {
  * Uses SELECT FOR UPDATE to prevent race conditions
  */
 async function getNextAvailableIP(serverId, client) {
+  // Get server IP range configuration
+  const serverQuery = await client.query(
+    `SELECT ip_range_start, ip_range_end, wireguard_subnet 
+     FROM vpn_servers 
+     WHERE id = $1`,
+    [serverId]
+  );
+  
+  if (serverQuery.rows.length === 0) {
+    throw new Error('Server not found');
+  }
+  
+  const server = serverQuery.rows[0];
+  
+  if (!server.ip_range_start || !server.ip_range_end) {
+    throw new Error('Server IP range not configured. Please configure IP range via admin panel.');
+  }
+  
+  const rangeStart = server.ip_range_start;
+  const rangeEnd = server.ip_range_end;
+  
+  // Parse IP addresses
+  const startParts = rangeStart.split('.');
+  const endParts = rangeEnd.split('.');
+  const startOctet = parseInt(startParts[3]);
+  const endOctet = parseInt(endParts[3]);
+  
   // Use transaction lock to prevent concurrent IP assignment
   const query = `
     SELECT assigned_ip FROM user_devices
-    WHERE server_id = $1
+    WHERE server_id = $1 AND is_active = true
     ORDER BY assigned_ip DESC
     LIMIT 1
     FOR UPDATE
@@ -55,8 +106,8 @@ async function getNextAvailableIP(serverId, client) {
   const result = await client.query(query, [serverId]);
   
   if (result.rows.length === 0) {
-    // Start from 10.8.0.2 (10.8.0.1 is usually the server)
-    return '10.8.0.2';
+    // Start from configured range start
+    return rangeStart;
   }
   
   // Increment last IP
@@ -64,12 +115,20 @@ async function getNextAvailableIP(serverId, client) {
   const parts = lastIP.split('.');
   const lastOctet = parseInt(parts[3]);
   
-  if (lastOctet >= 254) {
-    throw new Error('No available IPs in this subnet');
+  if (lastOctet >= endOctet) {
+    throw new Error(`No available IPs in subnet ${server.wireguard_subnet}. Range exhausted (${rangeStart} - ${rangeEnd})`);
   }
   
   parts[3] = (lastOctet + 1).toString();
-  return parts.join('.');
+  const nextIP = parts.join('.');
+  
+  // Verify IP is within range
+  const nextOctet = parseInt(parts[3]);
+  if (nextOctet < startOctet || nextOctet > endOctet) {
+    throw new Error(`IP ${nextIP} is outside configured range (${rangeStart} - ${rangeEnd})`);
+  }
+  
+  return nextIP;
 }
 
 /**
@@ -156,6 +215,41 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Server ID is required' });
     }
 
+    // *** CRITICAL: Check if user has active paid subscription ***
+    const userStatusResult = await pool.query(
+      `SELECT subscription_status, subscription_expires_at 
+       FROM user_details 
+       WHERE username = $1`,
+      [username]
+    );
+
+    if (userStatusResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userStatus = userStatusResult.rows[0];
+    const subscriptionStatus = userStatus.subscription_status;
+    const expiresAt = userStatus.subscription_expires_at;
+
+    // Check if subscription is active
+    if (subscriptionStatus !== 'active') {
+      return res.status(403).json({ 
+        error: 'Active subscription required. Please upgrade your plan to add devices.',
+        subscriptionStatus,
+        requiresPayment: true
+      });
+    }
+
+    // Check if subscription has expired
+    if (expiresAt && new Date(expiresAt) < new Date()) {
+      return res.status(403).json({ 
+        error: 'Your subscription has expired. Please renew to continue using VPN services.',
+        subscriptionStatus: 'expired',
+        expiresAt,
+        requiresPayment: true
+      });
+    }
+
     // Check if device name already exists for this user
     const existingDevice = await pool.query(
       'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = true',
@@ -196,6 +290,27 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     const server = serverResult.rows[0];
+
+    // *** CRITICAL: Verify server has IP range configured ***
+    if (!server.wireguard_subnet || !server.ip_range_start || !server.ip_range_end) {
+      return res.status(400).json({ 
+        error: 'Server IP range not configured. Please contact administrator.',
+        serverId: serverId,
+        serverName: server.name
+      });
+    }
+
+    // *** CRITICAL: Verify database subnet matches OPNsense subnet ***
+    try {
+      await opnsense.verifySubnetMatch(server.wireguard_subnet);
+    } catch (verifyError) {
+      console.error('[!] Subnet verification failed:', verifyError.message);
+      return res.status(500).json({ 
+        error: 'Subnet configuration mismatch with firewall',
+        details: verifyError.message,
+        databaseSubnet: server.wireguard_subnet
+      });
+    }
 
     // Use database transaction to prevent race conditions
     const client = await pool.connect();
@@ -392,6 +507,69 @@ router.get('/:deviceId/config/json', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('[!] Get device config JSON error:', error);
     res.status(500).json({ error: 'Failed to get device configuration' });
+  }
+});
+
+/**
+ * Get QR code for device configuration
+ * Returns QR code image (PNG) that can be scanned by WireGuard mobile apps
+ */
+router.get('/:deviceId/qrcode', authenticateToken, async (req, res) => {
+  try {
+    const { username } = req.user;
+    const { deviceId } = req.params;
+
+    const query = `
+      SELECT d.*, s.*
+      FROM user_devices d
+      JOIN vpn_servers s ON d.server_id = s.id
+      WHERE d.id = $1 AND d.username = $2 AND d.is_active = true
+    `;
+
+    const result = await pool.query(query, [deviceId, username]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+
+    const device = result.rows[0];
+
+    // Generate fresh config if not stored
+    let configFile = device.config_file;
+    if (!configFile) {
+      configFile = generateWireGuardConfig(device, device);
+      await pool.query(
+        'UPDATE user_devices SET config_file = $1 WHERE id = $2',
+        [configFile, device.id]
+      );
+    }
+
+    // Generate QR code from config
+    try {
+      const qrCodeDataURL = await QRCode.toDataURL(configFile, {
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+        width: 512,
+        margin: 2
+      });
+
+      // Convert data URL to buffer
+      const base64Data = qrCodeDataURL.replace(/^data:image\/png;base64,/, '');
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Disposition', `inline; filename="${device.device_name}-qrcode.png"`);
+      res.setHeader('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour
+      res.send(imageBuffer);
+
+    } catch (qrError) {
+      console.error('[!] QR code generation error:', qrError);
+      res.status(500).json({ error: 'Failed to generate QR code' });
+    }
+
+  } catch (error) {
+    console.error('[!] Get QR code error:', error);
+    res.status(500).json({ error: 'Failed to get QR code' });
   }
 });
 

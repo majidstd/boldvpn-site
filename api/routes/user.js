@@ -9,9 +9,11 @@ router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
 
-    // Get user details from user_details table
+    // Get user details from user_details table (including subscription status)
     const userResult = await pool.query(
-      'SELECT username, email, created_at FROM user_details WHERE username = $1',
+      `SELECT username, email, created_at, subscription_status, 
+              subscription_expires_at, payment_provider, payment_customer_id
+       FROM user_details WHERE username = $1`,
       [username]
     );
 
@@ -64,7 +66,12 @@ router.get('/profile', authenticateToken, async (req, res) => {
         username: user.username,
         email: user.email,
         createdAt: user.created_at,
-        plan: planName
+        plan: planName,
+        subscriptionStatus: user.subscription_status || 'trial',
+        subscriptionExpiresAt: user.subscription_expires_at,
+        paymentProvider: user.payment_provider,
+        isActive: user.subscription_status === 'active' && 
+                  (!user.subscription_expires_at || new Date(user.subscription_expires_at) > new Date())
       },
       limits
     });

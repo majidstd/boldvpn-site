@@ -429,6 +429,47 @@ class BoldVPNPortal {
             planName.textContent = profile.user.plan || 'Basic';
         }
 
+        // Update subscription status
+        const subscriptionStatus = profile.user.subscriptionStatus || 'trial';
+        const isActive = profile.user.isActive;
+        const expiresAt = profile.user.subscriptionExpiresAt;
+        
+        // Update subscription status display
+        const statusElement = document.getElementById('subscription-status');
+        const planElement = document.getElementById('subscription-plan');
+        const expiresElement = document.getElementById('subscription-expires');
+        const expiresDateElement = document.getElementById('subscription-expires-date');
+        
+        if (statusElement) {
+            const statusText = subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1);
+            statusElement.textContent = statusText;
+            statusElement.className = isActive ? 'status-active' : 'status-inactive';
+        }
+        
+        if (planElement) {
+            planElement.textContent = profile.user.plan || 'Basic';
+        }
+        
+        if (expiresAt && expiresElement && expiresDateElement) {
+            expiresElement.style.display = 'block';
+            expiresDateElement.textContent = new Date(expiresAt).toLocaleDateString();
+        } else if (expiresElement) {
+            expiresElement.style.display = 'none';
+        }
+        
+        // Show subscription status warning if needed
+        if (!isActive && subscriptionStatus !== 'active') {
+            const statusMessage = subscriptionStatus === 'expired' 
+                ? 'Your subscription has expired. Please renew to continue using VPN services.'
+                : 'Active subscription required. Please upgrade your plan.';
+            this.showAlert(statusMessage, 'warning');
+        } else if (expiresAt) {
+            const daysUntilExpiry = Math.ceil((new Date(expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
+            if (daysUntilExpiry <= 7 && daysUntilExpiry > 0) {
+                this.showAlert(`Your subscription expires in ${daysUntilExpiry} day(s). Please renew soon.`, 'warning');
+            }
+        }
+
         // Update speed limits
         const speedDown = document.getElementById('speed-down');
         const speedUp = document.getElementById('speed-up');
@@ -1183,10 +1224,12 @@ class BoldVPNPortal {
                     <p>Server: ${device.server ? this.escapeHtml(device.server.location) : 'Not configured'}</p>
                     <p>IP: ${device.assignedIP}</p>
                     <p>Added: ${new Date(device.createdAt).toLocaleDateString()}</p>
+                    ${device.lastUsed ? `<p>Last Used: ${new Date(device.lastUsed).toLocaleDateString()}</p>` : ''}
                 </div>
                 <div class="device-actions">
-                    <button class="btn btn-primary" onclick="boldVPNPortal.downloadConfig(${device.id})">Download Config</button>
-                    <button class="btn btn-secondary" onclick="boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
+                    <button class="btn btn-primary" onclick="boldVPNPortal.showQRCode(${device.id}, '${this.escapeHtml(device.deviceName)}')">Show QR Code</button>
+                    <button class="btn btn-secondary" onclick="boldVPNPortal.downloadConfig(${device.id})">Download Config</button>
+                    <button class="btn btn-danger" onclick="boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
                 </div>
             </div>
         `).join('');
@@ -1267,6 +1310,72 @@ class BoldVPNPortal {
         }
     }
 
+    async showQRCode(deviceId, deviceName) {
+        try {
+            const qrCodeUrl = `${this.apiBase}/devices/${deviceId}/qrcode`;
+            const token = this.token;
+            
+            // Create modal for QR code
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h3>QR Code - ${this.escapeHtml(deviceName)}</h3>
+                        <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+                    </div>
+                    <div style="text-align: center; padding: 20px;">
+                        <p style="margin-bottom: 15px;">Scan this QR code with WireGuard mobile app:</p>
+                        <img src="${qrCodeUrl}" alt="QR Code" style="max-width: 100%; border: 2px solid #ddd; border-radius: 8px;" 
+                             onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3EFailed to load QR code%3C/text%3E%3C/svg%3E';">
+                        <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                            Or download the config file below
+                        </p>
+                        <button class="btn btn-primary" onclick="boldVPNPortal.downloadConfig(${deviceId}); this.closest('.modal').remove();" style="margin-top: 10px;">
+                            Download Config File
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+            
+            // Load QR code with proper authentication
+            const img = modal.querySelector('img');
+            fetch(qrCodeUrl, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('Failed to load QR code');
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                img.src = url;
+                // Clean up URL when modal closes
+                modal.addEventListener('remove', () => {
+                    window.URL.revokeObjectURL(url);
+                });
+            })
+            .catch(error => {
+                console.error('QR code load error:', error);
+                img.alt = 'Failed to load QR code';
+            });
+            
+        } catch (error) {
+            console.error('Show QR code error:', error);
+            alert('Failed to load QR code. Please try downloading the config file instead.');
+        }
+    }
+
     async downloadConfig(deviceId) {
         try {
             const response = await fetch(`${this.apiBase}/devices/${deviceId}/config`, {
@@ -1284,7 +1393,8 @@ class BoldVPNPortal {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             } else {
-                alert('Failed to download configuration');
+                const data = await response.json();
+                alert(data.error || 'Failed to download configuration');
             }
         } catch (error) {
             console.error('Download config error:', error);

@@ -68,7 +68,7 @@ function makeRequest(method, path, data = null) {
 }
 
 /**
- * Get WireGuard server UUID
+ * Get WireGuard server UUID and configuration
  */
 async function getWireGuardServerUUID() {
   try {
@@ -94,6 +94,72 @@ async function getWireGuardServerUUID() {
     throw new Error('No WireGuard server found in OPNsense');
   } catch (error) {
     console.error('[!] Failed to get server UUID:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get WireGuard server subnet from OPNsense
+ * Returns the tunneladdress subnet (e.g., "10.11.0.1/24")
+ */
+async function getWireGuardServerSubnet() {
+  try {
+    const response = await makeRequest('GET', '/wireguard/server/get');
+    
+    if (response && response.server && response.server.servers && response.server.servers.server) {
+      const servers = response.server.servers.server;
+      const serverUUIDs = Object.keys(servers);
+      
+      if (serverUUIDs.length === 0) {
+        throw new Error('No WireGuard servers configured in OPNsense');
+      }
+      
+      // Get first enabled server
+      const serverUUID = serverUUIDs[0];
+      const serverConfig = servers[serverUUID];
+      
+      // Extract tunneladdress (e.g., "10.11.0.1/24")
+      if (serverConfig.tunneladdress) {
+        const tunnelAddress = serverConfig.tunneladdress;
+        // Convert to subnet format (e.g., "10.11.0.1/24" -> "10.11.0.0/24")
+        const parts = tunnelAddress.split('/');
+        if (parts.length === 2) {
+          const ipParts = parts[0].split('.');
+          const subnet = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/${parts[1]}`;
+          console.log(`[OK] OPNsense WireGuard subnet: ${subnet}`);
+          return subnet;
+        }
+      }
+      
+      throw new Error('WireGuard server tunneladdress not found in OPNsense');
+    }
+    
+    throw new Error('No WireGuard server found in OPNsense');
+  } catch (error) {
+    console.error('[!] Failed to get WireGuard subnet:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Verify database subnet matches OPNsense subnet
+ * Throws error if mismatch
+ */
+async function verifySubnetMatch(dbSubnet) {
+  try {
+    const opnsenseSubnet = await getWireGuardServerSubnet();
+    
+    if (opnsenseSubnet !== dbSubnet) {
+      throw new Error(
+        `Subnet mismatch! Database: ${dbSubnet}, OPNsense: ${opnsenseSubnet}. ` +
+        `Please update OPNsense WireGuard interface subnet to match database configuration.`
+      );
+    }
+    
+    console.log(`[OK] Subnet verification passed: ${dbSubnet}`);
+    return true;
+  } catch (error) {
+    console.error('[!] Subnet verification failed:', error.message);
     throw error;
   }
 }
@@ -285,6 +351,8 @@ async function healthCheck() {
 }
 
 module.exports = {
+  getWireGuardServerSubnet,
+  verifySubnetMatch,
   addWireGuardPeer,
   removeWireGuardPeer,
   getWireGuardPeers,

@@ -19,6 +19,7 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^7.0.10",
     "pg": "^8.11.3",
+    "qrcode": "^1.5.3",
     "stripe": "^14.17.0"
   },
   "devDependencies": {

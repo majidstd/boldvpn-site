@@ -441,5 +441,157 @@ router.get('/revenue/stats', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
+/**
+ * Update server IP range configuration (admin only)
+ * PUT /api/admin/servers/:serverId/ip-range
+ */
+router.put('/servers/:serverId/ip-range', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { serverId } = req.params;
+    const { wireguard_subnet, ip_range_start, ip_range_end, city_index } = req.body;
+
+    // Validate required fields
+    if (!wireguard_subnet || !ip_range_start || !ip_range_end) {
+      return res.status(400).json({ 
+        error: 'wireguard_subnet, ip_range_start, and ip_range_end are required' 
+      });
+    }
+
+    // Validate subnet format (e.g., "10.11.0.0/24")
+    const subnetRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/;
+    if (!subnetRegex.test(wireguard_subnet)) {
+      return res.status(400).json({ 
+        error: 'Invalid subnet format. Expected format: X.X.X.X/XX' 
+      });
+    }
+
+    // Validate IP addresses
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(ip_range_start) || !ipRegex.test(ip_range_end)) {
+      return res.status(400).json({ 
+        error: 'Invalid IP address format' 
+      });
+    }
+
+    // Verify IPs are within subnet
+    const subnetParts = wireguard_subnet.split('/');
+    const subnetIP = subnetParts[0];
+    const subnetMask = parseInt(subnetParts[1]);
+    
+    const subnetIPParts = subnetIP.split('.');
+    const startParts = ip_range_start.split('.');
+    const endParts = ip_range_end.split('.');
+    
+    // Check first 3 octets match subnet
+    for (let i = 0; i < 3; i++) {
+      if (startParts[i] !== subnetIPParts[i] || endParts[i] !== subnetIPParts[i]) {
+        return res.status(400).json({ 
+          error: 'IP range must be within the specified subnet' 
+        });
+      }
+    }
+
+    // Update server IP range
+    const updateQuery = `
+      UPDATE vpn_servers 
+      SET wireguard_subnet = $1,
+          ip_range_start = $2,
+          ip_range_end = $3,
+          city_index = COALESCE($4, city_index),
+          updated_at = NOW()
+      WHERE id = $5
+      RETURNING *
+    `;
+
+    const result = await pool.query(updateQuery, [
+      wireguard_subnet,
+      ip_range_start,
+      ip_range_end,
+      city_index || null,
+      serverId
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Server not found' });
+    }
+
+    res.json({
+      message: 'Server IP range updated successfully',
+      server: {
+        id: result.rows[0].id,
+        name: result.rows[0].name,
+        wireguard_subnet: result.rows[0].wireguard_subnet,
+        ip_range_start: result.rows[0].ip_range_start,
+        ip_range_end: result.rows[0].ip_range_end,
+        city_index: result.rows[0].city_index
+      }
+    });
+
+  } catch (error) {
+    console.error('[!] Update server IP range error:', error);
+    res.status(500).json({ error: 'Failed to update server IP range' });
+  }
+});
+
+/**
+ * Verify server IP range matches OPNsense (admin only)
+ * POST /api/admin/servers/:serverId/verify-subnet
+ */
+router.post('/servers/:serverId/verify-subnet', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { serverId } = req.params;
+
+    // Get server configuration
+    const serverQuery = await pool.query(
+      'SELECT id, name, wireguard_subnet FROM vpn_servers WHERE id = $1',
+      [serverId]
+    );
+
+    if (serverQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'Server not found' });
+    }
+
+    const server = serverQuery.rows[0];
+
+    if (!server.wireguard_subnet) {
+      return res.status(400).json({ 
+        error: 'Server IP range not configured',
+        serverId: server.id,
+        serverName: server.name
+      });
+    }
+
+    // Verify with OPNsense
+    try {
+      await opnsense.verifySubnetMatch(server.wireguard_subnet);
+      
+      res.json({
+        success: true,
+        message: 'Subnet verification passed',
+        databaseSubnet: server.wireguard_subnet,
+        server: {
+          id: server.id,
+          name: server.name
+        }
+      });
+    } catch (verifyError) {
+      res.status(400).json({
+        success: false,
+        error: 'Subnet verification failed',
+        message: verifyError.message,
+        databaseSubnet: server.wireguard_subnet,
+        server: {
+          id: server.id,
+          name: server.name
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('[!] Verify subnet error:', error);
+    res.status(500).json({ error: 'Failed to verify subnet' });
+  }
+});
+
 module.exports = router;
 

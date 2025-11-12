@@ -674,6 +674,11 @@ body > *:not(#vanta-background) {
     font-weight: 600;
 }
 
+.status-inactive {
+    color: var(--error-color);
+    font-weight: 600;
+}
+
 .status-maintenance {
     color: var(--warning-color);
     font-weight: 600;
