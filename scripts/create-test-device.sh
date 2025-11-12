@@ -67,7 +67,9 @@ if echo "$CREATE_RESPONSE" | grep -q '"message":"Device added successfully"'; th
     echo "   Device ID: $DEVICE_ID"
     echo "   Device Name: $DEVICE_NAME"
     echo "   Assigned IP: $ASSIGNED_IP"
-    echo "   Public Key: ${PUBLIC_KEY:0:50}..."
+    # Use cut instead of bash substring expansion for POSIX compatibility
+    PUBLIC_KEY_SHORT=$(echo "$PUBLIC_KEY" | cut -c1-50)
+    echo "   Public Key: ${PUBLIC_KEY_SHORT}..."
     echo ""
     echo "🔍 Verify in OPNsense:"
     echo "   VPN → WireGuard → Clients"
