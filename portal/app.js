@@ -313,20 +313,35 @@ class BoldVPNPortal {
             </div>
         `;
 
-        // Bind event listener after DOM is ready
+        // Bind event listener - use event delegation for reliability
+        const contentArea = document.getElementById('content-area');
+        if (contentArea) {
+            contentArea.addEventListener('click', (e) => {
+                if (e.target && e.target.id === 'add-device-btn') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Add Device button clicked via delegation');
+                    this.addDevice();
+                }
+            });
+        }
+        
+        // Also bind directly as fallback
         setTimeout(() => {
             const addBtn = document.getElementById('add-device-btn');
             if (addBtn) {
+                console.log('Direct binding Add Device button');
                 addBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Add Device button clicked');
+                    console.log('Add Device button clicked (direct)');
                     this.addDevice();
                 });
             } else {
                 console.error('Add Device button not found!');
             }
         }, 100);
+        
         this.loadDevices();
     }
 
@@ -592,14 +607,20 @@ class BoldVPNPortal {
     }
 
     addDevice() {
-        console.log('addDevice() called');
+        console.log('addDevice() called', this);
         // Prevent multiple modals
-        if (document.querySelector('.modal')) {
-            console.log('Modal already exists, returning');
-            return;
+        const existingModal = document.querySelector('.modal');
+        if (existingModal) {
+            console.log('Modal already exists, removing it first');
+            existingModal.remove();
         }
         // Fetch available servers first
-        this.showAddDeviceModal();
+        try {
+            this.showAddDeviceModal();
+        } catch (error) {
+            console.error('Error in addDevice:', error);
+            alert('Error opening add device dialog. Please check console for details.');
+        }
     }
 
     async showAddDeviceModal() {
