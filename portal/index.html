@@ -204,13 +204,47 @@
 
             <!-- Dashboard -->
             <div id="dashboard-section" class="dashboard-section" style="display: none;">
-                <div class="dashboard-header">
-                    <h2>Welcome back, <span id="user-greeting"></span>!</h2>
-                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
-                </div>
+                <div class="dashboard-layout">
+                    <!-- Sidebar Navigation -->
+                    <div class="dashboard-sidebar">
+                        <div class="sidebar-header">
+                            <h3>Dashboard</h3>
+                        </div>
+                        <nav class="sidebar-nav">
+                            <button class="nav-item active" data-section="overview">
+                                <span>📊</span> Overview
+                            </button>
+                            <button class="nav-item" data-section="devices">
+                                <span>📱</span> Devices
+                            </button>
+                            <button class="nav-item" data-section="usage">
+                                <span>📈</span> Usage History
+                            </button>
+                            <button class="nav-item" data-section="billing">
+                                <span>💳</span> Billing & Plans
+                            </button>
+                            <button class="nav-item" data-section="profile">
+                                <span>👤</span> Profile
+                            </button>
+                            <button class="nav-item" data-section="password">
+                                <span>🔒</span> Change Password
+                            </button>
+                        </nav>
+                        <div class="sidebar-footer">
+                            <button id="logout-btn" class="btn btn-secondary" style="width: 100%;">Logout</button>
+                        </div>
+                    </div>
 
-                <!-- Overview Cards -->
-                <div class="dashboard-grid">
+                    <!-- Main Content Area -->
+                    <div class="dashboard-content">
+                        <!-- Overview Section -->
+                        <div id="content-overview" class="content-section active">
+                            <div class="content-header">
+                                <h2>Welcome back, <span id="user-greeting"></span>!</h2>
+                            </div>
+                            
+                            <!-- Overview Cards -->
+                            <div class="dashboard-grid">
                     <!-- Usage Stats -->
                     <div class="dashboard-card">
                         <h3>Data Usage</h3>
@@ -276,35 +310,116 @@
                         </div>
                     </div>
                 </div>
+                        </div>
 
-                <!-- Action Buttons -->
-                <div class="dashboard-actions">
-                    <button id="change-password-btn" class="btn btn-secondary">Change Password</button>
-                    <button id="edit-profile-btn" class="btn btn-secondary">Edit Profile</button>
-                    <button id="view-usage-btn" class="btn btn-secondary">View Usage History</button>
-                    <button id="manage-devices-btn" class="btn btn-secondary">Manage Devices</button>
-                    <button id="billing-btn" class="btn btn-primary">Billing & Plans</button>
-                </div>
+                        <!-- Devices Section -->
+                        <div id="content-devices" class="content-section">
+                            <div class="content-header">
+                                <h2>My VPN Devices</h2>
+                                <button id="add-device-btn" class="btn btn-primary">+ Add Device</button>
+                            </div>
+                            <div id="devices-container" class="devices-container">
+                                <!-- Devices will be populated by JavaScript -->
+                            </div>
+                            <div id="servers-container" class="servers-container" style="margin-top: 20px;">
+                                <!-- Available servers will show here -->
+                            </div>
+                        </div>
 
-                <!-- Usage History (Hidden by default) -->
-                <div id="usage-history" class="usage-history" style="display: none;">
-                    <h3>Usage History (Last 30 Days)</h3>
-                    <div id="usage-chart" class="usage-chart">
-                        <!-- Chart will be populated by JavaScript -->
-                    </div>
-                </div>
+                        <!-- Usage History Section -->
+                        <div id="content-usage" class="content-section">
+                            <div class="content-header">
+                                <h2>Usage History</h2>
+                            </div>
+                            <div id="usage-chart" class="usage-chart">
+                                <!-- Chart will be populated by JavaScript -->
+                            </div>
+                        </div>
 
-                <!-- Devices List (Hidden by default) -->
-                <div id="devices-list" class="devices-list" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3>My VPN Devices</h3>
-                        <button id="add-device-btn" class="btn btn-primary">+ Add Device</button>
-                    </div>
-                    <div id="devices-container" class="devices-container">
-                        <!-- Devices will be populated by JavaScript -->
-                    </div>
-                    <div id="servers-container" class="servers-container" style="margin-top: 20px;">
-                        <!-- Available servers will show here -->
+                        <!-- Billing Section -->
+                        <div id="content-billing" class="content-section">
+                            <div class="content-header">
+                                <h2>Billing & Plans</h2>
+                            </div>
+                            <div class="billing-grid">
+                                <!-- Current Plan Card -->
+                                <div class="dashboard-card">
+                                    <h3>Your Current Plan</h3>
+                                    <p>Plan: <span id="current-plan-name">Loading...</span></p>
+                                    <p>Monthly Traffic: <span id="current-plan-traffic">Loading...</span></p>
+                                    <p>Max Devices: <span id="current-plan-devices">Loading...</span></p>
+                                    <button id="change-plan-btn" class="btn btn-primary">Change Plan</button>
+                                </div>
+
+                                <!-- Plan Options Card -->
+                                <div class="dashboard-card" id="plan-options-card" style="display: none;">
+                                    <h3>Available Plans</h3>
+                                    <div id="plan-options-container" class="plan-options-container">
+                                        <!-- Plans will be populated by JavaScript -->
+                                    </div>
+                                </div>
+
+                                <!-- Billing History Card -->
+                                <div class="dashboard-card">
+                                    <h3>Billing History</h3>
+                                    <div id="billing-history-container">
+                                        <p>No billing history available.</p>
+                                        <!-- Billing history will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Profile Section -->
+                        <div id="content-profile" class="content-section">
+                            <div class="content-header">
+                                <h2>User Profile</h2>
+                            </div>
+                            <div class="profile-card auth-card">
+                                <h3>Edit Your Profile</h3>
+                                <form id="profile-form" class="auth-form">
+                                    <div class="form-group">
+                                        <label for="profile-username">Username</label>
+                                        <input type="text" id="profile-username" name="username" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="profile-email">Email</label>
+                                        <input type="email" id="profile-email" name="email" required>
+                                        <div class="error-message" id="profile-email-error"></div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" id="update-profile-btn">
+                                        <span class="btn-text">Update Profile</span>
+                                        <div class="btn-spinner" style="display: none;"></div>
+                                    </button>
+                                </form>
+                                <div id="profile-message" class="alert alert-info" style="display: none;"></div>
+                                <div id="profile-error" class="alert alert-error" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Password Section -->
+                        <div id="content-password" class="content-section">
+                            <div class="content-header">
+                                <h2>Change Password</h2>
+                            </div>
+                            <div class="auth-card">
+                                <form id="password-form" class="auth-form">
+                                    <div class="form-group">
+                                        <label for="current-password">Current Password</label>
+                                        <input type="password" id="current-password" name="currentPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="new-password">New Password</label>
+                                        <input type="password" id="new-password" name="newPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="confirm-new-password">Confirm New Password</label>
+                                        <input type="password" id="confirm-new-password" name="confirmPassword" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Update Password</button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -334,70 +449,7 @@
                 </div>
             </div>
 
-            <!-- Billing & Plans Section -->
-            <div id="billing-section" class="billing-section" style="display: none;">
-                <div class="dashboard-header">
-                    <h2>Billing & Plans</h2>
-                    <button id="back-to-dashboard-btn" class="btn btn-secondary">Back to Dashboard</button>
-                </div>
 
-                <div class="billing-grid">
-                    <!-- Current Plan Card -->
-                    <div class="dashboard-card">
-                        <h3>Your Current Plan</h3>
-                        <p>Plan: <span id="current-plan-name">Loading...</span></p>
-                        <p>Monthly Traffic: <span id="current-plan-traffic">Loading...</span></p>
-                        <p>Max Devices: <span id="current-plan-devices">Loading...</span></p>
-                        <button id="change-plan-btn" class="btn btn-primary">Change Plan</button>
-                    </div>
-
-                    <!-- Plan Options Card -->
-                    <div class="dashboard-card" id="plan-options-card" style="display: none;">
-                        <h3>Available Plans</h3>
-                        <div id="plan-options-container" class="plan-options-container">
-                            <!-- Plans will be populated by JavaScript -->
-                        </div>
-                    </div>
-
-                    <!-- Billing History Card -->
-                    <div class="dashboard-card">
-                        <h3>Billing History</h3>
-                        <div id="billing-history-container">
-                            <p>No billing history available.</p>
-                            <!-- Billing history will be populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User Profile Section -->
-            <div id="profile-section" class="profile-section" style="display: none;">
-                <div class="dashboard-header">
-                    <h2>User Profile</h2>
-                    <button id="profile-back-to-dashboard-btn" class="btn btn-secondary">Back to Dashboard</button>
-                </div>
-
-                <div class="profile-card auth-card">
-                    <h3>Edit Your Profile</h3>
-                    <form id="profile-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="profile-username">Username</label>
-                            <input type="text" id="profile-username" name="username" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label for="profile-email">Email</label>
-                            <input type="email" id="profile-email" name="email" required>
-                            <div class="error-message" id="profile-email-error"></div>
-                        </div>
-                        <button type="submit" class="btn btn-primary" id="update-profile-btn">
-                            <span class="btn-text">Update Profile</span>
-                            <div class="btn-spinner" style="display: none;"></div>
-                        </button>
-                    </form>
-                    <div id="profile-message" class="alert alert-info" style="display: none;"></div>
-                    <div id="profile-error" class="alert alert-error" style="display: none;"></div>
-                </div>
-            </div>
         </main>
 
         <!-- Footer -->

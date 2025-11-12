@@ -17,7 +17,7 @@
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --error-color: #ef4444;
-    
+
     /* Spacing & Layout */
     --border-radius: 12px;
     --border-radius-sm: 10px;
@@ -35,10 +35,12 @@
 html {
     /* Prevent layout shift when scrollbar appears/disappears */
     scrollbar-gutter: stable;
-    overflow-y: scroll; /* Fallback for older browsers */
+    overflow-y: scroll;
+    /* Fallback for older browsers */
 }
 
-html, body {
+html,
+body {
     font-family: var(--font-family);
     background: linear-gradient(180deg, #05080f 0%, var(--bg) 100%);
     color: var(--text);
@@ -64,7 +66,7 @@ html, body {
 }
 
 /* Ensure all content is above vanta background - matches main site */
-body > *:not(#vanta-background) {
+body>*:not(#vanta-background) {
     position: relative;
     z-index: 1;
 }
@@ -284,7 +286,9 @@ body > *:not(#vanta-background) {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Auth Links */
@@ -623,10 +627,39 @@ body > *:not(#vanta-background) {
         grid-template-columns: 1fr;
     }
     
-    .dashboard-header {
+    .dashboard-layout {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
+    }
+    
+    .dashboard-sidebar {
+        width: 100%;
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .sidebar-nav {
+        display: flex;
+        overflow-x: auto;
+        padding: 10px;
+        gap: 5px;
+    }
+    
+    .nav-item {
+        white-space: nowrap;
+        padding: 10px 15px;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+    }
+    
+    .nav-item.active {
+        border-left: none;
+        border-bottom: 3px solid var(--primary);
+    }
+    
+    .dashboard-content {
+        padding: 20px;
     }
 
     .dashboard-actions {
@@ -639,52 +672,53 @@ body > *:not(#vanta-background) {
 
     .form-row {
         grid-template-columns: 1fr;
-}
+    }
 
     .auth-card {
         padding: 24px;
     }
-    
+
     /* Responsive device table */
     .devices-table-header,
     .device-row {
         grid-template-columns: 1fr;
         gap: 10px;
     }
-    
+
     .devices-table-header {
-        display: none; /* Hide header on mobile */
+        display: none;
+        /* Hide header on mobile */
     }
-    
+
     .device-row {
         padding: 15px;
         border-bottom: 2px solid var(--border);
     }
-    
+
     .device-col-name::before {
         content: "Device: ";
         font-weight: 600;
         color: var(--muted);
     }
-    
+
     .device-col-server::before {
         content: "Server: ";
         font-weight: 600;
         color: var(--muted);
     }
-    
+
     .device-col-ip::before {
         content: "IP: ";
         font-weight: 600;
         color: var(--muted);
     }
-    
+
     .device-col-date::before {
         content: "Added: ";
         font-weight: 600;
         color: var(--muted);
     }
-    
+
     .device-col-actions {
         margin-top: 10px;
         padding-top: 10px;
@@ -887,8 +921,15 @@ body > *:not(#vanta-background) {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .wizard-step h3 {
@@ -978,7 +1019,9 @@ body > *:not(#vanta-background) {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .wizard-loading p {
@@ -1123,6 +1166,3 @@ body > *:not(#vanta-background) {
         text-align: center;
     }
 }
-
-
-
