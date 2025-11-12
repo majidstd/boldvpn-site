@@ -62,41 +62,77 @@ function makeRequest(method, path, data = null) {
 }
 
 /**
+ * Get WireGuard server UUID
+ */
+async function getWireGuardServerUUID() {
+  try {
+    const response = await makeRequest('GET', '/wireguard/server/get');
+    
+    // Find first enabled server
+    if (response && response.server && response.server.servers && response.server.servers.server) {
+      const servers = response.server.servers.server;
+      const serverUUID = Object.keys(servers)[0]; // Get first server UUID
+      return serverUUID;
+    }
+    
+    // Fallback - check from service/show
+    const serviceResponse = await makeRequest('GET', '/wireguard/service/show');
+    if (serviceResponse && serviceResponse.rows && serviceResponse.rows.length > 0) {
+      // Find interface type row
+      const interfaceRow = serviceResponse.rows.find(row => row.type === 'interface');
+      if (interfaceRow) {
+        return interfaceRow.name; // This might be the UUID or name
+      }
+    }
+    
+    throw new Error('No WireGuard server found in OPNsense');
+  } catch (error) {
+    console.error('[!] Failed to get server UUID:', error.message);
+    throw error;
+  }
+}
+
+/**
  * Add WireGuard peer to OPNsense
  */
 async function addWireGuardPeer(username, publicKey, assignedIP, presharedKey = null) {
   try {
-    const peerData = {
-      peer: {
+    // Get server UUID dynamically
+    const serverUUID = await getWireGuardServerUUID();
+    
+    // OPNsense WireGuard uses "client" not "peer"
+    const clientData = {
+      client: {
         enabled: '1',
         name: username,
         pubkey: publicKey,
         psk: presharedKey || '',
-        tunneladdress: assignedIP,
+        tunneladdress: `${assignedIP}/32`,
         keepalive: '25',
-        comment: `BoldVPN user: ${username}`
+        servers: serverUUID
       }
     };
 
-    // Add peer via OPNsense API
-    const response = await makeRequest('POST', '/wireguard/client/addPeer', peerData);
+    // Add client via OPNsense API
+    const response = await makeRequest('POST', '/wireguard/client/addClient', clientData);
 
-    if (response.result === 'saved') {
-      console.log(`[OK] WireGuard peer added for ${username}`);
+    if (response.result === 'saved' || response.uuid) {
+      console.log(`[OK] WireGuard client added for ${username}, UUID: ${response.uuid}`);
       
-      // Restart WireGuard service to apply changes
-      await restartWireGuard();
+      // Apply configuration changes
+      await makeRequest('POST', '/wireguard/service/reconfigure');
       
       return {
         success: true,
         peerId: response.uuid
       };
     } else {
-      throw new Error('Failed to add peer: ' + JSON.stringify(response));
+      throw new Error('Failed to add client: ' + JSON.stringify(response));
     }
 
   } catch (error) {
-    console.error('[!] OPNsense add peer error:', error.message);
+    console.error('[!] OPNsense add client error:', error.message);
+    console.error('[!] Response:', error);
     throw new Error('Failed to add WireGuard peer to firewall');
   }
 }
