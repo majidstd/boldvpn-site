@@ -256,6 +256,10 @@ body > *:not(#vanta-background) {
     min-height: calc(100vh - 64px);
     gap: 0;
     background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    margin: 32px;
+    overflow: hidden;
 }
 
 /* Sidebar */
