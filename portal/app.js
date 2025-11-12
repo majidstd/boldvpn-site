@@ -28,11 +28,9 @@ class BoldVPNPortal {
         // Auth forms
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
-        const passwordForm = document.getElementById('password-form');
 
         if (loginForm) loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         if (registerForm) registerForm.addEventListener('submit', (e) => this.handleRegister(e));
-        if (passwordForm) passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
 
         // Navigation links
         const registerLink = document.getElementById('register-link');
