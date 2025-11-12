@@ -1213,11 +1213,20 @@ class BoldVPNPortal {
         if (!container) return;
 
         if (!devices || devices.length === 0) {
-            container.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">No devices configured. Click "Add Device" to create your first VPN device!</p>';
+            container.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--muted);">No devices configured. Click "Add Device" to create your first VPN device!</p>';
             return;
         }
 
-        container.innerHTML = devices.map(device => {
+        // Use compact table-like layout for better visibility
+        container.innerHTML = `
+            <div class="devices-table-header">
+                <div class="device-col-name">Device Name</div>
+                <div class="device-col-server">Server</div>
+                <div class="device-col-ip">IP Address</div>
+                <div class="device-col-date">Added</div>
+                <div class="device-col-actions">Actions</div>
+            </div>
+            ${devices.map(device => {
             // Validate device data
             if (!device || !device.id || !device.deviceName) {
                 console.warn('Invalid device data:', device);
@@ -1225,28 +1234,27 @@ class BoldVPNPortal {
             }
             
             const deviceName = this.escapeHtml(device.deviceName);
-            const serverInfo = device.server ? this.escapeHtml(device.server.location) : '<span style="color: #999;">Not configured</span>';
-            const assignedIP = device.assignedIP || '<span style="color: #999;">N/A</span>';
+            const serverInfo = device.server ? this.escapeHtml(device.server.location) : '<span style="color: var(--muted);">N/A</span>';
+            const assignedIP = device.assignedIP || '<span style="color: var(--muted);">N/A</span>';
             const createdAt = device.createdAt ? new Date(device.createdAt).toLocaleDateString() : 'Unknown';
-            const lastUsed = device.lastUsed ? new Date(device.lastUsed).toLocaleDateString() : null;
             
             return `
-            <div class="device-card" style="margin-bottom: 15px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fff;">
-                <div class="device-info">
-                    <h4 style="margin: 0 0 10px 0; color: #333;">${deviceName}</h4>
-                    <p style="margin: 5px 0; color: #666;"><strong>Server:</strong> ${serverInfo}</p>
-                    <p style="margin: 5px 0; color: #666;"><strong>IP:</strong> ${assignedIP}</p>
-                    <p style="margin: 5px 0; color: #666;"><strong>Added:</strong> ${createdAt}</p>
-                    ${lastUsed ? `<p style="margin: 5px 0; color: #666;"><strong>Last Used:</strong> ${lastUsed}</p>` : ''}
+            <div class="device-row">
+                <div class="device-col-name">
+                    <strong>${deviceName}</strong>
                 </div>
-                <div class="device-actions" style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="boldVPNPortal.showQRCode(${device.id}, '${deviceName.replace(/'/g, "\\'")}')">Show QR Code</button>
-                    <button class="btn btn-secondary" onclick="boldVPNPortal.downloadConfig(${device.id})">Download Config</button>
-                    <button class="btn btn-danger" onclick="boldVPNPortal.removeDevice(${device.id}, '${deviceName.replace(/'/g, "\\'")}')">Remove</button>
+                <div class="device-col-server">${serverInfo}</div>
+                <div class="device-col-ip"><code style="background: var(--card); padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">${assignedIP}</code></div>
+                <div class="device-col-date">${createdAt}</div>
+                <div class="device-col-actions">
+                    <button class="btn btn-sm btn-primary" onclick="boldVPNPortal.showQRCode(${device.id}, '${deviceName.replace(/'/g, "\\'")}')" title="Show QR Code">QR</button>
+                    <button class="btn btn-sm btn-secondary" onclick="boldVPNPortal.downloadConfig(${device.id})" title="Download Config">Download</button>
+                    <button class="btn btn-sm btn-danger" onclick="boldVPNPortal.removeDevice(${device.id}, '${deviceName.replace(/'/g, "\\'")}')" title="Remove Device">Remove</button>
                 </div>
             </div>
             `;
-        }).filter(html => html).join('');
+        }).filter(html => html).join('')}
+        `;
     }
 
     renderServers(servers) {

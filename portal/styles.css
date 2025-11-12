@@ -468,8 +468,75 @@ body > *:not(#vanta-background) {
 }
 
 .devices-container {
+    margin-top: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+/* Table-like layout for devices - compact and visible */
+.devices-table-header {
     display: grid;
-    gap: 12px;
+    grid-template-columns: 2fr 2fr 1.5fr 1fr 2fr;
+    gap: 15px;
+    padding: 15px 20px;
+    background: var(--panel);
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+    font-size: 0.9em;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.device-row {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1.5fr 1fr 2fr;
+    gap: 15px;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.device-row:last-child {
+    border-bottom: none;
+}
+
+.device-row:hover {
+    background: rgba(14, 165, 233, 0.05);
+}
+
+.device-col-name {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.device-col-server {
+    color: var(--text);
+    font-size: 0.95em;
+}
+
+.device-col-ip {
+    color: var(--text);
+}
+
+.device-col-date {
+    color: var(--muted);
+    font-size: 0.9em;
+}
+
+.device-col-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85em;
+    min-width: auto;
 }
 
 /* Modal */
@@ -576,6 +643,52 @@ body > *:not(#vanta-background) {
 
     .auth-card {
         padding: 24px;
+    }
+    
+    /* Responsive device table */
+    .devices-table-header,
+    .device-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .devices-table-header {
+        display: none; /* Hide header on mobile */
+    }
+    
+    .device-row {
+        padding: 15px;
+        border-bottom: 2px solid var(--border);
+    }
+    
+    .device-col-name::before {
+        content: "Device: ";
+        font-weight: 600;
+        color: var(--muted);
+    }
+    
+    .device-col-server::before {
+        content: "Server: ";
+        font-weight: 600;
+        color: var(--muted);
+    }
+    
+    .device-col-ip::before {
+        content: "IP: ";
+        font-weight: 600;
+        color: var(--muted);
+    }
+    
+    .device-col-date::before {
+        content: "Added: ";
+        font-weight: 600;
+        color: var(--muted);
+    }
+    
+    .device-col-actions {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
     }
 }
 
