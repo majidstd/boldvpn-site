@@ -480,6 +480,10 @@ class BoldVPNPortal {
             });
             
             const container = document.getElementById('devices-container');
+            if (!container) {
+                console.error('devices-container not found!');
+                return;
+            }
             
             if (response.ok) {
                 const devices = await response.json();
@@ -505,8 +509,8 @@ class BoldVPNPortal {
                                 <div><code>${device.assignedIP || 'N/A'}</code></div>
                                 <div>${new Date(device.createdAt).toLocaleDateString()}</div>
                                 <div>
-                                    <button class="btn btn-sm btn-primary" onclick="boldVPNPortal.downloadConfig(${device.id})">Download</button>
-                                    <button class="btn btn-sm btn-danger" onclick="boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
+                                    <button class="btn btn-sm btn-primary" onclick="window.boldVPNPortal.downloadConfig(${device.id})">Download</button>
+                                    <button class="btn btn-sm btn-danger" onclick="window.boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
                                 </div>
                             </div>
                         `).join('')}
@@ -517,7 +521,10 @@ class BoldVPNPortal {
             }
         } catch (error) {
             console.error('Failed to load devices:', error);
-            document.getElementById('devices-container').innerHTML = '<p style="text-align: center; color: var(--error-color); padding: 40px;">Network error loading devices</p>';
+            const container = document.getElementById('devices-container');
+            if (container) {
+                container.innerHTML = '<p style="text-align: center; color: var(--error-color); padding: 40px;">Network error loading devices</p>';
+            }
         }
     }
 
