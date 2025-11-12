@@ -104,11 +104,16 @@ async function getWireGuardServerUUID() {
  */
 async function getWireGuardServerSubnet() {
   try {
+    console.log('[DEBUG] Getting WireGuard server subnet from OPNsense...');
     const response = await makeRequest('GET', '/wireguard/server/get');
+    
+    console.log('[DEBUG] OPNsense response structure:', JSON.stringify(response).substring(0, 500));
     
     if (response && response.server && response.server.servers && response.server.servers.server) {
       const servers = response.server.servers.server;
       const serverUUIDs = Object.keys(servers);
+      
+      console.log('[DEBUG] Found server UUIDs:', serverUUIDs);
       
       if (serverUUIDs.length === 0) {
         throw new Error('No WireGuard servers configured in OPNsense');
@@ -117,6 +122,12 @@ async function getWireGuardServerSubnet() {
       // Get first enabled server
       const serverUUID = serverUUIDs[0];
       const serverConfig = servers[serverUUID];
+      
+      console.log('[DEBUG] Server UUID:', serverUUID);
+      console.log('[DEBUG] Server config keys:', Object.keys(serverConfig));
+      console.log('[DEBUG] Server config tunneladdress:', JSON.stringify(serverConfig.tunneladdress));
+      console.log('[DEBUG] Tunneladdress type:', typeof serverConfig.tunneladdress);
+      console.log('[DEBUG] Tunneladdress value:', serverConfig.tunneladdress);
       
       // Extract tunneladdress - handle different formats
       let tunnelAddress = null;
