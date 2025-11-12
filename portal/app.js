@@ -1173,9 +1173,20 @@ class BoldVPNPortal {
             if (response.ok) {
                 const devices = await response.json();
                 this.renderDevices(devices);
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Failed to load devices:', errorData.error || 'Unknown error');
+                const container = document.getElementById('devices-container');
+                if (container) {
+                    container.innerHTML = `<p class="alert alert-error">Failed to load devices: ${errorData.error || 'Unknown error'}</p>`;
+                }
             }
         } catch (error) {
             console.error('Failed to load devices:', error);
+            const container = document.getElementById('devices-container');
+            if (container) {
+                container.innerHTML = '<p class="alert alert-error">Network error. Please check your connection and try again.</p>';
+            }
         }
     }
 
@@ -1212,27 +1223,41 @@ class BoldVPNPortal {
         const container = document.getElementById('devices-container');
         if (!container) return;
 
-        if (devices.length === 0) {
-            container.innerHTML = '<p>No devices configured. Add your first device to get started!</p>';
+        if (!devices || devices.length === 0) {
+            container.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">No devices configured. Click "Add Device" to create your first VPN device!</p>';
             return;
         }
 
-        container.innerHTML = devices.map(device => `
-            <div class="device-card">
+        container.innerHTML = devices.map(device => {
+            // Validate device data
+            if (!device || !device.id || !device.deviceName) {
+                console.warn('Invalid device data:', device);
+                return '';
+            }
+            
+            const deviceName = this.escapeHtml(device.deviceName);
+            const serverInfo = device.server ? this.escapeHtml(device.server.location) : '<span style="color: #999;">Not configured</span>';
+            const assignedIP = device.assignedIP || '<span style="color: #999;">N/A</span>';
+            const createdAt = device.createdAt ? new Date(device.createdAt).toLocaleDateString() : 'Unknown';
+            const lastUsed = device.lastUsed ? new Date(device.lastUsed).toLocaleDateString() : null;
+            
+            return `
+            <div class="device-card" style="margin-bottom: 15px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fff;">
                 <div class="device-info">
-                    <h4>${this.escapeHtml(device.deviceName)}</h4>
-                    <p>Server: ${device.server ? this.escapeHtml(device.server.location) : 'Not configured'}</p>
-                    <p>IP: ${device.assignedIP}</p>
-                    <p>Added: ${new Date(device.createdAt).toLocaleDateString()}</p>
-                    ${device.lastUsed ? `<p>Last Used: ${new Date(device.lastUsed).toLocaleDateString()}</p>` : ''}
+                    <h4 style="margin: 0 0 10px 0; color: #333;">${deviceName}</h4>
+                    <p style="margin: 5px 0; color: #666;"><strong>Server:</strong> ${serverInfo}</p>
+                    <p style="margin: 5px 0; color: #666;"><strong>IP:</strong> ${assignedIP}</p>
+                    <p style="margin: 5px 0; color: #666;"><strong>Added:</strong> ${createdAt}</p>
+                    ${lastUsed ? `<p style="margin: 5px 0; color: #666;"><strong>Last Used:</strong> ${lastUsed}</p>` : ''}
                 </div>
-                <div class="device-actions">
-                    <button class="btn btn-primary" onclick="boldVPNPortal.showQRCode(${device.id}, '${this.escapeHtml(device.deviceName)}')">Show QR Code</button>
+                <div class="device-actions" style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="boldVPNPortal.showQRCode(${device.id}, '${deviceName.replace(/'/g, "\\'")}')">Show QR Code</button>
                     <button class="btn btn-secondary" onclick="boldVPNPortal.downloadConfig(${device.id})">Download Config</button>
-                    <button class="btn btn-danger" onclick="boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
+                    <button class="btn btn-danger" onclick="boldVPNPortal.removeDevice(${device.id}, '${deviceName.replace(/'/g, "\\'")}')">Remove</button>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).filter(html => html).join('');
     }
 
     renderServers(servers) {
@@ -1490,7 +1515,7 @@ class BoldVPNPortal {
     }
 
     async removeDevice(deviceId, deviceName) {
-        if (!confirm(`Remove device "${deviceName}"? This cannot be undone.`)) return;
+        if (!confirm(`Remove device "${deviceName}"? This will delete it from OPNsense and cannot be undone.`)) return;
 
         try {
             const response = await fetch(`${this.apiBase}/devices/${deviceId}`, {
@@ -1499,15 +1524,15 @@ class BoldVPNPortal {
             });
 
             if (response.ok) {
-                alert(`Device "${deviceName}" removed successfully`);
-                this.loadDevices();
+                this.showAlert(`Device "${deviceName}" removed successfully`, 'success');
+                await this.loadDevices();
             } else {
                 const data = await response.json();
-                alert(data.error || 'Failed to remove device');
+                this.showAlert(data.error || 'Failed to remove device', 'error');
             }
         } catch (error) {
             console.error('Remove device error:', error);
-            alert('Network error. Please try again.');
+            this.showAlert('Network error. Please check your connection and try again.', 'error');
         }
     }
 

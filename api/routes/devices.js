@@ -175,7 +175,43 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const result = await pool.query(query, [username]);
 
-    const devices = result.rows.map(device => ({
+    // *** SYNC CHECK: Verify each device exists in OPNsense ***
+    const validDevices = [];
+    for (const device of result.rows) {
+      const peerName = `${username}-${device.device_name}`;
+      
+      try {
+        // Check if peer exists in OPNsense
+        const opnsensePeer = await opnsense.findPeerByName(peerName);
+        
+        if (opnsensePeer) {
+          // Peer exists - sync peer ID if different
+          if (device.opnsense_peer_id !== opnsensePeer.uuid) {
+            await pool.query(
+              'UPDATE user_devices SET opnsense_peer_id = $1 WHERE id = $2',
+              [opnsensePeer.uuid, device.id]
+            );
+            console.log(`[OK] Synced peer ID for device ${device.id}`);
+          }
+          // Add to valid devices
+          validDevices.push(device);
+        } else {
+          // Peer doesn't exist in OPNsense - mark device as inactive
+          console.log(`[!] Device ${device.id} (${peerName}) not found in OPNsense, marking inactive`);
+          await pool.query(
+            'UPDATE user_devices SET is_active = false WHERE id = $1',
+            [device.id]
+          );
+        }
+      } catch (syncError) {
+        // If sync check fails, still include device but log warning
+        console.error(`[!] Sync check failed for device ${device.id}:`, syncError.message);
+        // Include device anyway (OPNsense might be temporarily unavailable)
+        validDevices.push(device);
+      }
+    }
+
+    const devices = validDevices.map(device => ({
       id: device.id,
       deviceName: device.device_name,
       server: device.server_name ? {
