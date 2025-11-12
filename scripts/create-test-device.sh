@@ -1,6 +1,6 @@
 #!/bin/sh
 # Create a test device (peer) on WireGuard server
-# Usage: ./scripts/create-test-device.sh [username] [password] [device_name] [server_id]
+# Usage: ./scripts/create-test-device.sh [username] [password] [device_name] [server_name_or_id]
 
 set -e
 
@@ -8,7 +8,23 @@ API_URL="${API_URL:-http://localhost:3000/api}"
 USERNAME="${1:-testuser}"
 PASSWORD="${2}"
 DEVICE_NAME="${3:-TestDevice-$(date +%s)}"
-SERVER_ID="${4:-1}"
+SERVER_ARG="${4:-CA-Vancouver01}"
+
+# Try to get server ID if server name provided
+if echo "$SERVER_ARG" | grep -q '^[0-9]*$'; then
+    SERVER_ID="$SERVER_ARG"
+else
+    # Look up server ID by name
+    DB_USER="${DB_USER:-radiususer}"
+    DB_NAME="${DB_NAME:-radius}"
+    SERVER_ID=$(psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT id FROM vpn_servers WHERE name = '$SERVER_ARG' LIMIT 1" | tr -d ' ')
+    
+    if [ -z "$SERVER_ID" ]; then
+        echo "❌ Server '$SERVER_ARG' not found in database"
+        exit 1
+    fi
+    echo "📋 Found server: $SERVER_ARG (ID: $SERVER_ID)"
+fi
 
 if [ -z "$PASSWORD" ]; then
     echo "Usage: $0 [username] [password] [device_name] [server_id]"
