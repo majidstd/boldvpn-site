@@ -256,11 +256,6 @@ body > *:not(#vanta-background) {
     min-height: calc(100vh - 64px);
     gap: 0;
     background: var(--card);
-    border: 1px solid var(--border);
-    margin: 32px auto;
-    max-width: 1400px;
-    border-radius: var(--border-radius);
-    overflow: hidden;
 }
 
 /* Sidebar */
@@ -269,6 +264,7 @@ body > *:not(#vanta-background) {
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
+    min-height: calc(100vh - 64px);
 }
 
 .sidebar-header {
@@ -352,7 +348,7 @@ body > *:not(#vanta-background) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 32px 32px 24px 32px;
+    padding: 0 0 24px 0;
     margin: 0;
 }
 
@@ -365,8 +361,8 @@ body > *:not(#vanta-background) {
 .overview-container,
 .content-container {
     background: transparent;
-    padding: 24px;
-    margin: 0 32px 32px 32px;
+    padding: 32px;
+    margin: 0;
 }
 
 /* Form Container - constrain width for forms */
@@ -382,7 +378,7 @@ body > *:not(#vanta-background) {
 }
 
 .dashboard-card {
-    background: var(--panel);
+    background: rgba(15, 23, 42, 0.5);
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
     padding: 24px;
@@ -390,6 +386,7 @@ body > *:not(#vanta-background) {
 }
 
 .dashboard-card:hover {
+    background: rgba(15, 23, 42, 0.7);
     border-color: var(--primary);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
