@@ -314,14 +314,19 @@ class BoldVPNPortal {
         `;
 
         // Bind event listener after DOM is ready
-        const addBtn = document.getElementById('add-device-btn');
-        if (addBtn) {
-            addBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.addDevice();
-            });
-        }
+        setTimeout(() => {
+            const addBtn = document.getElementById('add-device-btn');
+            if (addBtn) {
+                addBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Add Device button clicked');
+                    this.addDevice();
+                });
+            } else {
+                console.error('Add Device button not found!');
+            }
+        }, 100);
         this.loadDevices();
     }
 
@@ -587,8 +592,10 @@ class BoldVPNPortal {
     }
 
     addDevice() {
+        console.log('addDevice() called');
         // Prevent multiple modals
         if (document.querySelector('.modal')) {
+            console.log('Modal already exists, returning');
             return;
         }
         // Fetch available servers first
@@ -596,6 +603,7 @@ class BoldVPNPortal {
     }
 
     async showAddDeviceModal() {
+        console.log('showAddDeviceModal() called');
         try {
             // Fetch servers
             const serversResponse = await fetch(`${this.apiBase}/servers`, {
@@ -605,6 +613,9 @@ class BoldVPNPortal {
             let servers = [];
             if (serversResponse.ok) {
                 servers = await serversResponse.json();
+                console.log('Servers loaded:', servers.length);
+            } else {
+                console.warn('Failed to load servers:', serversResponse.status);
             }
 
             // Create modal
@@ -652,9 +663,16 @@ class BoldVPNPortal {
             `;
 
             document.body.appendChild(modal);
+            console.log('Modal added to DOM');
+            
+            // Ensure modal is visible
+            modal.style.display = 'flex';
 
             // Close handlers
-            const closeModal = () => modal.remove();
+            const closeModal = () => {
+                console.log('Closing modal');
+                modal.remove();
+            };
             
             modal.querySelector('.modal-close').addEventListener('click', closeModal);
             modal.querySelector('#cancel-add-device').addEventListener('click', closeModal);
