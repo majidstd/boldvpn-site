@@ -53,7 +53,7 @@ echo "Hostname:   $SERVER_HOSTNAME"
 echo "IP:         $SERVER_IP"
 echo "Port:       $WG_PORT"
 echo "Location:   $FLAG_EMOJI $COUNTRY, $CITY"
-echo "Public Key: ${WG_PUBLIC_KEY:0:20}...${WG_PUBLIC_KEY: -10}"
+echo "Public Key: $(echo "$WG_PUBLIC_KEY" | cut -c1-20)...$(echo "$WG_PUBLIC_KEY" | tail -c 11)"
 echo ""
 
 read -p "Update database with this config? [y/N] " CONFIRM
@@ -110,4 +110,5 @@ echo "Next steps:"
 echo "1. Restart API: service boldvpn_api restart"
 echo "2. Test: curl http://localhost:3000/api/servers"
 echo ""
+
 
