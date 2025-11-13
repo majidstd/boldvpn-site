@@ -822,6 +822,31 @@ class BoldVPNPortal {
             form.parentNode.replaceChild(newForm, form);
             
             console.log('Attaching form submit handler');
+            
+            // Attach BOTH form submit AND button click handlers for redundancy
+            const submitButton = newForm.querySelector('button[type="submit"]');
+            console.log('Submit button found:', submitButton);
+            
+            // Direct button click handler (prevent default immediately)
+            submitButton.addEventListener('click', async (e) => {
+                alert('BUTTON CLICKED!'); // Visible alert
+                console.log('%c SUBMIT BUTTON CLICKED!', 'background: orange; color: white; font-size: 16px;', e);
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                console.log('Button click prevented, calling handleAddDevice');
+                try {
+                    await this.handleAddDevice(e, newForm, modal);
+                    console.log('%c handleAddDevice completed', 'background: blue; color: white;');
+                } catch (err) {
+                    console.error('%c handleAddDevice ERROR:', 'background: red; color: white;', err);
+                    alert('ERROR: ' + err.message);
+                }
+                document.removeEventListener('keydown', handleEscape);
+                return false;
+            }, true); // Use capture phase
+            
+            // Form submit handler (backup)
             newForm.addEventListener('submit', async (e) => {
                 alert('FORM SUBMITTED!'); // Visible alert to confirm handler runs
                 console.log('%c FORM SUBMIT FIRED!', 'background: green; color: white; font-size: 16px;', e);
@@ -837,7 +862,7 @@ class BoldVPNPortal {
                     alert('ERROR: ' + err.message);
                 }
                 document.removeEventListener('keydown', handleEscape);
-            });
+            }, true); // Use capture phase
         } catch (error) {
             console.error('Error showing add device modal:', error);
             this.showAlert('Failed to load server list. Please try again.', 'error');
