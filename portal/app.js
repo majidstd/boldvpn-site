@@ -530,7 +530,8 @@ class BoldVPNPortal {
                                 <div><code>${device.assignedIP || 'N/A'}</code></div>
                                 <div>${new Date(device.createdAt).toLocaleDateString()}</div>
                                 <div>
-                                    <button class="btn btn-sm btn-primary" onclick="window.boldVPNPortal.downloadConfig(${device.id})">Download</button>
+                                    <button class="btn btn-sm btn-primary" onclick="window.boldVPNPortal.downloadConfig(${device.id})" title="Download WireGuard config file">📥 Config</button>
+                                    <button class="btn btn-sm btn-primary" onclick="window.boldVPNPortal.downloadQRCode(${device.id})" title="Download QR code for mobile setup">📱 QR Code</button>
                                     <button class="btn btn-sm btn-danger" onclick="window.boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
                                 </div>
                             </div>
@@ -964,6 +965,33 @@ class BoldVPNPortal {
             }
         } catch (error) {
             console.error('Download error:', error);
+            this.showAlert('Network error. Please try again.', 'error');
+        }
+    }
+
+    async downloadQRCode(deviceId) {
+        try {
+            const response = await fetch(`${this.apiBase}/devices/${deviceId}/qrcode`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `wireguard-qrcode-${deviceId}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                this.showAlert('QR code downloaded successfully', 'success');
+        } else {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                this.showAlert(errorData.error || 'Failed to download QR code', 'error');
+            }
+        } catch (error) {
+            console.error('QR code download error:', error);
             this.showAlert('Network error. Please try again.', 'error');
         }
     }
