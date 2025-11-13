@@ -860,7 +860,7 @@ class BoldVPNPortal {
             submitButton.parentNode.replaceChild(freshSubmit, submitButton);
 
             freshSubmit.addEventListener('click', async (e) => {
-                console.log('Add Device submit button clicked');
+                console.log('Add Device button clicked - starting process');
                 e.preventDefault();
                 e.stopPropagation();
                 // Immediate UI feedback and client-side validation
