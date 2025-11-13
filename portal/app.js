@@ -196,16 +196,26 @@ class BoldVPNPortal {
     }
 
     navigateTo(section) {
+        console.log('navigateTo called with section:', section);
         this.currentSection = section;
 
         // Update active nav item
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
         });
-        document.querySelector(`[data-section="${section}"]`).classList.add('active');
+        const activeNav = document.querySelector(`[data-section="${section}"]`);
+        if (activeNav) {
+            activeNav.classList.add('active');
+        } else {
+            console.error('Nav item not found for section:', section);
+        }
 
         // Render content
         const contentArea = document.getElementById('content-area');
+        if (!contentArea) {
+            console.error('Content area not found!');
+            return;
+        }
         
         switch(section) {
             case 'overview':
@@ -226,7 +236,10 @@ class BoldVPNPortal {
             case 'billing':
                 this.renderBilling(contentArea);
                 break;
+            default:
+                console.error('Unknown section:', section);
         }
+        console.log('Navigation complete, currentSection:', this.currentSection);
     }
 
     renderOverview(container) {
@@ -819,11 +832,18 @@ class BoldVPNPortal {
             const data = await response.json();
 
             if (response.ok) {
+                console.log('Device added successfully, navigating to devices section');
                 modal.remove();
                 // Show success message
                 this.showAlert('Device added successfully!', 'success');
                 // Always stay on devices section and reload
+                console.log('Current section before navigate:', this.currentSection);
                 this.navigateTo('devices');
+                console.log('Current section after navigate:', this.currentSection);
+                // Force reload devices list
+                setTimeout(() => {
+                    this.loadDevices();
+                }, 100);
             } else {
                 errorDiv.textContent = data.error || 'Failed to add device';
                 errorDiv.style.display = 'block';
