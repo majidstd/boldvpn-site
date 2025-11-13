@@ -127,7 +127,8 @@ cmd_create() {
     password=$(echo "$creds" | cut -d'|' -f2)
     
     echo ""
-    echo "Device Information:"
+    echo "Step 2: Device Information"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
     while true; do
