@@ -401,9 +401,21 @@ cmd_list_opnsense() {
     echo "Data Source: OPNsense Firewall (Direct API Call)"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
+    
+    # Read OPNsense credentials from .env first
+    OPNSENSE_KEY=$(grep -E '^OPNSENSE_API_KEY=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    OPNSENSE_SECRET=$(grep -E '^OPNSENSE_API_SECRET=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    OPNSENSE_HOST=$(grep -E '^OPNSENSE_HOST=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || echo "firewall.boldvpn.net")
+    OPNSENSE_PORT=$(grep -E '^OPNSENSE_PORT=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || echo "8443")
+    
+    echo "OPNsense Configuration:"
+    echo "  Host: $OPNSENSE_HOST"
+    echo "  Port: $OPNSENSE_PORT"
+    echo "  Source: /usr/local/boldvpn-site/api/.env"
+    echo ""
     echo "Running command:"
     echo "curl -k -u \"\$OPNSENSE_API_KEY:\$OPNSENSE_API_SECRET\" \\"
-    echo "  -X GET https://firewall.boldvpn.net:8443/api/wireguard/client/get"
+    echo "  -X GET https://${OPNSENSE_HOST}:${OPNSENSE_PORT}/api/wireguard/client/get"
     echo ""
     echo "What this shows:"
     echo "  • ALL WireGuard clients/peers in OPNsense"
@@ -411,12 +423,6 @@ cmd_list_opnsense() {
     echo "  • Shows UUID, name, tunnel address, public key"
     echo "  • This is the source of truth for active peers"
     echo ""
-    
-    # Check if OPNsense credentials are set
-    OPNSENSE_KEY=$(grep -E '^OPNSENSE_API_KEY=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-    OPNSENSE_SECRET=$(grep -E '^OPNSENSE_API_SECRET=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-    OPNSENSE_HOST=$(grep -E '^OPNSENSE_HOST=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || echo "firewall.boldvpn.net")
-    OPNSENSE_PORT=$(grep -E '^OPNSENSE_PORT=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || echo "8443")
     
     if [ -z "$OPNSENSE_KEY" ] || [ -z "$OPNSENSE_SECRET" ]; then
         echo "Error: OPNsense API credentials not found in /usr/local/boldvpn-site/api/.env"
