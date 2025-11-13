@@ -690,12 +690,12 @@ class BoldVPNPortal {
                             <select id="device-server" name="serverId" required>
                                 <option value="">Select a server</option>
                                 ${servers.map(s => {
-                                    // Use consistent format: Flag Country, City - Server Name
+                                    // Use consistent format: Flag Country, City (ServerName)
                                     const flag = s.flag || '';
                                     const country = s.country || '';
                                     const city = s.city || '';
                                     const name = s.name || '';
-                                    
+
                                     // Build location string
                                     let locationStr = '';
                                     if (flag && country && city) {
@@ -707,13 +707,13 @@ class BoldVPNPortal {
                                     } else {
                                         locationStr = 'Unknown Server';
                                     }
-                                    
-                                    // Add server name if different from city (to distinguish duplicates)
-                                    if (name && name !== city && !name.includes(city)) {
-                                        locationStr += ` - ${name}`;
+
+                                    // Always show server name in parentheses for clarity
+                                    if (name) {
+                                        locationStr += ` (${name})`;
                                     }
-                                    
-                                    const loadInfo = s.load !== undefined ? ` (${s.load.toFixed(0)}% load)` : '';
+
+                                    const loadInfo = s.load !== undefined ? ` - ${s.load.toFixed(0)}% load` : '';
                                     const premiumBadge = s.isPremium ? ' ⭐' : '';
                                     return `<option value="${s.id}">${locationStr}${loadInfo}${premiumBadge}</option>`;
                                 }).join('')}
