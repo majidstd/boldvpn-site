@@ -93,6 +93,11 @@ const getUserAttributes = async (username) => {
 
 // Creates a new user, storing plain-text pass for RADIUS and hash for API
 const createUser = async (username, plainTextPassword, email, plan) => {
+  // SECURITY WARNING: This function stores a plain-text password in the 'radcheck'
+  // table for RADIUS authentication. This is a significant security risk.
+  // If the database is compromised, all user passwords will be exposed.
+  // This is a common requirement for RADIUS with Cleartext-Password, but it is
+  // strongly recommended to use a more secure authentication method if possible.
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -133,6 +138,9 @@ const createUser = async (username, plainTextPassword, email, plan) => {
 
 // Updates a user's password in both places
 const updateUserPassword = async (username, plainTextPassword) => {
+  // SECURITY WARNING: This function updates the plain-text password in the 'radcheck'
+  // table for RADIUS authentication. This is a significant security risk.
+  // See the warning in the 'createUser' function for more details.
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

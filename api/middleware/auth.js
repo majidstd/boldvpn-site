@@ -168,7 +168,6 @@ const validatePasswordChange = [
 
 module.exports = {
   authenticateToken,
-  requireAuth,
   validateRegistration,
   validateLogin,
   validatePasswordReset,

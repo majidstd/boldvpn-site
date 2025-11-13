@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
-const { requireAuth } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // Mock Stripe integration for now
 // TODO: Replace with real Stripe implementation
 
 // Get user subscription status
-router.get('/subscription', requireAuth, async (req, res) => {
+router.get('/subscription', authenticateToken, async (req, res) => {
   try {
     const { username, plan } = req.user;
 
@@ -141,7 +141,7 @@ router.get('/plans', (req, res) => {
 });
 
 // Create payment intent (Stripe)
-router.post('/create-payment-intent', requireAuth, async (req, res) => {
+router.post('/create-payment-intent', authenticateToken, async (req, res) => {
   try {
     const { planId, paymentMethodId } = req.body;
     const { username } = req.user;
@@ -182,7 +182,7 @@ router.post('/create-payment-intent', requireAuth, async (req, res) => {
 });
 
 // Confirm payment (Stripe webhook would handle this in production)
-router.post('/confirm-payment', requireAuth, async (req, res) => {
+router.post('/confirm-payment', authenticateToken, async (req, res) => {
   try {
     const { paymentIntentId, planId } = req.body;
     const { username } = req.user;
@@ -210,7 +210,7 @@ router.post('/confirm-payment', requireAuth, async (req, res) => {
 });
 
 // Get billing history
-router.get('/history', requireAuth, async (req, res) => {
+router.get('/history', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
 
@@ -245,7 +245,7 @@ router.get('/history', requireAuth, async (req, res) => {
 });
 
 // Cancel subscription
-router.post('/cancel', requireAuth, async (req, res) => {
+router.post('/cancel', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
 
