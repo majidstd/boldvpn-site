@@ -56,54 +56,6 @@ require_cmd() {
 
 # Check for required commands
 require_cmd curl psql
-
-# Pretty-print JSON without Python: use jq if available, otherwise simple sed fallback
-pretty_json() {
-    if command -v jq >/dev/null 2>&1; then
-        jq . 2>/dev/null
-    else
-        # Fallback: add newlines between top-level objects to make JSON more readable
-        sed -e 's/},\s*{/,\n{/g'
-    fi
-}
-
-# Parse a JSON array of objects (devices) in pure sh (best-effort)
-# Input: entire JSON array on stdin
-parse_devices() {
-    # Remove leading/trailing brackets, split on '},{' boundary
-    tr -d '\n' | sed -e 's/^\s*\[//' -e 's/\]\s*$//' -e 's/},\s*{/}\n{/g' | while IFS= read -r obj; do
-        # Ensure obj starts with { and ends with }
-        case "$obj" in
-            '{'*'}') ;;
-            *) continue ;;
-        esac
-
-        # Extract fields with simple patterns
-        id=$(echo "$obj" | grep -o '"id"\s*:\s*[0-9]*' | grep -o '[0-9]*' || echo 'N/A')
-        deviceName=$(echo "$obj" | sed -n 's/.*"deviceName"\s*:\s*"\([^"]*\)".*/\1/p' || echo 'N/A')
-        isActive=$(echo "$obj" | grep -o '"isActive"\s*:\s*\(true\|false\|"[^"]*"\|[0-9]\)' | sed -E 's/.*:\s*//g' || echo 'N/A')
-        assignedIP=$(echo "$obj" | sed -n 's/.*"assignedIP"\s*:\s*"\([^"]*\)".*/\1/p' || echo 'N/A')
-        createdAt=$(echo "$obj" | sed -n 's/.*"createdAt"\s*:\s*"\([^"]*\)".*/\1/p' || echo 'N/A')
-        serverLoc=$(echo "$obj" | sed -n 's/.*"server"\s*:\s*{[^}]*"location"\s*:\s*"\([^"]*\)".*/\1/p' || echo '')
-
-        # Normalize isActive
-        case "$isActive" in
-            "true"|true|"t"|t|1) status='Active' ;;
-            "false"|false|"f"|f|0) status='Inactive' ;;
-            *) status="$isActive" ;;
-        esac
-
-        echo "  Device ID: ${id:-N/A}"
-        echo "  Name: ${deviceName:-N/A}"
-        echo "  Status: ${status:-N/A}"
-        echo "  IP: ${assignedIP:-N/A}"
-        if [ -n "$serverLoc" ]; then
-            echo "  Server: $serverLoc"
-        fi
-        echo "  Created: ${createdAt:-N/A}"
-        echo ""
-    done
-}
 print_header() {
     clear_screen
     echo "${BLUE}╔════════════════════════════════════════╗${NC}"
@@ -164,7 +116,7 @@ login() {
     
     if [ -z "$TOKEN" ]; then
         echo "${RED}❌ Login failed!${NC}"
-        echo "$LOGIN_RESPONSE" | pretty_json 2>/dev/null || echo "$LOGIN_RESPONSE"
+        echo "$LOGIN_RESPONSE"
         return 1
     fi
     
@@ -389,12 +341,12 @@ cmd_list() {
         else
             echo "Found $device_count device(s):"
             echo ""
-            # Parse devices in pure shell (best-effort)
-            echo "$devices_response" | parse_devices 2>/dev/null || echo "$devices_response"
+            # Show raw devices JSON
+            echo "$devices_response"
         fi
     else
         echo "Response:"
-        echo "$devices_response" | pretty_json 2>/dev/null || echo "$devices_response"
+        echo "$devices_response"
     fi
     
     echo ""
@@ -606,7 +558,7 @@ cmd_remove() {
     echo ""
     echo "${BLUE}HTTP Status: $http_code${NC}"
     echo "${BLUE}Response:${NC}"
-    echo "$response_body" | pretty_json 2>/dev/null || echo "$response_body"
+    echo "$response_body"
     echo ""
     
     if [ "$http_code" = "200" ]; then
