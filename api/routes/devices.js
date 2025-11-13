@@ -198,10 +198,10 @@ router.get('/', authenticateToken, async (req, res) => {
           // Add to valid devices
           validDevices.push(device);
         } else {
-          // Peer doesn't exist in OPNsense - mark device as inactive
-          console.log(`[!] Device ${device.id} (${peerName}) not found in OPNsense, marking inactive`);
+          // Peer doesn't exist in OPNsense - hard delete from database
+          console.log(`[!] Device ${device.id} (${peerName}) not found in OPNsense, deleting from database. IP ${device.assigned_ip} freed.`);
           await pool.query(
-            'UPDATE user_devices SET is_active = false WHERE id = $1',
+            'DELETE FROM user_devices WHERE id = $1',
             [device.id]
           );
         }
@@ -216,7 +216,6 @@ router.get('/', authenticateToken, async (req, res) => {
     const devices = validDevices.map(device => ({
       id: device.id,
       deviceName: device.device_name,
-      isActive: device.is_active,
       server: device.server_name ? {
         id: device.server_id,
         name: device.server_name,
