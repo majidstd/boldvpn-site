@@ -492,10 +492,13 @@ class BoldVPNPortal {
         }
     }
 
-    async loadDevices() {
+    async loadDevices(includeInactive = false) {
         try {
-            console.log('Loading devices from:', `${this.apiBase}/devices`);
-            const response = await fetch(`${this.apiBase}/devices`, {
+            const url = includeInactive 
+                ? `${this.apiBase}/devices?includeInactive=true`
+                : `${this.apiBase}/devices`;
+            console.log('Loading devices from:', url);
+            const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
             
@@ -514,30 +517,58 @@ class BoldVPNPortal {
                     return;
                 }
 
-                container.innerHTML = `
+                const inactiveCount = devices.filter(d => d.isActive === false).length;
+                const inactiveLabel = inactiveCount > 0 ? ` (${inactiveCount})` : '';
+
+                let html = `
+                    <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="show-inactive-devices" ${includeInactive ? 'checked' : ''} 
+                                   onchange="window.boldVPNPortal.loadDevices(this.checked);" 
+                                   style="cursor: pointer;">
+                            <span>Show inactive devices${inactiveLabel}</span>
+                        </label>
+                    </div>
                     <div class="devices-table">
                         <div class="devices-table-header">
                             <div>Device Name</div>
                             <div>Server</div>
                             <div>IP Address</div>
                             <div>Added</div>
+                            <div>Status</div>
                             <div>Actions</div>
                         </div>
-                        ${devices.map(device => `
-                            <div class="device-row">
+                        ${devices.map(device => {
+                            const isInactive = device.isActive === false;
+                            const rowClass = isInactive ? 'device-row device-row-inactive' : 'device-row';
+                            return `
+                            <div class="${rowClass}">
                                 <div><strong>${this.escapeHtml(device.deviceName)}</strong></div>
                                 <div>${device.server?.location || 'N/A'}</div>
                                 <div><code>${device.assignedIP || 'N/A'}</code></div>
                                 <div>${new Date(device.createdAt).toLocaleDateString()}</div>
                                 <div>
-                                    <button class="btn btn-sm btn-primary" onclick="window.boldVPNPortal.downloadConfig(${device.id})" title="Download WireGuard config file">📥 Config</button>
-                                    <button class="btn btn-sm btn-primary" onclick="window.boldVPNPortal.downloadQRCode(${device.id})" title="Download QR code for mobile setup">📱 QR Code</button>
-                                    <button class="btn btn-sm btn-danger" onclick="window.boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')">Remove</button>
+                                    ${isInactive 
+                                        ? '<span style="color: var(--error-color); font-size: 0.9em;">⚠️ Inactive</span>' 
+                                        : '<span style="color: var(--success-color); font-size: 0.9em;">✓ Active</span>'}
+                                </div>
+                                <div>
+                                    ${!isInactive ? `
+                                        <button class="btn btn-sm btn-primary" onclick="window.boldVPNPortal.downloadConfig(${device.id})" title="Download WireGuard config file">📥 Config</button>
+                                        <button class="btn btn-sm btn-primary" onclick="window.boldVPNPortal.downloadQRCode(${device.id})" title="Download QR code for mobile setup">📱 QR Code</button>
+                                    ` : ''}
+                                    <button class="btn btn-sm btn-danger" onclick="window.boldVPNPortal.removeDevice(${device.id}, '${this.escapeHtml(device.deviceName)}')" 
+                                            title="${isInactive ? 'Remove inactive device and clean up OPNsense peer' : 'Remove device'}">
+                                        ${isInactive ? '🗑️ Remove' : 'Remove'}
+                                    </button>
                                 </div>
                             </div>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </div>
                 `;
+                
+                container.innerHTML = html;
             } else {
                 const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
                 console.error('Failed to load devices:', response.status, errorData);

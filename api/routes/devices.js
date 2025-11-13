@@ -154,10 +154,13 @@ PersistentKeepalive = ${device.persistent_keepalive || 25}
 
 /**
  * Get all devices for authenticated user
+ * Query params:
+ *   - includeInactive: if 'true', include inactive devices
  */
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
+    const includeInactive = req.query.includeInactive === 'true';
 
     const query = `
       SELECT 
@@ -169,7 +172,7 @@ router.get('/', authenticateToken, async (req, res) => {
       FROM user_devices d
       LEFT JOIN vpn_servers s ON d.server_id = s.id
       WHERE d.username = $1
-      AND d.is_active = true
+      ${includeInactive ? '' : 'AND d.is_active = true'}
       ORDER BY d.created_at DESC
     `;
 
@@ -214,6 +217,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const devices = validDevices.map(device => ({
       id: device.id,
       deviceName: device.device_name,
+      isActive: device.is_active,
       server: device.server_name ? {
         id: device.server_id,
         name: device.server_name,
