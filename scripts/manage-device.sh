@@ -242,6 +242,15 @@ cmd_list() {
     echo "List All Devices"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
+    echo "This will show all your VPN devices including:"
+    echo "  • Device ID and Name"
+    echo "  • Server Location"
+    echo "  • Assigned IP Address"
+    echo "  • Status (Active/Inactive)"
+    echo "  • Creation Date"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     echo "Step 1: Login"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -276,7 +285,10 @@ cmd_list() {
     fi
     
     echo ""
-    echo "Fetching devices..."
+    echo "Step 2: Fetching Your Devices"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Fetching devices from server..."
     echo ""
     
     devices_response=$(curl -s -X GET "$API_URL/devices?includeInactive=true" \
