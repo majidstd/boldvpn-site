@@ -413,16 +413,18 @@ body>*:not(#vanta-background) {
     letter-spacing: -0.02em;
 }
 
-/* Content Container */
-.content-container {
-    background: transparent;
-    padding: 0;
-    margin: 0;
+/* Unified Container - single curved box */
+.unified-container {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    padding: 32px;
+    margin: 32px;
 }
 
 /* Form Container - constrain width for forms */
 .form-container {
-    max-width: 500px;
+    max-width: 600px;
 }
 
 /* Dashboard Grid */
