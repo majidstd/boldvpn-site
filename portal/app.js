@@ -132,7 +132,7 @@ class BoldVPNPortal {
 
     showDashboard() {
         document.getElementById('auth-container').style.display = 'none';
-        document.getElementById('portal-container').style.display = 'grid';
+        document.getElementById('portal-container').style.display = 'block';
         
         this.renderDashboardStructure();
         this.bindNavigationEvents();
