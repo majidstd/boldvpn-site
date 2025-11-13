@@ -400,9 +400,9 @@ body>*:not(#vanta-background) {
     border-radius: var(--border-radius);
     padding: 32px;
     animation: fadeIn 0.3s ease;
-    min-height: calc(100vh - 120px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border: 1px solid var(--border);
+    width: 100%;
 }
 
 @keyframes fadeIn {
