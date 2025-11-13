@@ -215,14 +215,15 @@ try:
     devices = json.load(sys.stdin)
     for d in devices:
         status = 'Active' if d.get('isActive', True) else 'Inactive'
-        print(f\"  Device ID: {d.get('id', 'N/A')}\")
-        print(f\"  Name: {d.get('deviceName', 'N/A')}\")
-        print(f\"  Status: {status}\")
-        print(f\"  IP: {d.get('assignedIP', 'N/A')}\")
+        print('  Device ID: ' + str(d.get('id', 'N/A')))
+        print('  Name: ' + str(d.get('deviceName', 'N/A')))
+        print('  Status: ' + status)
+        print('  IP: ' + str(d.get('assignedIP', 'N/A')))
         if d.get('server'):
-            print(f\"  Server: {d.get('server', {}).get('location', 'N/A')}\")
-        print(f\"  Created: {d.get('createdAt', 'N/A')}\")
-        print(\"\")
+            server_loc = d.get('server', {}).get('location', 'N/A')
+            print('  Server: ' + str(server_loc))
+        print('  Created: ' + str(d.get('createdAt', 'N/A')))
+        print('')
 except Exception as e:
     print(json.dumps(devices, indent=2))
 " 2>/dev/null || echo "$devices_response"
