@@ -833,17 +833,28 @@ class BoldVPNPortal {
 
             if (response.ok) {
                 console.log('Device added successfully, navigating to devices section');
+                // Close modal first
+                modal.style.display = 'none';
                 modal.remove();
+                
                 // Show success message
                 this.showAlert('Device added successfully!', 'success');
-                // Always stay on devices section and reload
+                
+                // Ensure we're on devices section - force navigation
                 console.log('Current section before navigate:', this.currentSection);
+                this.currentSection = 'devices'; // Set it explicitly first
                 this.navigateTo('devices');
                 console.log('Current section after navigate:', this.currentSection);
-                // Force reload devices list
+                
+                // Force reload devices list after a short delay to ensure DOM is ready
                 setTimeout(() => {
-                    this.loadDevices();
-                }, 100);
+                    const devicesContainer = document.getElementById('devices-container');
+                    if (devicesContainer) {
+                        this.loadDevices();
+                    } else {
+                        console.error('devices-container not found after navigation!');
+                    }
+                }, 200);
             } else {
                 errorDiv.textContent = data.error || 'Failed to add device';
                 errorDiv.style.display = 'block';
