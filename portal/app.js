@@ -701,10 +701,17 @@ class BoldVPNPortal {
             `;
 
             document.body.appendChild(modal);
-            console.log('Modal added to DOM');
+            console.log('Modal added to DOM', modal);
+            console.log('Modal computed style:', window.getComputedStyle(modal).display);
+            console.log('Modal z-index:', window.getComputedStyle(modal).zIndex);
             
             // Ensure modal is visible
             modal.style.display = 'flex';
+            console.log('Modal display set to flex');
+            
+            // Force visibility
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
 
             // Close handlers
             const closeModal = () => {
