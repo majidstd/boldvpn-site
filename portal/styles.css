@@ -380,11 +380,11 @@ body>*:not(#vanta-background) {
     width: 100%;
 }
 
-/* Main Content - floating tab style */
+/* Main Content - connected to sidebar */
 .portal-content {
-    background: transparent;
+    background: var(--panel);
     overflow-y: auto;
-    padding: 24px;
+    padding: 0;
     min-height: calc(100vh - 64px);
 }
 
@@ -394,15 +394,16 @@ body>*:not(#vanta-background) {
     animation: fadeIn 0.3s ease;
 }
 
-/* Unified Container - floating card/tab style */
+/* Unified Container - seamless connection with sidebar */
 .unified-container {
-    background: var(--panel);
-    border-radius: var(--border-radius);
+    background: transparent;
+    border-radius: 0;
     padding: 32px;
     animation: fadeIn 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--border);
     width: 100%;
+    border: none;
+    box-shadow: none;
+    height: 100%;
 }
 
 @keyframes fadeIn {
