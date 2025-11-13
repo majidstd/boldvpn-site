@@ -97,7 +97,7 @@ async function getNextAvailableIP(serverId, client) {
   // Use transaction lock to prevent concurrent IP assignment
   const query = `
     SELECT assigned_ip FROM user_devices
-    WHERE server_id = $1 AND is_active = true
+    WHERE server_id = $1
     ORDER BY assigned_ip DESC
     LIMIT 1
     FOR UPDATE
@@ -172,7 +172,6 @@ router.get('/', authenticateToken, async (req, res) => {
       FROM user_devices d
       LEFT JOIN vpn_servers s ON d.server_id = s.id
       WHERE d.username = $1
-      ${includeInactive ? '' : 'AND d.is_active = true'}
       ORDER BY d.created_at DESC
     `;
 
@@ -331,7 +330,7 @@ router.post('/', authenticateToken, async (req, res) => {
       // Peer doesn't exist in OPNsense - check if we have this device in DB
       // If device exists in DB but not in OPNsense, mark as inactive (was deleted from OPNsense)
       const dbDevice = await pool.query(
-        'SELECT id, opnsense_peer_id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = true',
+        'SELECT id, opnsense_peer_id FROM user_devices WHERE username = $1 AND device_name = $2',
         [username, deviceName]
       );
       
@@ -347,7 +346,7 @@ router.post('/', authenticateToken, async (req, res) => {
     
     // Check if device name already exists for this user (only check active devices)
     const existingDevice = await pool.query(
-      'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = true',
+      'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2',
       [username, deviceName]
     );
 
@@ -394,9 +393,9 @@ router.post('/', authenticateToken, async (req, res) => {
     const deviceLimit = limitResult.rows.length > 0 ? parseInt(limitResult.rows[0].value) : 2;
 
     // *** SYNC CHECK before counting devices ***
-    // Check all active devices exist in OPNsense and mark inactive if deleted
+    // Check all devices exist in OPNsense and delete if not found
     const activeDevices = await pool.query(
-      'SELECT id, device_name FROM user_devices WHERE username = $1 AND is_active = true',
+      'SELECT id, device_name FROM user_devices WHERE username = $1',
       [username]
     );
 
@@ -405,22 +404,22 @@ router.post('/', authenticateToken, async (req, res) => {
       try {
         const opnsensePeer = await opnsense.findPeerByName(peerName);
         if (!opnsensePeer) {
-          // Peer doesn't exist in OPNsense - mark device as inactive
-          console.log(`[!] Device ${device.id} (${peerName}) not found in OPNsense, marking inactive before limit check`);
+          // Peer doesn't exist in OPNsense - delete device from database
+          console.log(`[!] Device ${device.id} (${peerName}) not found in OPNsense, deleting from database before limit check`);
           await pool.query(
-            'UPDATE user_devices SET is_active = false WHERE id = $1',
+            'DELETE FROM user_devices WHERE id = $1',
             [device.id]
           );
         }
       } catch (syncError) {
         console.error(`[!] Sync check failed for device ${device.id}:`, syncError.message);
-        // Don't mark inactive if sync check fails (OPNsense might be temporarily unavailable)
+        // Don't delete if sync check fails (OPNsense might be temporarily unavailable)
       }
     }
 
     // Now count devices AFTER sync
     const deviceCount = await pool.query(
-      'SELECT COUNT(*) FROM user_devices WHERE username = $1 AND is_active = true',
+      'SELECT COUNT(*) FROM user_devices WHERE username = $1',
       [username]
     );
 
@@ -581,7 +580,7 @@ router.get('/:deviceId/config', authenticateToken, async (req, res) => {
       SELECT d.*, s.*
       FROM user_devices d
       JOIN vpn_servers s ON d.server_id = s.id
-      WHERE d.id = $1 AND d.username = $2 AND d.is_active = true
+      WHERE d.id = $1 AND d.username = $2
     `;
 
     const result = await pool.query(query, [deviceId, username]);
@@ -625,7 +624,7 @@ router.get('/:deviceId/config/json', authenticateToken, async (req, res) => {
       SELECT d.*, s.name as server_name, s.country, s.flag_emoji, s.city
       FROM user_devices d
       JOIN vpn_servers s ON d.server_id = s.id
-      WHERE d.id = $1 AND d.username = $2 AND d.is_active = true
+      WHERE d.id = $1 AND d.username = $2
     `;
 
     const result = await pool.query(query, [deviceId, username]);
@@ -676,7 +675,7 @@ router.get('/:deviceId/qrcode', authenticateToken, async (req, res) => {
       SELECT d.*, s.*
       FROM user_devices d
       JOIN vpn_servers s ON d.server_id = s.id
-      WHERE d.id = $1 AND d.username = $2 AND d.is_active = true
+      WHERE d.id = $1 AND d.username = $2
     `;
 
     const result = await pool.query(query, [deviceId, username]);
