@@ -67,59 +67,61 @@ login() {
 }
 
 get_credentials() {
-    echo "+========================================+"
-    echo "|           LOGIN REQUIRED               |"
-    echo "+========================================+"
-    echo ""
-    echo "Please fill in the form below:"
-    echo ""
+    # Send all prompts to stderr (>&2) so they display even when output is captured
+    echo "+========================================+" >&2
+    echo "|           LOGIN REQUIRED               |" >&2
+    echo "+========================================+" >&2
+    echo "" >&2
+    echo "Please fill in the form below:" >&2
+    echo "" >&2
 
     while true; do
-        echo "┌─────────────────────────────────────┐"
-        echo "│ Username= "
-        echo "│ (Type your username and press Enter)"
-        echo "└─────────────────────────────────────┘"
-        printf "> "
+        echo "┌─────────────────────────────────────┐" >&2
+        echo "│ Username= " >&2
+        echo "│ (Type your username and press Enter)" >&2
+        echo "└─────────────────────────────────────┘" >&2
+        printf "> " >&2
         read -r username
 
         if [ -z "$username" ]; then
-            echo ""
-            echo "  [ERROR] Username field is empty!"
-            echo "  Please type your username and press Enter."
-            echo ""
+            echo "" >&2
+            echo "  [ERROR] Username field is empty!" >&2
+            echo "  Please type your username and press Enter." >&2
+            echo "" >&2
             continue
         fi
 
         break
     done
 
-    echo ""
+    echo "" >&2
 
     while true; do
-        echo "┌─────────────────────────────────────┐"
-        echo "│ Password= "
-        echo "│ (Type your password and press Enter)"
-        echo "│ (Password will be hidden)"
-        echo "└─────────────────────────────────────┘"
-        printf "> "
+        echo "┌─────────────────────────────────────┐" >&2
+        echo "│ Password= " >&2
+        echo "│ (Type your password and press Enter)" >&2
+        echo "│ (Password will be hidden)" >&2
+        echo "└─────────────────────────────────────┘" >&2
+        printf "> " >&2
         # Hide password input (no echo to terminal)
         stty -echo 2>/dev/null || true
         read -r password
         stty echo 2>/dev/null || true
-        echo ""
+        echo "" >&2
 
         if [ -z "$password" ]; then
-            echo ""
-            echo "  [ERROR] Password field is empty!"
-            echo "  Please type your password and press Enter."
-            echo ""
+            echo "" >&2
+            echo "  [ERROR] Password field is empty!" >&2
+            echo "  Please type your password and press Enter." >&2
+            echo "" >&2
             continue
         fi
 
         break
     done
 
-    echo ""
+    echo "" >&2
+    # Only send the result to stdout (this is what gets captured in creds variable)
     echo "$username|$password"
     return 0
 }
