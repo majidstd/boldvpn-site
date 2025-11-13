@@ -335,15 +335,17 @@ router.post('/', authenticateToken, async (req, res) => {
       
       if (dbDevice.rows.length > 0) {
         const dev = dbDevice.rows[0];
+        
+        // Hard delete from database
         await pool.query(
-          'UPDATE user_devices SET is_active = false WHERE id = $1',
+          'DELETE FROM user_devices WHERE id = $1',
           [dev.id]
         );
-        console.log(`[OK] Marked device ${dev.id} as inactive (peer deleted from OPNsense)`);
+        console.log(`[OK] Deleted device ${dev.id} from database (peer was deleted from OPNsense)`);
       }
     }
     
-    // Check if device name already exists for this user (only check active devices)
+    // Check if device name already exists for this user
     const existingDevice = await pool.query(
       'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2',
       [username, deviceName]
@@ -351,36 +353,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     if (existingDevice.rows.length > 0) {
       return res.status(409).json({ error: 'Device name already exists' });
-    }
-
-    // If there's an inactive device with the same name, clean it up
-    const inactiveDevice = await pool.query(
-      'SELECT id, opnsense_peer_id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = false',
-      [username, deviceName]
-    );
-
-    if (inactiveDevice.rows.length > 0) {
-      // Clean up any remaining OPNsense peer if it exists
-      const inactiveDev = inactiveDevice.rows[0];
-      if (inactiveDev.opnsense_peer_id) {
-        try {
-          // Check if peer still exists in OPNsense
-          const peerExists = await opnsense.findPeerByUsername(username);
-          if (peerExists && peerExists.uuid === inactiveDev.opnsense_peer_id) {
-            await opnsense.removeWireGuardPeer(inactiveDev.opnsense_peer_id);
-            console.log(`[OK] Cleaned up inactive device's OPNsense peer: ${inactiveDev.opnsense_peer_id}`);
-          }
-        } catch (error) {
-          // Peer might already be deleted, that's okay
-          console.log(`[i] Could not remove OPNsense peer (may already be deleted): ${error.message}`);
-        }
-      }
-      // Delete the inactive device record so we can create a fresh one
-      await pool.query(
-        'DELETE FROM user_devices WHERE id = $1',
-        [inactiveDev.id]
-      );
-      console.log(`[OK] Removed inactive device record: ${inactiveDev.id}`);
     }
 
     // Check device limit from radreply
