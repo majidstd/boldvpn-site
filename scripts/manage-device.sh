@@ -351,18 +351,24 @@ cmd_list_database() {
     echo ""
     echo "Running command:"
     echo "psql -U $DB_USER -d $DB_NAME -c \\"
-    echo "\"SELECT ud.id, ud.username, ud.device_name, ud.opnsense_peer_id,"
-    echo " ud.is_active, ud.assigned_ip, vs.name as server_name"
+    echo "\"SELECT ud.id, ud.username, ud.device_name,"
+    echo " ud.opnsense_peer_id, ud.assigned_ip,"
+    echo " vs.name as server, vs.country, vs.city,"
+    echo " ud.created_at"
     echo " FROM user_devices ud"
     echo " LEFT JOIN vpn_servers vs ON ud.server_id = vs.id"
     echo " ORDER BY ud.created_at DESC;\""
     echo ""
     echo "What this shows:"
-    echo "  • ALL devices from database (active AND inactive)"
-    echo "  • OPNsense peer IDs"
-    echo "  • Device status (is_active column)"
+    echo "  • ALL devices in database (hard delete - no inactive devices)"
+    echo "  • OPNsense peer UUIDs"
+    echo "  • Assigned IP addresses"
+    echo "  • Server assignments"
     echo "  • No API authentication needed"
-    echo "  • Raw data without sync checks"
+    echo "  • Raw data - useful for troubleshooting"
+    echo ""
+    echo "Note: is_active column still exists in schema but is no longer used"
+    echo "      All devices shown are active (deleted devices are removed)"
     echo ""
     echo "Fetching devices..."
     echo ""
@@ -370,15 +376,14 @@ cmd_list_database() {
     # Query database to show all peers with their metadata
     psql -U "$DB_USER" -d "$DB_NAME" -c "
     SELECT 
-        ud.id as device_id,
+        ud.id,
         ud.username,
         ud.device_name,
         ud.opnsense_peer_id,
-        ud.is_active,
         ud.assigned_ip,
-        vs.name as server_name,
-        vs.country,
-        vs.city
+        vs.name as server,
+        vs.country || ', ' || vs.city as location,
+        to_char(ud.created_at, 'YYYY-MM-DD HH24:MI') as created
     FROM user_devices ud
     LEFT JOIN vpn_servers vs ON ud.server_id = vs.id
     ORDER BY ud.created_at DESC;
@@ -386,8 +391,10 @@ cmd_list_database() {
     
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "This shows what's stored in the database."
-    echo "Compare with option 4 to see what's in OPNsense."
+    echo "Database State:"
+    echo "  • Rows shown = Active devices"
+    echo "  • Deleted devices are removed from database (hard delete)"
+    echo "  • Compare with option 4 (OPNsense) to find sync issues"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     printf "Press Enter to continue... "
