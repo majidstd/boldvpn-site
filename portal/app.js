@@ -1005,20 +1005,23 @@ class BoldVPNPortal {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
 
+            const data = await response.json();
+
             if (response.ok) {
-                const data = await response.json();
-                
                 if (data.opnsenseRemoved === false) {
                     // OPNsense removal failed but device was removed from database
-                    this.showAlert(`Device removed from database. ${data.warning || 'Peer may still exist in OPNsense.'}`, 'warning');
+                    this.showAlert(`Device removed from database. ${data.warning || data.message || 'Peer may still exist in OPNsense.'}`, 'warning');
                 } else {
-                    this.showAlert('Device removed successfully', 'success');
+                    this.showAlert(data.message || 'Device removed successfully', 'success');
                 }
                 
                 this.loadDevices();
             } else {
-                const data = await response.json();
-                this.showAlert(data.error || 'Failed to remove device', 'error');
+                // API returned error (likely OPNsense removal failed)
+                const errorMsg = data.message || data.error || 'Failed to remove device';
+                this.showAlert(errorMsg, 'error');
+                // Still refresh to show updated state
+                this.loadDevices();
             }
         } catch (error) {
             console.error('Remove error:', error);

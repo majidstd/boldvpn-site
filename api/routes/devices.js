@@ -704,9 +704,9 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
     const { username } = req.user;
     const { deviceId } = req.params;
 
-    // Get device info first
+    // Get device info first (including is_active status)
     const deviceQuery = await pool.query(
-      'SELECT opnsense_peer_id, device_name FROM user_devices WHERE id = $1 AND username = $2',
+      'SELECT opnsense_peer_id, device_name, is_active FROM user_devices WHERE id = $1 AND username = $2',
       [deviceId, username]
     );
 
@@ -717,6 +717,7 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
     const device = deviceQuery.rows[0];
     const opnsensePeerId = device.opnsense_peer_id;
     const deviceName = device.device_name;
+    const isActive = device.is_active;
     const peerName = `${username}-${deviceName}`;
 
     console.log(`[DEBUG] Device removal request:`, {
@@ -724,11 +725,13 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
       deviceName,
       peerName,
       opnsensePeerId: opnsensePeerId || 'NULL',
+      isActive,
       hasPeerId: !!opnsensePeerId
     });
 
     // Remove from OPNsense - try multiple methods
     let opnsenseRemoved = false;
+    let peerNotFound = false;
     
     // Method 1: Use stored peer ID
     if (opnsensePeerId) {
@@ -758,7 +761,8 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
           console.log(`[OK] Found and removed peer ${peer.uuid} (${peerName}) from OPNsense`);
           opnsenseRemoved = true;
         } else {
-          console.log(`[i] Peer ${peerName} not found in OPNsense (may already be deleted)`);
+          console.log(`[i] Peer ${peerName} not found in OPNsense (already deleted or never existed)`);
+          peerNotFound = true;
         }
       } catch (findError) {
         console.error(`[!] Failed to find/remove peer ${peerName} from OPNsense:`, findError.message);
@@ -766,30 +770,42 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
       }
     }
 
-    // Soft delete (mark as inactive) - do this even if OPNsense removal failed
-    const query = `
-      UPDATE user_devices
-      SET is_active = false
-      WHERE id = $1 AND username = $2
-      RETURNING *
-    `;
+    // Only mark inactive if device is currently active
+    // If already inactive, we're just cleaning up OPNsense
+    if (isActive) {
+      const query = `
+        UPDATE user_devices
+        SET is_active = false
+        WHERE id = $1 AND username = $2
+        RETURNING *
+      `;
+      await pool.query(query, [deviceId, username]);
+      console.log(`[OK] Device ${deviceId} marked inactive in database`);
+    } else {
+      console.log(`[i] Device ${deviceId} already inactive, skipping DB update`);
+    }
 
-    const result = await pool.query(query, [deviceId, username]);
-
-    // Return success with warning if OPNsense removal failed
-    if (!opnsenseRemoved) {
-      console.warn(`[!] Device ${deviceId} marked inactive but OPNsense peer may still exist`);
+    // Return appropriate response based on OPNsense removal status
+    if (opnsenseRemoved) {
       return res.json({ 
-        message: 'Device removed from database',
-        warning: 'Peer may still exist in OPNsense. Please verify manually.',
+        message: 'Device removed successfully',
+        opnsenseRemoved: true
+      });
+    } else if (peerNotFound) {
+      // Peer doesn't exist in OPNsense - this is fine, consider it success
+      return res.json({ 
+        message: 'Device removed successfully (peer was already deleted from OPNsense)',
+        opnsenseRemoved: true
+      });
+    } else {
+      // OPNsense removal failed - return error
+      console.error(`[!] CRITICAL: Device ${deviceId} removal failed - peer may still exist in OPNsense`);
+      return res.status(500).json({ 
+        error: 'Failed to remove peer from OPNsense',
+        message: 'Device marked inactive in database, but peer removal from OPNsense failed. Please verify manually.',
         opnsenseRemoved: false
       });
     }
-
-    res.json({ 
-      message: 'Device removed successfully',
-      opnsenseRemoved: true
-    });
 
   } catch (error) {
     console.error('[!] Delete device error:', error);
