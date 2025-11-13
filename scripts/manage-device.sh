@@ -55,8 +55,55 @@ require_cmd() {
 }
 
 # Check for required commands
-require_cmd curl psql python3
+require_cmd curl psql
 
+# Pretty-print JSON without Python: use jq if available, otherwise simple sed fallback
+pretty_json() {
+    if command -v jq >/dev/null 2>&1; then
+        jq . 2>/dev/null
+    else
+        # Fallback: add newlines between top-level objects to make JSON more readable
+        sed -e 's/},\s*{/,\n{/g'
+    fi
+}
+
+# Parse a JSON array of objects (devices) in pure sh (best-effort)
+# Input: entire JSON array on stdin
+parse_devices() {
+    # Remove leading/trailing brackets, split on '},{' boundary
+    tr -d '\n' | sed -e 's/^\s*\[//' -e 's/\]\s*$//' -e 's/},\s*{/}\n{/g' | while IFS= read -r obj; do
+        # Ensure obj starts with { and ends with }
+        case "$obj" in
+            '{'*'}') ;;
+            *) continue ;;
+        esac
+
+        # Extract fields with simple patterns
+        id=$(echo "$obj" | grep -o '"id"\s*:\s*[0-9]*' | grep -o '[0-9]*' || echo 'N/A')
+        deviceName=$(echo "$obj" | sed -n 's/.*"deviceName"\s*:\s*"\([^"]*\)".*/\1/p' || echo 'N/A')
+        isActive=$(echo "$obj" | grep -o '"isActive"\s*:\s*\(true\|false\|"[^"]*"\|[0-9]\)' | sed -E 's/.*:\s*//g' || echo 'N/A')
+        assignedIP=$(echo "$obj" | sed -n 's/.*"assignedIP"\s*:\s*"\([^"]*\)".*/\1/p' || echo 'N/A')
+        createdAt=$(echo "$obj" | sed -n 's/.*"createdAt"\s*:\s*"\([^"]*\)".*/\1/p' || echo 'N/A')
+        serverLoc=$(echo "$obj" | sed -n 's/.*"server"\s*:\s*{[^}]*"location"\s*:\s*"\([^"]*\)".*/\1/p' || echo '')
+
+        # Normalize isActive
+        case "$isActive" in
+            "true"|true|"t"|t|1) status='Active' ;;
+            "false"|false|"f"|f|0) status='Inactive' ;;
+            *) status="$isActive" ;;
+        esac
+
+        echo "  Device ID: ${id:-N/A}"
+        echo "  Name: ${deviceName:-N/A}"
+        echo "  Status: ${status:-N/A}"
+        echo "  IP: ${assignedIP:-N/A}"
+        if [ -n "$serverLoc" ]; then
+            echo "  Server: $serverLoc"
+        fi
+        echo "  Created: ${createdAt:-N/A}"
+        echo ""
+    done
+}
 print_header() {
     clear_screen
     echo "${BLUE}╔════════════════════════════════════════╗${NC}"
@@ -117,7 +164,7 @@ login() {
     
     if [ -z "$TOKEN" ]; then
         echo "${RED}❌ Login failed!${NC}"
-        echo "$LOGIN_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$LOGIN_RESPONSE"
+        echo "$LOGIN_RESPONSE" | pretty_json 2>/dev/null || echo "$LOGIN_RESPONSE"
         return 1
     fi
     
@@ -281,7 +328,7 @@ get_credentials() {
         echo "   IP: $assigned_ip"
     else
         echo "${RED}❌ Device creation failed!${NC}"
-        echo "$create_response" | python3 -m json.tool 2>/dev/null || echo "$create_response"
+        echo "$create_response" | pretty_json 2>/dev/null || echo "$create_response"
     fi
     
     echo ""
@@ -335,35 +382,19 @@ cmd_list() {
     
     # Check if response is valid JSON and has devices
     if echo "$devices_response" | grep -q '^\['; then
-        device_count=$(echo "$devices_response" | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
-        
+        device_count=$(echo "$devices_response" | tr -d '\n' | sed -e 's/^\s*\[//' -e 's/\]\s*$//' -e 's/},\s*{/}\n{/g' | grep -c '^{' 2>/dev/null || echo "0")
+
         if [ "$device_count" = "0" ]; then
             echo "No devices found."
         else
             echo "Found $device_count device(s):"
             echo ""
-            echo "$devices_response" | python3 -c "
-import sys, json
-try:
-    devices = json.load(sys.stdin)
-    for d in devices:
-        status = 'Active' if d.get('isActive', True) else 'Inactive'
-        print('  Device ID: ' + str(d.get('id', 'N/A')))
-        print('  Name: ' + str(d.get('deviceName', 'N/A')))
-        print('  Status: ' + status)
-        print('  IP: ' + str(d.get('assignedIP', 'N/A')))
-        if d.get('server'):
-            server_loc = d.get('server', {}).get('location', 'N/A')
-            print('  Server: ' + str(server_loc))
-        print('  Created: ' + str(d.get('createdAt', 'N/A')))
-        print('')
-except Exception as e:
-    print(json.dumps(devices, indent=2))
-" 2>/dev/null || echo "$devices_response"
+            # Parse devices in pure shell (best-effort)
+            echo "$devices_response" | parse_devices 2>/dev/null || echo "$devices_response"
         fi
     else
         echo "Response:"
-        echo "$devices_response" | python3 -m json.tool 2>/dev/null || echo "$devices_response"
+        echo "$devices_response" | pretty_json 2>/dev/null || echo "$devices_response"
     fi
     
     echo ""
@@ -575,7 +606,7 @@ cmd_remove() {
     echo ""
     echo "${BLUE}HTTP Status: $http_code${NC}"
     echo "${BLUE}Response:${NC}"
-    echo "$response_body" | python3 -m json.tool 2>/dev/null || echo "$response_body"
+    echo "$response_body" | pretty_json 2>/dev/null || echo "$response_body"
     echo ""
     
     if [ "$http_code" = "200" ]; then
