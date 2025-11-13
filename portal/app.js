@@ -823,12 +823,17 @@ class BoldVPNPortal {
             
             console.log('Attaching form submit handler');
             newForm.addEventListener('submit', async (e) => {
-                console.log('FORM SUBMIT EVENT FIRED!', e);
+                console.log('%c FORM SUBMIT FIRED!', 'background: green; color: white; font-size: 16px;', e);
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
                 console.log('Prevented default, calling handleAddDevice');
-                await this.handleAddDevice(e, newForm, modal);
+                try {
+                    await this.handleAddDevice(e, newForm, modal);
+                    console.log('%c handleAddDevice completed', 'background: blue; color: white;');
+                } catch (err) {
+                    console.error('%c handleAddDevice ERROR:', 'background: red; color: white;', err);
+                }
                 document.removeEventListener('keydown', handleEscape);
             });
         } catch (error) {
@@ -838,7 +843,9 @@ class BoldVPNPortal {
     }
 
     async handleAddDevice(e, form, modal) {
-        console.log('handleAddDevice called!', { e, form, modal });
+        console.log('%c ===== handleAddDevice START =====', 'background: purple; color: white; font-size: 14px;');
+        console.log('Args:', { e, form, modal });
+        
         if (!form) {
             form = e.target;
         }
@@ -850,6 +857,10 @@ class BoldVPNPortal {
         const deviceName = document.getElementById('device-name').value.trim();
         const serverId = document.getElementById('device-server')?.value;
 
+        console.log('Form data:', { deviceName, serverId });
+        console.log('API Base:', this.apiBase);
+        console.log('Token:', this.token ? 'Present' : 'MISSING!');
+
         // Show loading state
         submitBtn.classList.add('loading');
         btnText.style.display = 'none';
@@ -857,6 +868,7 @@ class BoldVPNPortal {
         errorDiv.style.display = 'none';
 
         try {
+            console.log('%c Calling API...', 'color: orange;');
             const response = await fetch(`${this.apiBase}/devices`, {
                 method: 'POST',
                 headers: {
@@ -865,11 +877,13 @@ class BoldVPNPortal {
                 },
                 body: JSON.stringify({
                     deviceName,
-                    serverId: serverId || undefined
+                    serverId: parseInt(serverId)
                 })
             });
 
+            console.log('%c API Response received', 'color: green;', response.status, response.ok);
             const data = await response.json();
+            console.log('%c Response data:', 'color: green;', data);
 
             if (response.ok) {
                 console.log('✅ Device added successfully! Response:', data);
@@ -1049,3 +1063,4 @@ class BoldVPNPortal {
 document.addEventListener('DOMContentLoaded', () => {
     window.boldVPNPortal = new BoldVPNPortal();
 });
+
