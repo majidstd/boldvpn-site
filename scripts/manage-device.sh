@@ -20,13 +20,29 @@ API_URL="${API_URL:-https://api.boldvpn.net/api}"
 DB_USER="${DB_USER:-radiususer}"
 DB_NAME="${DB_NAME:-radius}"
 
-# Colors disabled for FreeBSD compatibility
-# Use plain text instead of ANSI codes
-RED=''
-GREEN=''
-YELLOW=''
-BLUE=''
-NC=''
+# Colors: FreeBSD disables ANSI, Linux uses ANSI
+if [ "$(uname)" = "FreeBSD" ]; then
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+else
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m'
+fi
+
+# FreeBSD fallback for clear
+clear_screen() {
+    if command -v clear >/dev/null 2>&1; then
+        clear
+    else
+        printf "\n\n"
+    fi
+}
 
 # Utility: Check required commands
 require_cmd() {
@@ -42,7 +58,7 @@ require_cmd() {
 require_cmd curl psql python3
 
 print_header() {
-    clear
+    clear_screen
     echo "${BLUE}╔════════════════════════════════════════╗${NC}"
     echo "${BLUE}║   Device Management Tool              ║${NC}"
     echo "${BLUE}╚════════════════════════════════════════╝${NC}"
@@ -67,7 +83,10 @@ print_menu() {
 }
 
 read_input() {
-    read -r input || true
+    # POSIX read, handle EOF gracefully
+    if ! read -r input; then
+        input=""
+    fi
     echo "$input"
 }
 
