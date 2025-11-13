@@ -171,8 +171,8 @@ cmd_create() {
     fi
     
     echo ""
-    printf "${YELLOW}Press Enter to continue...${NC}"
-    read_input > /dev/null
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
 }
 
 cmd_list() {
@@ -194,17 +194,47 @@ cmd_list() {
     fi
     
     echo ""
-    echo "${BLUE}📋 Fetching devices...${NC}"
+    echo "Fetching devices..."
     echo ""
     
     devices_response=$(curl -s -X GET "$API_URL/devices?includeInactive=true" \
       -H "Authorization: Bearer $token")
     
-    echo "$devices_response" | python3 -m json.tool 2>/dev/null || echo "$devices_response"
+    # Check if response is valid JSON and has devices
+    if echo "$devices_response" | grep -q '^\['; then
+        device_count=$(echo "$devices_response" | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
+        
+        if [ "$device_count" = "0" ]; then
+            echo "No devices found."
+        else
+            echo "Found $device_count device(s):"
+            echo ""
+            echo "$devices_response" | python3 -c "
+import sys, json
+try:
+    devices = json.load(sys.stdin)
+    for d in devices:
+        status = 'Active' if d.get('isActive', True) else 'Inactive'
+        print(f\"  Device ID: {d.get('id', 'N/A')}\")
+        print(f\"  Name: {d.get('deviceName', 'N/A')}\")
+        print(f\"  Status: {status}\")
+        print(f\"  IP: {d.get('assignedIP', 'N/A')}\")
+        if d.get('server'):
+            print(f\"  Server: {d.get('server', {}).get('location', 'N/A')}\")
+        print(f\"  Created: {d.get('createdAt', 'N/A')}\")
+        print(\"\")
+except Exception as e:
+    print(json.dumps(devices, indent=2))
+" 2>/dev/null || echo "$devices_response"
+        fi
+    else
+        echo "Response:"
+        echo "$devices_response" | python3 -m json.tool 2>/dev/null || echo "$devices_response"
+    fi
     
     echo ""
-    printf "${YELLOW}Press Enter to continue...${NC}"
-    read_input > /dev/null
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
 }
 
 cmd_check() {
@@ -288,8 +318,8 @@ cmd_check() {
     echo "  - is_active: false means device was soft-deleted"
     echo "  - Check API logs if removal failed: tail -f /var/log/boldvpn-api.log"
     echo ""
-    printf "${YELLOW}Press Enter to continue...${NC}"
-    read_input > /dev/null
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
 }
 
 cmd_remove() {
@@ -366,8 +396,8 @@ cmd_remove() {
     fi
     
     echo ""
-    printf "${YELLOW}Press Enter to continue...${NC}"
-    read_input > /dev/null
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
 }
 
 cmd_diagnose() {
@@ -460,8 +490,8 @@ cmd_diagnose() {
     echo "${BLUE}🔧 Check API logs for sync check errors:${NC}"
     echo "   tail -f /var/log/boldvpn-api.log | grep -E 'not found in OPNsense|Sync check failed'"
     echo ""
-    printf "${YELLOW}Press Enter to continue...${NC}"
-    read_input > /dev/null
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
 }
 
 # Main loop
@@ -471,6 +501,11 @@ main() {
         print_menu
         
         choice=$(read_input)
+        
+        # Handle empty input (just pressing Enter)
+        if [ -z "$choice" ]; then
+            continue
+        fi
         
         case "$choice" in
             1)
@@ -490,14 +525,16 @@ main() {
                 ;;
             6)
                 echo ""
-                echo "${GREEN}Goodbye!${NC}"
+                echo "Goodbye!"
                 echo ""
                 exit 0
                 ;;
             *)
                 echo ""
-                echo "${RED}Invalid choice. Please enter 1-6.${NC}"
-                sleep 1
+                echo "Invalid choice. Please enter 1-6."
+                echo ""
+                printf "Press Enter to continue... "
+                read_input > /dev/null 2>&1 || true
                 ;;
         esac
     done
