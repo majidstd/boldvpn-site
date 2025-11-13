@@ -379,7 +379,7 @@ class BoldVPNPortal {
                         <div class="form-group"><label for="device-name">Device Name</label><input type="text" id="device-name" name="deviceName" required placeholder="e.g., My Laptop, iPhone, etc." autofocus></div>
                         <div class="form-group"><label for="device-server">Server Location</label><select id="device-server" name="serverId" required><option value="">Select a server</option>${servers.map(s => `<option value="${s.id}">${s.location}</option>`).join('')}</select></div>
                         <div id="add-device-error" class="alert alert-error" style="display: none;"></div>
-                        <div style="display: flex; gap: 12px; margin-top: 8px;"><button id="add-device-submit" type="button" class="btn btn-primary" style="flex: 1;"><span class="btn-text">Add Device</span><div class="spinner" style="display: none;"></div></button><button type="button" class.btn.btn-secondary" id="cancel-add-device">Cancel</button></div>
+                        <div style="display: flex; gap: 12px; margin-top: 8px;"><button id="add-device-submit" type="button" class="btn btn-primary" style="flex: 1;"><span class="btn-text">Add Device</span><div class="spinner" style="display: none;"></div></button><button type="button" class="btn btn-secondary" id="cancel-add-device">Cancel</button></div>
                     </form>
                 </div>
             `;
@@ -420,7 +420,7 @@ class BoldVPNPortal {
         const alert = document.createElement('div');
         alert.className = `alert alert-${type}`;
         alert.textContent = message;
-        alert.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; min-width: 300px; animation: fadeIn 0.3s ease; text-align: center;';
+        alert.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1001; min-width: 300px; animation: fadeIn 0.3s ease; text-align: center;';
         document.body.appendChild(alert);
         setTimeout(() => {
             alert.style.opacity = '0';
