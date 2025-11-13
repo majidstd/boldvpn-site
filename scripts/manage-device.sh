@@ -29,14 +29,15 @@ print_menu() {
     echo "${GREEN}What would you like to do?${NC}"
     echo ""
     echo "  1) Create a new device"
-    echo "  2) List all devices"
-    echo "  3) Check device status"
-    echo "  4) Remove a device"
-    echo "  5) Diagnose device issues"
-    echo "  6) Show guide / Help"
-    echo "  7) Exit"
+    echo "  2) List devices from Database (via API)"
+    echo "  3) List devices from OPNsense (direct)"
+    echo "  4) Check device status (Database)"
+    echo "  5) Remove a device"
+    echo "  6) Diagnose device issues"
+    echo "  7) Show guide / Help"
+    echo "  8) Exit"
     echo ""
-    printf "${YELLOW}Enter your choice [1-7]: ${NC}"
+    printf "${YELLOW}Enter your choice [1-8]: ${NC}"
 }
 
 read_input() {
@@ -68,25 +69,17 @@ login() {
 
 get_credentials() {
     # Send all prompts to stderr (>&2) so they display even when output is captured
-    echo "+========================================+" >&2
-    echo "|           LOGIN REQUIRED               |" >&2
-    echo "+========================================+" >&2
-    echo "" >&2
-    echo "Please fill in the form below:" >&2
+    echo "LOGIN REQUIRED" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     echo "" >&2
 
     while true; do
-        echo "┌─────────────────────────────────────┐" >&2
-        echo "│ Username= " >&2
-        echo "│ (Type your username and press Enter)" >&2
-        echo "└─────────────────────────────────────┘" >&2
-        printf "> " >&2
+        printf "Username= " >&2
         read -r username
 
         if [ -z "$username" ]; then
             echo "" >&2
-            echo "  [ERROR] Username field is empty!" >&2
-            echo "  Please type your username and press Enter." >&2
+            echo "[ERROR] Username cannot be empty. Please try again." >&2
             echo "" >&2
             continue
         fi
@@ -97,12 +90,7 @@ get_credentials() {
     echo "" >&2
 
     while true; do
-        echo "┌─────────────────────────────────────┐" >&2
-        echo "│ Password= " >&2
-        echo "│ (Type your password and press Enter)" >&2
-        echo "│ (Password will be hidden)" >&2
-        echo "└─────────────────────────────────────┘" >&2
-        printf "> " >&2
+        printf "Password= " >&2
         # Hide password input (no echo to terminal)
         stty -echo 2>/dev/null || true
         read -r password
@@ -111,8 +99,7 @@ get_credentials() {
 
         if [ -z "$password" ]; then
             echo "" >&2
-            echo "  [ERROR] Password field is empty!" >&2
-            echo "  Please type your password and press Enter." >&2
+            echo "[ERROR] Password cannot be empty. Please try again." >&2
             echo "" >&2
             continue
         fi
@@ -258,12 +245,7 @@ cmd_list() {
     print_header
     echo "List All Devices"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "[DEBUG] About to call get_credentials..."
-    echo ""
-    
     creds=$(get_credentials)
-    echo "[DEBUG] get_credentials returned: $?"
     if [ $? -ne 0 ] || [ -z "$creds" ]; then
         echo ""
         echo "Failed to get credentials"
@@ -292,6 +274,19 @@ cmd_list() {
         return 1
     fi
     
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Data Source: API → Database (with OPNsense sync check)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Running command:"
+    echo "curl -X GET \"$API_URL/devices?includeInactive=true\" \\"
+    echo "  -H \"Authorization: Bearer \$TOKEN\""
+    echo ""
+    echo "This will:"
+    echo "  1. Query devices from database (is_active=true)"
+    echo "  2. Verify each device exists in OPNsense"
+    echo "  3. Mark as inactive if peer deleted from OPNsense"
     echo ""
     echo "Fetching devices..."
     echo ""
@@ -332,6 +327,49 @@ except Exception as e:
         echo "$devices_response" | python3 -m json.tool 2>/dev/null || echo "$devices_response"
     fi
     
+    echo ""
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
+}
+
+cmd_list_opnsense() {
+    print_header
+    echo "List Devices from OPNsense (Direct)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Data Source: OPNsense Firewall (Direct API)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "This queries OPNsense directly to show all WireGuard peers."
+    echo "No database or API authentication required."
+    echo ""
+    echo "Fetching peers from OPNsense..."
+    echo ""
+    
+    # Query database to show all peers with their metadata
+    psql -U "$DB_USER" -d "$DB_NAME" -c "
+    SELECT 
+        ud.id as device_id,
+        ud.username,
+        ud.device_name,
+        ud.opnsense_peer_id,
+        ud.is_active,
+        ud.assigned_ip,
+        vs.name as server_name,
+        vs.country,
+        vs.city
+    FROM user_devices ud
+    LEFT JOIN vpn_servers vs ON ud.server_id = vs.id
+    ORDER BY ud.created_at DESC;
+    "
+    
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Note: This shows all devices from database."
+    echo "To see what's actually in OPNsense, check:"
+    echo "  VPN → WireGuard → Clients in OPNsense UI"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     printf "Press Enter to continue... "
     read_input > /dev/null 2>&1 || true
@@ -769,18 +807,21 @@ main() {
                 cmd_list
                 ;;
             3)
-                cmd_check
+                cmd_list_opnsense
                 ;;
             4)
-                cmd_remove
+                cmd_check
                 ;;
             5)
-                cmd_diagnose
+                cmd_remove
                 ;;
             6)
-                cmd_guide
+                cmd_diagnose
                 ;;
             7)
+                cmd_guide
+                ;;
+            8)
                 echo ""
                 echo "Goodbye!"
                 echo ""
@@ -788,7 +829,7 @@ main() {
                 ;;
             *)
                 echo ""
-                echo "Invalid choice. Please enter 1-7."
+                echo "Invalid choice. Please enter 1-8."
                 echo ""
                 printf "Press Enter to continue... "
                 read_input > /dev/null 2>&1 || true
