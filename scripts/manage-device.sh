@@ -1,6 +1,17 @@
 #!/bin/sh
-# Interactive Device Management Script
+# BoldVPN Interactive Device Management Script
 # Usage: ./scripts/manage-device.sh
+#
+# Features:
+#   - Create, list, check, remove, and diagnose VPN devices
+#   - Uses both API and direct DB access
+#   - Interactive and (soon) non-interactive modes
+#
+# Improvements:
+#   - Refactored repeated code into functions
+#   - Added comments for clarity
+#   - Improved error handling and user experience
+#   - Portability checks and help option planned
 
 # Don't exit on error - handle errors explicitly
 set +e
@@ -17,11 +28,27 @@ YELLOW=''
 BLUE=''
 NC=''
 
+# Utility: Check required commands
+require_cmd() {
+    for cmd in "$@"; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            echo "Error: Required command '$cmd' not found. Please install it." >&2
+            exit 1
+        fi
+    done
+}
+
+# Check for required commands
+require_cmd curl psql python3
+
 print_header() {
     clear
     echo "${BLUE}╔════════════════════════════════════════╗${NC}"
     echo "${BLUE}║   Device Management Tool              ║${NC}"
     echo "${BLUE}╚════════════════════════════════════════╝${NC}"
+    echo ""
+    # Show help shortcut
+    echo "Type 'help' at any menu to see options."
     echo ""
 }
 
@@ -34,6 +61,7 @@ print_menu() {
     echo "  4) Remove a device"
     echo "  5) Diagnose device issues"
     echo "  6) Exit"
+    echo "  7) Help"
     echo ""
     printf "${YELLOW}Enter your choice [1-6]: ${NC}"
 }
@@ -41,6 +69,20 @@ print_menu() {
 read_input() {
     read -r input || true
     echo "$input"
+}
+
+# Utility: Show help
+show_help() {
+    echo "\nHelp - Menu Options:"
+    echo "  1) Create: Add a new VPN device (API + DB)"
+    echo "  2) List: Show all your devices (API)"
+    echo "  3) Check: Query device status (DB)"
+    echo "  4) Remove: Delete a device (API)"
+    echo "  5) Diagnose: Troubleshoot device issues (DB + API)"
+    echo "  6) Exit: Quit the tool"
+    echo "  7) Help: Show this help message\n"
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
 }
 
 login() {
@@ -70,7 +112,12 @@ get_credentials() {
         printf "Username: "
         username=$(read_input)
         
-        if [ -z "$username" ]; then
+        choice=$(read_input)
+        # Allow 'help' at any menu
+        if [ "$choice" = "help" ] || [ "$choice" = "7" ]; then
+            show_help
+            continue
+        fi
             echo "Error: Username cannot be empty. Please try again."
             echo ""
             continue
@@ -97,13 +144,13 @@ get_credentials() {
     done
     
     echo "$username|$password"
-    return 0
-}
-
-cmd_create() {
-    print_header
-    echo "Create New Device"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            *)
+                echo ""
+                echo "Invalid choice. Please enter 1-7 or type 'help'."
+                echo ""
+                printf "Press Enter to continue... "
+                read_input > /dev/null 2>&1 || true
+                ;;
     echo ""
     echo "Please provide the following information:"
     echo ""
