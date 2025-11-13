@@ -275,11 +275,9 @@ body>*:not(#vanta-background) {
 
 /* Portal Grid Container */
 #portal-container {
-    display: grid;
-    grid-template-columns: 260px 1fr;
+    display: block;
     min-height: calc(100vh - 64px);
     background: var(--bg);
-    gap: 0;
 }
 
 /* Portal Wrapper - creates floating tab effect */
@@ -288,6 +286,7 @@ body>*:not(#vanta-background) {
     grid-template-columns: 260px 1fr;
     min-height: calc(100vh - 64px);
     gap: 0;
+    width: 100%;
 }
 
 /* Sidebar */
@@ -630,7 +629,7 @@ body>*:not(#vanta-background) {
 
 /* Responsive */
 @media (max-width: 768px) {
-    #portal-container {
+    .portal-wrapper {
         grid-template-columns: 1fr;
     }
 
