@@ -207,34 +207,51 @@ cmd_create() {
     fi
     
     echo ""
-    echo "${BLUE}📱 Creating device: $device_name on server ID $server_id...${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Creating Device"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Running command:"
+    echo "curl -X POST \"$API_URL/devices\" \\"
+    echo "  -H \"Authorization: Bearer \$TOKEN\" \\"
+    echo "  -H \"Content-Type: application/json\" \\"
+    echo "  -d '{\"deviceName\":\"$device_name\",\"serverId\":$server_id}'"
+    echo ""
+    echo "Creating device: $device_name on server ID $server_id..."
+    echo ""
     
     create_response=$(curl -s -X POST "$API_URL/devices" \
       -H "Authorization: Bearer $token" \
       -H "Content-Type: application/json" \
       -d "{\"deviceName\":\"$device_name\",\"serverId\":$server_id}")
     
+    echo "Response:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "$create_response" | python3 -m json.tool 2>/dev/null || echo "$create_response"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    
     if echo "$create_response" | grep -q '"message":"Device added successfully"'; then
         device_id=$(echo "$create_response" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
         assigned_ip=$(echo "$create_response" | grep -o '"assignedIP":"[^"]*' | cut -d'"' -f4)
         public_key=$(echo "$create_response" | grep -o '"publicKey":"[^"]*' | cut -d'"' -f4)
         
-        echo "${GREEN}✅ Device created successfully!${NC}"
+        echo "✅ Device created successfully!"
         echo ""
-        echo "${BLUE}📋 Device Details:${NC}"
-        echo "   Device ID: $device_id"
-        echo "   Device Name: $device_name"
-        echo "   Assigned IP: $assigned_ip"
+        echo "Device Details:"
+        echo "  Device ID: $device_id"
+        echo "  Device Name: $device_name"
+        echo "  Assigned IP: $assigned_ip"
         public_key_short=$(echo "$public_key" | cut -c1-50)
-        echo "   Public Key: ${public_key_short}..."
+        echo "  Public Key: ${public_key_short}..."
         echo ""
-        echo "${BLUE}🔍 Verify in OPNsense:${NC}"
-        echo "   VPN → WireGuard → Clients"
-        echo "   Look for peer: $username-$device_name"
-        echo "   IP: $assigned_ip"
+        echo "Verify in OPNsense:"
+        echo "  VPN → WireGuard → Clients"
+        echo "  Look for peer: $username-$device_name"
+        echo "  IP: $assigned_ip"
     else
-        echo "${RED}❌ Device creation failed!${NC}"
-        echo "$create_response" | python3 -m json.tool 2>/dev/null || echo "$create_response"
+        echo "❌ Device creation failed!"
+        echo "See error details above."
     fi
     
     echo ""
