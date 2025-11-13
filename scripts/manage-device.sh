@@ -257,8 +257,11 @@ cmd_list() {
     echo "List All Devices"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
+    echo "[DEBUG] About to call get_credentials..."
+    echo ""
     
     creds=$(get_credentials)
+    echo "[DEBUG] get_credentials returned: $?"
     if [ $? -ne 0 ] || [ -z "$creds" ]; then
         echo ""
         echo "Failed to get credentials"
