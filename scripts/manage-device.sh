@@ -67,16 +67,23 @@ login() {
 }
 
 get_credentials() {
-    echo "════════════════════════════════════════"
+    echo "+========================================+"
+    echo "|           LOGIN REQUIRED               |"
+    echo "+========================================+"
+    echo ""
+    echo "Please fill in the form below:"
     echo ""
 
     while true; do
-        echo "Enter your Username:"
-        printf "> "
+        echo "┌─────────────────────────────────────┐"
+        printf "│ Username= "
         read -r username
+        echo "└─────────────────────────────────────┘"
 
         if [ -z "$username" ]; then
-            echo "[ERROR] Username cannot be empty. Try again."
+            echo ""
+            echo "  [ERROR] Username field is empty!"
+            echo "  Please type your username and press Enter."
             echo ""
             continue
         fi
@@ -87,16 +94,19 @@ get_credentials() {
     echo ""
 
     while true; do
-        echo "Enter your Password:"
-        printf "> "
+        echo "┌─────────────────────────────────────┐"
+        printf "│ Password= "
         # Hide password input (no echo to terminal)
         stty -echo 2>/dev/null || true
         read -r password
         stty echo 2>/dev/null || true
         echo ""
+        echo "└─────────────────────────────────────┘"
 
         if [ -z "$password" ]; then
-            echo "[ERROR] Password cannot be empty. Try again."
+            echo ""
+            echo "  [ERROR] Password field is empty!"
+            echo "  Please type your password and press Enter."
             echo ""
             continue
         fi
@@ -104,7 +114,6 @@ get_credentials() {
         break
     done
 
-    echo "════════════════════════════════════════"
     echo ""
     echo "$username|$password"
     return 0
@@ -242,16 +251,6 @@ cmd_list() {
     print_header
     echo "List All Devices"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "This will show all your VPN devices including:"
-    echo "  • Device ID and Name"
-    echo "  • Server Location"
-    echo "  • Assigned IP Address"
-    echo "  • Status (Active/Inactive)"
-    echo "  • Creation Date"
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Please enter your login credentials below:"
     echo ""
     
     creds=$(get_credentials)
