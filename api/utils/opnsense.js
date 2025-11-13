@@ -260,74 +260,60 @@ async function removeWireGuardPeer(peerId) {
   try {
     console.log(`[DEBUG] removeWireGuardPeer called with peerId: ${peerId}`);
     
-    // Try multiple endpoint formats - OPNsense API can vary by version
-    // Pattern: addClient -> delClient (most likely)
-    const endpoints = [
-      { path: `/wireguard/client/delClient/${peerId}`, body: null },
-      { path: `/wireguard/client/delClient/${peerId}`, body: { uuid: peerId } },
-      { path: `/wireguard/client/deleteClient/${peerId}`, body: null },
-      { path: `/wireguard/client/delete/${peerId}`, body: null }
-    ];
+    // Use the confirmed working endpoint: /wireguard/client/delClient/{uuid}
+    // Verified working on OPNsense - matches addClient pattern
+    const endpoint = `/wireguard/client/delClient/${peerId}`;
     
-    let lastError = null;
-    let lastResponse = null;
-    
-    for (const { path, body } of endpoints) {
-      try {
-        console.log(`[DEBUG] Trying OPNsense API endpoint: POST ${path}${body ? ' with body' : ''}`);
-        const response = await makeRequest('POST', path, body);
-        console.log(`[DEBUG] OPNsense API response from ${path}:`, JSON.stringify(response, null, 2));
-        
-        lastResponse = response;
-        
-        // Check if this endpoint worked
-        if (response.result === 'deleted' || response.result === 'saved') {
-          console.log(`[OK] WireGuard peer ${peerId} removed using endpoint: ${path}`);
-          
-          // Restart WireGuard service
-          await restartWireGuard();
-          
-          return { success: true };
-        } else if (response.errorMessage) {
-          if (response.errorMessage.includes('not found') || response.errorMessage.includes('Endpoint not found')) {
-            // Endpoint doesn't exist, try next one
-            console.log(`[i] Endpoint ${path} not found, trying next...`);
-            lastError = new Error(`Endpoint not found: ${path}`);
-            continue;
-          } else {
-            // Other error message - might be about the peer itself
-            console.log(`[i] Endpoint ${path} returned error: ${response.errorMessage}`);
-            lastError = new Error(response.errorMessage);
-            continue;
-          }
-        } else {
-          // Got a response but not the expected format
-          // If no errorMessage, might be success (some APIs return empty object)
-          console.log(`[i] Unexpected response format from ${path}, assuming it might have worked...`);
-          // Verify by checking if peer still exists (will do this after trying all endpoints)
-        }
-      } catch (endpointError) {
-        console.log(`[i] Endpoint ${path} failed: ${endpointError.message}, trying next...`);
-        lastError = endpointError;
-        continue;
-      }
-    }
-    
-    // If we got here, all endpoints returned errors or unexpected responses
-    // Verify if peer was actually deleted by checking if it still exists
-    console.log(`[DEBUG] Verifying if peer ${peerId} was actually deleted...`);
     try {
-      // Try to find the peer - if it doesn't exist, deletion might have succeeded
-      // But we need the peer name to check, so we'll just report the error
-      console.log(`[i] Could not verify deletion - check OPNsense manually`);
-    } catch (verifyError) {
-      // Ignore verification errors
+      console.log(`[DEBUG] Calling OPNsense API: POST ${endpoint}`);
+      const response = await makeRequest('POST', endpoint);
+      console.log(`[DEBUG] OPNsense API response:`, JSON.stringify(response, null, 2));
+      
+      // Check if deletion succeeded
+      if (response.result === 'deleted' || response.result === 'saved') {
+        console.log(`[OK] WireGuard peer ${peerId} removed from OPNsense`);
+        
+        // Restart WireGuard service to apply changes
+        await restartWireGuard();
+        
+        return { success: true };
+      } else if (response.errorMessage) {
+        // Check if it's an endpoint error (shouldn't happen, but handle gracefully)
+        if (response.errorMessage.includes('not found') || response.errorMessage.includes('Endpoint not found')) {
+          console.error(`[!] OPNsense endpoint not found: ${endpoint}`);
+          throw new Error(`OPNsense API endpoint not found. Your OPNsense version may use a different endpoint format.`);
+        } else {
+          // Other error (e.g., peer doesn't exist, permission denied, etc.)
+          console.error(`[!] OPNsense returned error: ${response.errorMessage}`);
+          throw new Error(`Failed to delete peer: ${response.errorMessage}`);
+        }
+      } else {
+        // Unexpected response format
+        console.error(`[!] OPNsense did not return expected result. Response:`, response);
+        throw new Error(`Failed to delete peer. Unexpected response format: ${JSON.stringify(response)}`);
+      }
+    } catch (error) {
+      // If the primary endpoint fails, try fallback (for different OPNsense versions)
+      if (error.message && error.message.includes('not found')) {
+        console.log(`[i] Primary endpoint failed, trying fallback...`);
+        try {
+          const fallbackEndpoint = `/wireguard/client/deleteClient/${peerId}`;
+          console.log(`[DEBUG] Trying fallback endpoint: POST ${fallbackEndpoint}`);
+          const fallbackResponse = await makeRequest('POST', fallbackEndpoint);
+          
+          if (fallbackResponse.result === 'deleted' || fallbackResponse.result === 'saved') {
+            console.log(`[OK] WireGuard peer ${peerId} removed using fallback endpoint`);
+            await restartWireGuard();
+            return { success: true };
+          }
+        } catch (fallbackError) {
+          console.error(`[!] Fallback endpoint also failed:`, fallbackError.message);
+        }
+      }
+      
+      // Re-throw the original error
+      throw error;
     }
-    
-    // All methods failed or returned unexpected responses
-    console.error(`[!] All deletion methods failed or returned unexpected responses`);
-    console.error(`[!] Last response:`, JSON.stringify(lastResponse, null, 2));
-    throw new Error(`Failed to delete peer. Tried multiple endpoints. Last response: ${JSON.stringify(lastResponse)}`);
 
   } catch (error) {
     console.error('[!] OPNsense remove peer error:', error.message);
