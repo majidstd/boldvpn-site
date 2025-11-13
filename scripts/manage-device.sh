@@ -76,9 +76,11 @@ get_credentials() {
 
     while true; do
         echo "┌─────────────────────────────────────┐"
-        printf "│ Username= "
-        read -r username
+        echo "│ Username= "
+        echo "│ (Type your username and press Enter)"
         echo "└─────────────────────────────────────┘"
+        printf "> "
+        read -r username
 
         if [ -z "$username" ]; then
             echo ""
@@ -95,13 +97,16 @@ get_credentials() {
 
     while true; do
         echo "┌─────────────────────────────────────┐"
-        printf "│ Password= "
+        echo "│ Password= "
+        echo "│ (Type your password and press Enter)"
+        echo "│ (Password will be hidden)"
+        echo "└─────────────────────────────────────┘"
+        printf "> "
         # Hide password input (no echo to terminal)
         stty -echo 2>/dev/null || true
         read -r password
         stty echo 2>/dev/null || true
         echo ""
-        echo "└─────────────────────────────────────┘"
 
         if [ -z "$password" ]; then
             echo ""
