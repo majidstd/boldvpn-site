@@ -800,9 +800,23 @@ class BoldVPNPortal {
 
             // Handle form submission
             const form = document.getElementById('add-device-form');
-            form.addEventListener('submit', async (e) => {
+            if (!form) {
+                console.error('add-device-form not found!');
+                return;
+            }
+            
+            // Remove any existing listeners to prevent duplicates
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+            
+            console.log('Attaching form submit handler');
+            newForm.addEventListener('submit', async (e) => {
+                console.log('FORM SUBMIT EVENT FIRED!', e);
                 e.preventDefault();
-                await this.handleAddDevice(e, modal);
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                console.log('Prevented default, calling handleAddDevice');
+                await this.handleAddDevice(e, newForm, modal);
                 document.removeEventListener('keydown', handleEscape);
             });
         } catch (error) {
@@ -811,8 +825,11 @@ class BoldVPNPortal {
         }
     }
 
-    async handleAddDevice(e, modal) {
-        const form = e.target;
+    async handleAddDevice(e, form, modal) {
+        console.log('handleAddDevice called!', { e, form, modal });
+        if (!form) {
+            form = e.target;
+        }
         const submitBtn = form.querySelector('button[type="submit"]');
         const btnText = submitBtn.querySelector('.btn-text');
         const spinner = submitBtn.querySelector('.spinner');
@@ -843,22 +860,29 @@ class BoldVPNPortal {
             const data = await response.json();
 
             if (response.ok) {
-                console.log('Device added successfully, navigating to devices section');
+                console.log('✅ Device added successfully! Response:', data);
+                console.log('Current section BEFORE device add success:', this.currentSection);
+                
                 // Mark that we just added a device to prevent navigation away
                 this._justAddedDevice = true;
+                console.log('Set _justAddedDevice flag to true');
                 
                 // Close modal first
+                console.log('Closing modal...');
                 modal.style.display = 'none';
                 modal.remove();
+                console.log('Modal closed');
                 
                 // Show success message
                 this.showAlert('Device added successfully!', 'success');
+                console.log('Success alert shown');
                 
                 // Ensure we're on devices section - force navigation
-                console.log('Current section before navigate:', this.currentSection);
+                console.log('About to navigate to devices. Current section:', this.currentSection);
                 this.currentSection = 'devices'; // Set it explicitly first
+                console.log('Set currentSection to devices, now calling navigateTo...');
                 this.navigateTo('devices');
-                console.log('Current section after navigate:', this.currentSection);
+                console.log('✅ Navigation complete. Current section:', this.currentSection);
                 
                 // Force reload devices list after a short delay to ensure DOM is ready
                 setTimeout(() => {
