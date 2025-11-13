@@ -377,6 +377,7 @@ class BoldVPNPortal {
             // Remove old listener if exists
             contentArea.removeEventListener('click', portal.handleAddDeviceClick);
             portal.handleAddDeviceClick = (e) => {
+                console.log('Content area click delegation fired, target:', e.target, 'id:', e.target.id);
                 if (e.target && (e.target.id === 'add-device-btn' || e.target.closest('#add-device-btn'))) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -391,12 +392,13 @@ class BoldVPNPortal {
         setTimeout(() => {
             const addBtn = document.getElementById('add-device-btn');
             if (addBtn) {
-                console.log('Direct binding Add Device button');
+                console.log('Direct binding: found add-device-btn', addBtn);
                 // Remove old listener
                 const newBtn = addBtn.cloneNode(true);
                 addBtn.parentNode.replaceChild(newBtn, addBtn);
                 
                 newBtn.addEventListener('click', (e) => {
+                    console.log('Direct binding click handler fired');
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('Add Device button clicked (direct)');
