@@ -280,25 +280,30 @@ body>*:not(#vanta-background) {
     background: var(--bg);
 }
 
-/* Portal Wrapper - creates floating tab effect */
+/* Portal Wrapper - creates floating tab effect with unified background */
 .portal-wrapper {
     display: grid;
     grid-template-columns: 260px 1fr;
     min-height: calc(100vh - 64px);
     gap: 0;
     width: 100%;
+    background: var(--panel);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 }
 
-/* Sidebar */
+/* Sidebar - unified with content */
 .portal-sidebar {
-    background: var(--panel);
-    border-right: 1px solid var(--border);
+    background: transparent;
     display: flex;
     flex-direction: column;
     position: sticky;
     top: 64px;
     height: calc(100vh - 64px);
     overflow-y: auto;
+    border-right: 1px solid var(--border);
 }
 
 .sidebar-header {
@@ -380,7 +385,7 @@ body>*:not(#vanta-background) {
     width: 100%;
 }
 
-/* Main Content - floating tab style */
+/* Main Content - unified with sidebar */
 .portal-content {
     background: transparent;
     overflow-y: auto;
@@ -394,15 +399,15 @@ body>*:not(#vanta-background) {
     animation: fadeIn 0.3s ease;
 }
 
-/* Unified Container - floating card/tab style */
+/* Unified Container - seamless with wrapper */
 .unified-container {
-    background: var(--panel);
-    border-radius: var(--border-radius);
+    background: transparent;
+    border-radius: 0;
     padding: 32px;
     animation: fadeIn 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--border);
     width: 100%;
+    border: none;
+    box-shadow: none;
 }
 
 @keyframes fadeIn {
