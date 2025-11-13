@@ -8,6 +8,8 @@ class BoldVPNPortal {
         this.token = localStorage.getItem(this.tokenKey) || sessionStorage.getItem(this.tokenKey);
         this.user = null;
         this.currentSection = 'overview';
+        // Navigation history for debugging (keeps a short trace of recent navigations)
+        this._navHistory = [];
 
         this.init();
     }
@@ -202,6 +204,32 @@ class BoldVPNPortal {
     navigateTo(section) {
         console.log('=== navigateTo called with section:', section, '(was:', this.currentSection, ')');
         console.trace('navigateTo trace');
+
+        // Instrumentation: keep a short history and emit an expanded trace when
+        // navigating to overview so we can identify unexpected callers.
+        try {
+            this._navHistory = this._navHistory || [];
+            this._navHistory.push({
+                time: new Date().toISOString(),
+                section,
+                from: this.currentSection,
+                justAdded: !!this._justAddedDevice,
+                stack: (new Error()).stack
+            });
+            // keep only last 10 entries
+            if (this._navHistory.length > 10) this._navHistory.shift();
+        } catch (err) {
+            console.warn('Failed to record nav history:', err);
+        }
+
+        if (section === 'overview') {
+            console.groupCollapsed('navigateTo OVERVIEW debug');
+            console.log('overview navigation requested. currentSection:', this.currentSection, ' _justAddedDevice:', !!this._justAddedDevice);
+            // Print the most recent nav history (shallow)
+            try { console.log('navHistory (recent):', this._navHistory.slice(-5)); } catch(e) {}
+            console.trace('Stack trace for navigateTo(overview)');
+            console.groupEnd();
+        }
         
         // Prevent navigation to overview if we just added a device
         if (section === 'overview' && this.currentSection === 'devices' && this._justAddedDevice) {
@@ -762,7 +790,9 @@ class BoldVPNPortal {
                         `}
                         <div id="add-device-error" class="alert alert-error" style="display: none;"></div>
                         <div style="display: flex; gap: 12px; margin-top: 8px;">
-                            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                            <!-- Use an explicit button type="button" to avoid native form submission
+                                 and ensure we control the submit flow entirely via JS. -->
+                            <button id="add-device-submit" type="button" class="btn btn-primary" style="flex: 1;" data-action="submit">
                                 <span class="btn-text">Add Device</span>
                                 <div class="spinner" style="display: none;"></div>
                             </button>
@@ -810,59 +840,38 @@ class BoldVPNPortal {
             };
             document.addEventListener('keydown', handleEscape);
 
-            // Handle form submission
+            // Handle submit via an explicit button click handler. The submit button is
+            // type="button" so the browser won't perform a native form submit or
+            // reload the page unexpectedly.
             const form = document.getElementById('add-device-form');
             if (!form) {
                 console.error('add-device-form not found!');
                 return;
             }
-            
-            // Remove any existing listeners to prevent duplicates
-            const newForm = form.cloneNode(true);
-            form.parentNode.replaceChild(newForm, form);
-            
-            console.log('Attaching form submit handler');
-            
-            // Attach BOTH form submit AND button click handlers for redundancy
-            const submitButton = newForm.querySelector('button[type="submit"]');
-            console.log('Submit button found:', submitButton);
-            
-            // Direct button click handler (prevent default immediately)
-            submitButton.addEventListener('click', async (e) => {
-                alert('BUTTON CLICKED!'); // Visible alert
-                console.log('%c SUBMIT BUTTON CLICKED!', 'background: orange; color: white; font-size: 16px;', e);
+
+            const submitButton = document.getElementById('add-device-submit');
+            if (!submitButton) {
+                console.error('add-device-submit button not found!');
+                return;
+            }
+
+            // Remove any previous click handlers by replacing the button node
+            const freshSubmit = submitButton.cloneNode(true);
+            submitButton.parentNode.replaceChild(freshSubmit, submitButton);
+
+            freshSubmit.addEventListener('click', async (e) => {
+                console.log('Add Device submit button clicked');
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();
-                console.log('Button click prevented, calling handleAddDevice');
                 try {
-                    await this.handleAddDevice(e, newForm, modal);
-                    console.log('%c handleAddDevice completed', 'background: blue; color: white;');
+                    await this.handleAddDevice(e, form, modal);
                 } catch (err) {
-                    console.error('%c handleAddDevice ERROR:', 'background: red; color: white;', err);
-                    alert('ERROR: ' + err.message);
+                    console.error('handleAddDevice ERROR:', err);
+                    this.showAlert('Error adding device: ' + (err.message || 'Unknown'), 'error');
+                } finally {
+                    document.removeEventListener('keydown', handleEscape);
                 }
-                document.removeEventListener('keydown', handleEscape);
-                return false;
-            }, true); // Use capture phase
-            
-            // Form submit handler (backup)
-            newForm.addEventListener('submit', async (e) => {
-                alert('FORM SUBMITTED!'); // Visible alert to confirm handler runs
-                console.log('%c FORM SUBMIT FIRED!', 'background: green; color: white; font-size: 16px;', e);
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                console.log('Prevented default, calling handleAddDevice');
-                try {
-                    await this.handleAddDevice(e, newForm, modal);
-                    console.log('%c handleAddDevice completed', 'background: blue; color: white;');
-                } catch (err) {
-                    console.error('%c handleAddDevice ERROR:', 'background: red; color: white;', err);
-                    alert('ERROR: ' + err.message);
-                }
-                document.removeEventListener('keydown', handleEscape);
-            }, true); // Use capture phase
+            });
         } catch (error) {
             console.error('Error showing add device modal:', error);
             this.showAlert('Failed to load server list. Please try again.', 'error');
