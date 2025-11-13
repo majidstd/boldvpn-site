@@ -97,6 +97,7 @@ const allowedOrigins = [
   'https://boldvpn.net',
   'https://www.boldvpn.net',
   'https://login.boldvpn.net',
+  'https://www.boldvpn.net/portal',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   process.env.FRONTEND_URL
