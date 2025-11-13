@@ -1166,5 +1166,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Form or modal not found for manual trigger');
         }
     };
+    // Debug: log clicks on add-device-submit button
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'add-device-submit' || e.target.closest('#add-device-submit')) {
+            console.log('%c DOCUMENT CLICK on add-device-submit', 'background: yellow; color: black; font-size: 14px;', e);
+        }
+    });
 });
 
