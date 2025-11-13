@@ -220,21 +220,38 @@ cmd_create() {
     echo "Creating device: $device_name on server ID $server_id..."
     echo ""
     
-    create_response=$(curl -s -X POST "$API_URL/devices" \
+    create_response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$API_URL/devices" \
       -H "Authorization: Bearer $token" \
       -H "Content-Type: application/json" \
       -d "{\"deviceName\":\"$device_name\",\"serverId\":$server_id}")
     
+    # Extract HTTP code and response body
+    http_code=$(echo "$create_response" | grep "HTTP_CODE:" | cut -d':' -f2)
+    response_body=$(echo "$create_response" | sed '/HTTP_CODE:/d')
+    
     echo "Response:"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "$create_response" | python3 -m json.tool 2>/dev/null || echo "$create_response"
+    echo "HTTP Status: $http_code"
+    echo ""
+    if [ -n "$response_body" ]; then
+        echo "$response_body" | python3 -m json.tool 2>/dev/null || echo "$response_body"
+    else
+        echo "ERROR: Empty response from server!"
+        echo "This usually means:"
+        echo "  • API server is not running"
+        echo "  • Network connection failed"
+        echo "  • URL is incorrect"
+        echo ""
+        echo "Check API server status:"
+        echo "  sudo service boldvpn_api status"
+    fi
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
-    if echo "$create_response" | grep -q '"message":"Device added successfully"'; then
-        device_id=$(echo "$create_response" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
-        assigned_ip=$(echo "$create_response" | grep -o '"assignedIP":"[^"]*' | cut -d'"' -f4)
-        public_key=$(echo "$create_response" | grep -o '"publicKey":"[^"]*' | cut -d'"' -f4)
+    if echo "$response_body" | grep -q '"message":"Device added successfully"'; then
+        device_id=$(echo "$response_body" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
+        assigned_ip=$(echo "$response_body" | grep -o '"assignedIP":"[^"]*' | cut -d'"' -f4)
+        public_key=$(echo "$response_body" | grep -o '"publicKey":"[^"]*' | cut -d'"' -f4)
         
         echo "✅ Device created successfully!"
         echo ""
