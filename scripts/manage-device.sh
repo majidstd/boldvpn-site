@@ -258,11 +258,8 @@ cmd_list() {
     echo "  • Status (Active/Inactive)"
     echo "  • Creation Date"
     echo ""
-    printf "${YELLOW}Press Enter to login and continue...${NC} "
-    read_input > /dev/null 2>&1 || true
-    echo ""
-    echo "Step 1: Login"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Please enter your login credentials below:"
     echo ""
     
     creds=$(get_credentials)
