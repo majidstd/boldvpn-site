@@ -1006,7 +1006,15 @@ class BoldVPNPortal {
             });
 
             if (response.ok) {
-                this.showAlert('Device removed successfully', 'success');
+                const data = await response.json();
+                
+                if (data.opnsenseRemoved === false) {
+                    // OPNsense removal failed but device was removed from database
+                    this.showAlert(`Device removed from database. ${data.warning || 'Peer may still exist in OPNsense.'}`, 'warning');
+                } else {
+                    this.showAlert('Device removed successfully', 'success');
+                }
+                
                 this.loadDevices();
             } else {
                 const data = await response.json();
