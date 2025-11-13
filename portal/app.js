@@ -43,33 +43,15 @@ class BoldVPNPortal {
 
     renderLoginForm() {
         const authContainer = document.getElementById('auth-container');
-        authContainer.innerHTML = `
-            <div class="auth-section">
-                <div class="auth-card">
-                    <h2>Account Login</h2>
-                    <p class="auth-subtitle">Access your BoldVPN account</p>
-                    <form id="login-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="username">Username</label>
-                            <input type="text" id="username" name="username" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Password</label>
-                            <input type="password" id="password" name="password" required>
-                        </div>
-                        <div class="form-options">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="remember-me">
-                                Remember me
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Sign In</button>
-                    </form>
-                    <div id="login-error" class="alert alert-error" style="display: none;"></div>
-                </div>
-            </div>
-        `;
-        document.getElementById('login-form').addEventListener('submit', (e) => this.handleLogin(e));
+        authContainer.innerHTML = ''; // Clear previous content
+        const template = document.getElementById('login-template');
+        if (template) {
+            const clonedContent = template.content.cloneNode(true);
+            authContainer.appendChild(clonedContent);
+            document.getElementById('login-form').addEventListener('submit', (e) => this.handleLogin(e));
+        } else {
+            console.error('Login template not found!');
+        }
     }
 
     async handleLogin(e) {
@@ -103,41 +85,10 @@ class BoldVPNPortal {
 
     showDashboard() {
         document.getElementById('auth-container').style.display = 'none';
-        document.getElementById('portal-container').style.display = 'block';
+        document.getElementById('portal-container').style.display = 'grid'; // Use grid for portal layout
         
-        this.renderDashboardStructure();
         this.bindNavigationEvents();
         this.navigateTo('overview');
-    }
-
-    renderDashboardStructure() {
-        const portalContainer = document.getElementById('portal-container');
-        portalContainer.innerHTML = `
-            <div class="portal-wrapper">
-                <aside class="portal-sidebar">
-                    <div class="sidebar-header">
-                        <div class="user-info">
-                            <h3 id="sidebar-username">${this.user?.username || 'User'}</h3>
-                            <p id="sidebar-plan">${this.user?.plan || 'Basic'} Plan</p>
-                        </div>
-                    </div>
-                    <nav class="sidebar-nav">
-                        <button class="nav-item active" data-section="overview"><span>📊</span> Overview</button>
-                        <button class="nav-item" data-section="devices"><span>📱</span> Manage Devices</button>
-                        <button class="nav-item" data-section="usage"><span>📈</span> Usage History</button>
-                        <button class="nav-item" data-section="profile"><span>👤</span> Profile Settings</button>
-                        <button class="nav-item" data-section="password"><span>🔒</span> Change Password</button>
-                        <button class="nav-item" data-section="billing"><span>💳</span> Billing & Plans</button>
-                    </nav>
-                    <div class="sidebar-footer">
-                        <button id="logout-btn" class="btn btn-secondary">Logout</button>
-                    </div>
-                </aside>
-                <main class="portal-content">
-                    <div id="content-area"></div>
-                </main>
-            </div>
-        `;
     }
 
     bindNavigationEvents() {
@@ -170,90 +121,104 @@ class BoldVPNPortal {
     }
 
     renderOverview(container) {
-        container.innerHTML = `
-            <div class="unified-container">
-                <div class="section-header"><h2>Welcome back, ${this.user?.username || 'User'}!</h2></div>
-                <div class="dashboard-grid">
-                    <div class="dashboard-card"><h3>📊 Data Usage</h3><div class="usage-stats"><div class="usage-item"><span class="usage-label">Used:</span><span class="usage-value" id="data-used">Loading...</span></div><div class="usage-item"><span class="usage-label">Limit:</span><span class="usage-value" id="data-limit">Loading...</span></div><div class="usage-progress"><div class="progress-bar" id="data-progress" style="width: 0%"></div></div></div></div>
-                    <div class="dashboard-card"><h3>⚡ Connection Speed</h3><div class="speed-stats"><div class="speed-item"><span class="speed-label">Download:</span><span class="speed-value" id="speed-down">Loading...</span></div><div class="speed-item"><span class="speed-label">Upload:</span><span class="speed-value" id="speed-up">Loading...</span></div></div></div>
-                    <div class="dashboard-card"><h3>📱 Connected Devices</h3><div class="devices-stats"><div class="devices-count"><span class="devices-number" id="devices-count">0</span><span class="devices-label">Devices</span></div><div class="devices-limit"><span>of <span id="devices-limit">--</span> allowed</span></div></div></div>
-                    <div class="dashboard-card"><h3>✓ Subscription Status</h3><div class="subscription-info"><p><strong>Status:</strong> <span id="subscription-status" class="status-active">Active</span></p><p><strong>Plan:</strong> <span id="subscription-plan">${this.user?.plan || 'Basic'}</span></p></div></div>
-                </div>
-            </div>
-        `;
-        this.loadOverviewData();
+        container.innerHTML = ''; // Clear previous content
+        const template = document.getElementById('overview-template');
+        if (template) {
+            const clonedContent = template.content.cloneNode(true);
+            // Update dynamic content before appending
+            const usernameSpan = clonedContent.querySelector('#overview-username');
+            if (usernameSpan) usernameSpan.textContent = this.user?.username || 'User';
+            const planSpan = clonedContent.querySelector('#subscription-plan');
+            if (planSpan) planSpan.textContent = this.user?.plan || 'Basic';
+
+            container.appendChild(clonedContent);
+            this.loadOverviewData();
+        } else {
+            console.error('Overview template not found!');
+        }
     }
 
     renderDevices(container) {
-        container.innerHTML = `
-            <div class="unified-container">
-                <div class="section-header">
-                    <h2>Manage Devices</h2>
-                    <div style="display: flex; gap: 10px;">
-                        <button id="refresh-devices-btn" class="btn btn-primary" type="button">🔄 Refresh</button>
-                        <button id="add-device-btn" class="btn btn-primary" type="button">+ Add Device</button>
-                    </div>
-                </div>
-                <div id="devices-container"><p style="text-align: center; color: var(--muted); padding: 40px;">Loading devices...</p></div>
-            </div>
-        `;
-        document.getElementById('refresh-devices-btn').addEventListener('click', () => this.loadDevices());
-        document.getElementById('add-device-btn').addEventListener('click', () => this.addDevice());
-        this.loadDevices();
+        container.innerHTML = ''; // Clear previous content
+        const template = document.getElementById('devices-template');
+        if (template) {
+            const clonedContent = template.content.cloneNode(true);
+            container.appendChild(clonedContent);
+            document.getElementById('refresh-devices-btn').addEventListener('click', () => this.loadDevices());
+            document.getElementById('add-device-btn').addEventListener('click', () => this.addDevice());
+            
+            const devicesContainer = clonedContent.querySelector('#devices-container');
+            if (devicesContainer) {
+                devicesContainer.addEventListener('click', (e) => {
+                    const target = e.target.closest('button');
+                    if (!target) return;
+                    const { deviceId, deviceName, action } = target.dataset;
+                    if (action === 'config') this.downloadConfig(deviceId);
+                    if (action === 'qr') this.downloadQRCode(deviceId);
+                    if (action === 'remove') this.removeDevice(deviceId, deviceName);
+                });
+            }
+            this.loadDevices();
+        } else {
+            console.error('Devices template not found!');
+        }
     }
 
     renderUsage(container) {
-        container.innerHTML = `
-            <div class="unified-container">
-                <div class="section-header"><h2>Usage History</h2></div>
-                <h3>Data Usage (Last 30 Days)</h3>
-                <canvas id="usage-chart" style="max-height: 400px;"></canvas>
-            </div>
-        `;
-        this.loadUsageHistory();
+        container.innerHTML = ''; // Clear previous content
+        const template = document.getElementById('usage-template');
+        if (template) {
+            const clonedContent = template.content.cloneNode(true);
+            container.appendChild(clonedContent);
+            this.loadUsageHistory();
+        } else {
+            console.error('Usage template not found!');
+        }
     }
 
     renderProfile(container) {
-        container.innerHTML = `
-            <div class="unified-container form-container">
-                <div class="section-header"><h2>Profile Settings</h2></div>
-                <form id="profile-form" class="auth-form">
-                    <div class="form-group"><label for="profile-username">Username</label><input type="text" id="profile-username" value="${this.user?.username || ''}" disabled></div>
-                    <div class="form-group"><label for="profile-email">Email</label><input type="email" id="profile-email" value="${this.user?.email || ''}" required></div>
-                    <button type="submit" class="btn btn-primary">Update Profile</button>
-                </form>
-                <div id="profile-message" class="alert" style="display: none; margin-top: 15px;"></div>
-            </div>
-        `;
-        document.getElementById('profile-form').addEventListener('submit', (e) => this.handleProfileUpdate(e));
+        container.innerHTML = ''; // Clear previous content
+        const template = document.getElementById('profile-template');
+        if (template) {
+            const clonedContent = template.content.cloneNode(true);
+            // Update dynamic content before appending
+            const usernameInput = clonedContent.querySelector('#profile-username');
+            if (usernameInput) usernameInput.value = this.user?.username || '';
+            const emailInput = clonedContent.querySelector('#profile-email');
+            if (emailInput) emailInput.value = this.user?.email || '';
+
+            container.appendChild(clonedContent);
+            document.getElementById('profile-form').addEventListener('submit', (e) => this.handleProfileUpdate(e));
+        } else {
+            console.error('Profile template not found!');
+        }
     }
 
     renderPassword(container) {
-        container.innerHTML = `
-            <div class="unified-container form-container">
-                <div class="section-header"><h2>Change Password</h2></div>
-                <form id="password-form" class="auth-form">
-                    <div class="form-group"><label for="current-password">Current Password</label><input type="password" id="current-password" required></div>
-                    <div class="form-group"><label for="new-password">New Password</label><input type="password" id="new-password" required></div>
-                    <div class="form-group"><label for="confirm-password">Confirm New Password</label><input type="password" id="confirm-password" required></div>
-                    <button type="submit" class="btn btn-primary">Update Password</button>
-                </form>
-                <div id="password-message" class="alert" style="display: none; margin-top: 15px;"></div>
-            </div>
-        `;
-        document.getElementById('password-form').addEventListener('submit', (e) => this.handlePasswordChange(e));
+        container.innerHTML = ''; // Clear previous content
+        const template = document.getElementById('password-template');
+        if (template) {
+            const clonedContent = template.content.cloneNode(true);
+            container.appendChild(clonedContent);
+            document.getElementById('password-form').addEventListener('submit', (e) => this.handlePasswordChange(e));
+        } else {
+            console.error('Password template not found!');
+        }
     }
 
     renderBilling(container) {
-        container.innerHTML = `
-            <div class="unified-container">
-                <div class="section-header"><h2>Billing & Plans</h2></div>
-                <div class="dashboard-grid">
-                    <div class="dashboard-card"><h3>Current Plan</h3><p><strong>Plan:</strong> ${this.user?.plan || 'Basic'}</p><p><strong>Status:</strong> <span class="status-active">Active</span></p><button class="btn btn-primary" style="margin-top: 10px;">Upgrade Plan</button></div>
-                    <div class="dashboard-card"><h3>Billing History</h3><p style="color: var(--muted);">No billing history available.</p></div>
-                </div>
-            </div>
-        `;
+        container.innerHTML = ''; // Clear previous content
+        const template = document.getElementById('billing-template');
+        if (template) {
+            const clonedContent = template.content.cloneNode(true);
+            // Update dynamic content before appending
+            const planSpan = clonedContent.querySelector('#billing-plan');
+            if (planSpan) planSpan.textContent = this.user?.plan || 'Basic';
+
+            container.appendChild(clonedContent);
+        } else {
+            console.error('Billing template not found!');
+        }
     }
 
     async loadOverviewData() {
@@ -268,6 +233,8 @@ class BoldVPNPortal {
 
     async loadDevices() {
         const container = document.getElementById('devices-container');
+        if (!container) return;
+        
         try {
             const devices = await api.devices.getAll();
             if (devices.length === 0) {
@@ -294,14 +261,7 @@ class BoldVPNPortal {
                     `).join('')}
                 </div>
             `;
-            container.addEventListener('click', (e) => {
-                const target = e.target.closest('button');
-                if (!target) return;
-                const { deviceId, deviceName, action } = target.dataset;
-                if (action === 'config') this.downloadConfig(deviceId);
-                if (action === 'qr') this.downloadQRCode(deviceId);
-                if (action === 'remove') this.removeDevice(deviceId, deviceName);
-            });
+            // Event listener is now attached in renderDevices()
         } catch (error) {
             container.innerHTML = `<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices: ${error.message}</p>`;
         }
@@ -369,7 +329,29 @@ class BoldVPNPortal {
         if (existingModal) existingModal.remove();
 
         try {
-            const servers = await api.servers.getAll();
+            const allServers = await api.servers.getAll();
+            
+            // Filter servers based on user plan and availability
+            const userPlan = this.user?.plan || 'basic';
+            const isPremium = userPlan === 'premium' || userPlan === 'family';
+            
+            const servers = allServers.filter(server => {
+                // Only show available servers
+                if (!server.available && server.status !== 'active') {
+                    return false;
+                }
+                // Basic users can't see premium servers
+                if (!isPremium && server.isPremium) {
+                    return false;
+                }
+                return true;
+            });
+            
+            if (servers.length === 0) {
+                this.showAlert('No servers available for your plan. Please contact support.', 'error');
+                return;
+            }
+            
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `
@@ -377,7 +359,11 @@ class BoldVPNPortal {
                     <div class="modal-header"><h3 id="modal-title">Add New Device</h3><button class="modal-close" type="button" aria-label="Close modal"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
                     <form id="add-device-form" class="auth-form">
                         <div class="form-group"><label for="device-name">Device Name</label><input type="text" id="device-name" name="deviceName" required placeholder="e.g., My Laptop, iPhone, etc." autofocus></div>
-                        <div class="form-group"><label for="device-server">Server Location</label><select id="device-server" name="serverId" required><option value="">Select a server</option>${servers.map(s => `<option value="${s.id}">${s.location}</option>`).join('')}</select></div>
+                        <div class="form-group"><label for="device-server">Server Location</label><select id="device-server" name="serverId" required><option value="">Select a server</option>${servers.map(s => {
+                            const loadInfo = s.load !== undefined ? ` - ${s.load.toFixed(0)}% load` : '';
+                            const premiumBadge = s.isPremium ? ' ⭐' : '';
+                            return `<option value="${s.id}">${s.location}${loadInfo}${premiumBadge}</option>`;
+                        }).join('')}</select></div>
                         <div id="add-device-error" class="alert alert-error" style="display: none;"></div>
                         <div style="display: flex; gap: 12px; margin-top: 8px;"><button id="add-device-submit" type="button" class="btn btn-primary" style="flex: 1;"><span class="btn-text">Add Device</span><div class="spinner" style="display: none;"></div></button><button type="button" class="btn btn-secondary" id="cancel-add-device">Cancel</button></div>
                     </form>
@@ -496,4 +482,6 @@ class BoldVPNPortal {
     }
 }
 
-window.boldVPNPortal = new BoldVPNPortal();
+new BoldVPNPortal();
+
+
