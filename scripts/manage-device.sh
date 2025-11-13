@@ -29,15 +29,16 @@ print_menu() {
     echo "${GREEN}What would you like to do?${NC}"
     echo ""
     echo "  1) Create a new device"
-    echo "  2) List devices from Database (via API)"
-    echo "  3) List devices from OPNsense (direct)"
-    echo "  4) Check device status (Database)"
-    echo "  5) Remove a device"
-    echo "  6) Diagnose device issues"
-    echo "  7) Show guide / Help"
-    echo "  8) Exit"
+    echo "  2) List devices (Portal/User View - via API)"
+    echo "  3) List devices (Database - direct SQL)"
+    echo "  4) List devices (OPNsense - direct API)"
+    echo "  5) Check device status (Database)"
+    echo "  6) Remove a device"
+    echo "  7) Diagnose device issues"
+    echo "  8) Show guide / Help"
+    echo "  9) Exit"
     echo ""
-    printf "${YELLOW}Enter your choice [1-8]: ${NC}"
+    printf "${YELLOW}Enter your choice [1-9]: ${NC}"
 }
 
 read_input() {
@@ -337,7 +338,7 @@ except Exception as e:
     read_input > /dev/null 2>&1 || true
 }
 
-cmd_list_opnsense() {
+cmd_list_database() {
     print_header
     echo "List Devices from Database (Direct Query)"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -383,9 +384,87 @@ cmd_list_opnsense() {
     
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Note: This shows all devices from database."
-    echo "To see what's actually in OPNsense, check:"
-    echo "  VPN → WireGuard → Clients in OPNsense UI"
+    echo "This shows what's stored in the database."
+    echo "Compare with option 4 to see what's in OPNsense."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
+}
+
+cmd_list_opnsense() {
+    print_header
+    echo "List Devices from OPNsense (Direct API)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Data Source: OPNsense Firewall (Direct API Call)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Running command:"
+    echo "curl -k -u \"\$OPNSENSE_API_KEY:\$OPNSENSE_API_SECRET\" \\"
+    echo "  -X GET https://firewall.boldvpn.net:8443/api/wireguard/client/get"
+    echo ""
+    echo "What this shows:"
+    echo "  • ALL WireGuard clients/peers in OPNsense"
+    echo "  • Directly from firewall (not filtered by database)"
+    echo "  • Shows UUID, name, tunnel address, public key"
+    echo "  • This is the source of truth for active peers"
+    echo ""
+    
+    # Check if OPNsense credentials are set
+    OPNSENSE_KEY=$(grep -E '^OPNSENSE_API_KEY=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    OPNSENSE_SECRET=$(grep -E '^OPNSENSE_API_SECRET=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    OPNSENSE_HOST=$(grep -E '^OPNSENSE_HOST=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || echo "firewall.boldvpn.net")
+    OPNSENSE_PORT=$(grep -E '^OPNSENSE_PORT=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || echo "8443")
+    
+    if [ -z "$OPNSENSE_KEY" ] || [ -z "$OPNSENSE_SECRET" ]; then
+        echo "Error: OPNsense API credentials not found in /usr/local/boldvpn-site/api/.env"
+        echo ""
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
+    
+    echo "Fetching WireGuard clients from OPNsense..."
+    echo ""
+    
+    # Call OPNsense API
+    opnsense_response=$(curl -s -k -u "${OPNSENSE_KEY}:${OPNSENSE_SECRET}" \
+      -X GET "https://${OPNSENSE_HOST}:${OPNSENSE_PORT}/api/wireguard/client/get")
+    
+    # Parse and display the response
+    echo "$opnsense_response" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    if 'client' in data and 'clients' in data['client'] and 'client' in data['client']['clients']:
+        clients = data['client']['clients']['client']
+        if isinstance(clients, dict):
+            print('Found ' + str(len(clients)) + ' peer(s) in OPNsense:')
+            print('')
+            for uuid, client in clients.items():
+                print('  UUID: ' + str(uuid))
+                print('  Name: ' + str(client.get('name', 'N/A')))
+                print('  Tunnel Address: ' + str(client.get('tunneladdress', 'N/A')))
+                print('  Public Key: ' + str(client.get('pubkey', 'N/A'))[:50] + '...')
+                print('  Enabled: ' + str(client.get('enabled', 'N/A')))
+                print('')
+        else:
+            print('No peers found in OPNsense')
+    else:
+        print('Response:')
+        print(json.dumps(data, indent=2))
+except Exception as e:
+    print('Error parsing response: ' + str(e))
+    print('Raw response:')
+    print(sys.stdin.read())
+" <<< "$opnsense_response" 2>/dev/null || echo "$opnsense_response"
+    
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "This shows actual peers in OPNsense firewall."
+    echo "Compare with option 3 (Database) to find sync issues."
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     printf "Press Enter to continue... "
@@ -824,21 +903,24 @@ main() {
                 cmd_list
                 ;;
             3)
-                cmd_list_opnsense
+                cmd_list_database
                 ;;
             4)
-                cmd_check
+                cmd_list_opnsense
                 ;;
             5)
-                cmd_remove
+                cmd_check
                 ;;
             6)
-                cmd_diagnose
+                cmd_remove
                 ;;
             7)
-                cmd_guide
+                cmd_diagnose
                 ;;
             8)
+                cmd_guide
+                ;;
+            9)
                 echo ""
                 echo "Goodbye!"
                 echo ""
@@ -846,7 +928,7 @@ main() {
                 ;;
             *)
                 echo ""
-                echo "Invalid choice. Please enter 1-8."
+                echo "Invalid choice. Please enter 1-9."
                 echo ""
                 printf "Press Enter to continue... "
                 read_input > /dev/null 2>&1 || true
