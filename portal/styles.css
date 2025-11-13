@@ -282,9 +282,12 @@ body>*:not(#vanta-background) {
     gap: 0;
 }
 
-/* Remove unused wrapper class since we're using direct grid */
+/* Portal Wrapper - creates floating tab effect */
 .portal-wrapper {
-    display: contents;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: calc(100vh - 64px);
+    gap: 0;
 }
 
 /* Sidebar */
@@ -333,28 +336,31 @@ body>*:not(#vanta-background) {
     align-items: center;
     gap: 10px;
     background: transparent;
-    border: 1px solid transparent;
+    border: none;
     color: var(--muted);
     font-size: 14px;
     transition: all 0.2s ease;
-    border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
-    margin-right: -1px;
+    border-radius: var(--border-radius-sm);
+    margin: 2px 0;
     position: relative;
     cursor: pointer;
 }
 
 .nav-item:hover {
-    background: rgba(14, 165, 233, 0.05);
+    background: rgba(14, 165, 233, 0.08);
     color: var(--text);
 }
 
 .nav-item.active {
-    background: var(--card);
-    color: var(--primary);
-    border: 1px solid var(--border);
-    border-right: 1px solid var(--card);
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
     z-index: 1;
     font-weight: 600;
+}
+
+.nav-item.active:hover {
+    background: var(--primary-strong);
 }
 
 .nav-item:focus {
@@ -375,26 +381,29 @@ body>*:not(#vanta-background) {
     width: 100%;
 }
 
-/* Main Content */
+/* Main Content - floating tab style */
 .portal-content {
-    background: var(--card);
+    background: transparent;
     overflow-y: auto;
-    padding: 0;
+    padding: 24px;
     min-height: calc(100vh - 64px);
 }
 
 .content-section {
-    padding: 32px;
+    padding: 0;
     background: transparent;
     animation: fadeIn 0.3s ease;
 }
 
-/* Unified Container - content with consistent padding */
+/* Unified Container - floating card/tab style */
 .unified-container {
     background: var(--panel);
+    border-radius: var(--border-radius);
     padding: 32px;
     animation: fadeIn 0.3s ease;
-    height: 100%;
+    min-height: calc(100vh - 120px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
 }
 
 @keyframes fadeIn {
@@ -414,15 +423,37 @@ body>*:not(#vanta-background) {
     justify-content: space-between;
     align-items: center;
     padding: 0 0 24px 0;
-    margin: 0;
+    margin: 0 0 24px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
 }
 
 .section-header h2 {
-    font-size: 28px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 600;
     margin: 0;
     color: var(--text);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
+}
+
+/* Search bar in section header */
+.section-header input[type="search"],
+.section-header input[type="text"] {
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-sm);
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+    width: 300px;
+    transition: all 0.2s ease;
+}
+
+.section-header input[type="search"]:focus,
+.section-header input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
 /* Form Container - constrain width for forms */
@@ -542,23 +573,24 @@ body>*:not(#vanta-background) {
     font-weight: 600;
 }
 
-/* Devices Table */
+/* Devices Table - cleaner floating style */
 .devices-table {
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .devices-table-header {
     display: grid;
     grid-template-columns: 2fr 1.5fr 1.5fr 1fr 2fr;
     gap: 15px;
-    padding: 15px 20px;
-    background: var(--contrast);
-    border-bottom: 2px solid var(--border);
+    padding: 16px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
     font-weight: 600;
-    font-size: 0.9em;
+    font-size: 0.85em;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -568,10 +600,11 @@ body>*:not(#vanta-background) {
     display: grid;
     grid-template-columns: 2fr 1.5fr 1.5fr 1fr 2fr;
     gap: 15px;
-    padding: 15px 20px;
+    padding: 16px 24px;
     border-bottom: 1px solid var(--border);
     align-items: center;
-    transition: background 0.2s;
+    transition: background 0.15s ease;
+    background: var(--card);
 }
 
 .device-row:last-child {
@@ -579,7 +612,7 @@ body>*:not(#vanta-background) {
 }
 
 .device-row:hover {
-    background: rgba(14, 165, 233, 0.05);
+    background: rgba(14, 165, 233, 0.08);
 }
 
 .device-row code {
@@ -748,6 +781,8 @@ body>*:not(#vanta-background) {
     overflow-y: auto;
     animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(148, 163, 184, 0.1);
+    position: relative;
+    z-index: 10001;
 }
 
 @keyframes modalSlideUp {
