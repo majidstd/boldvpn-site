@@ -706,7 +706,7 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
 
     // Get device info first
     const deviceQuery = await pool.query(
-      'SELECT opnsense_peer_id FROM user_devices WHERE id = $1 AND username = $2',
+      'SELECT opnsense_peer_id, device_name FROM user_devices WHERE id = $1 AND username = $2',
       [deviceId, username]
     );
 
@@ -714,20 +714,43 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Device not found' });
     }
 
-    const opnsensePeerId = deviceQuery.rows[0].opnsense_peer_id;
+    const device = deviceQuery.rows[0];
+    const opnsensePeerId = device.opnsense_peer_id;
+    const deviceName = device.device_name;
+    const peerName = `${username}-${deviceName}`;
 
-    // Remove from OPNsense first
+    // Remove from OPNsense - try multiple methods
+    let opnsenseRemoved = false;
+    
+    // Method 1: Use stored peer ID
     if (opnsensePeerId) {
       try {
         await opnsense.removeWireGuardPeer(opnsensePeerId);
         console.log(`[OK] Removed peer ${opnsensePeerId} from OPNsense`);
+        opnsenseRemoved = true;
       } catch (opnsenseError) {
-        console.error('[!] Failed to remove from OPNsense:', opnsenseError.message);
-        // Continue anyway - mark as inactive in DB
+        console.error(`[!] Failed to remove peer ${opnsensePeerId} from OPNsense:`, opnsenseError.message);
+        // Try method 2: find by name
       }
     }
 
-    // Soft delete (mark as inactive)
+    // Method 2: Find peer by name if peer ID method failed or doesn't exist
+    if (!opnsenseRemoved) {
+      try {
+        const peer = await opnsense.findPeerByName(peerName);
+        if (peer && peer.uuid) {
+          await opnsense.removeWireGuardPeer(peer.uuid);
+          console.log(`[OK] Found and removed peer ${peer.uuid} (${peerName}) from OPNsense`);
+          opnsenseRemoved = true;
+        } else {
+          console.log(`[i] Peer ${peerName} not found in OPNsense (may already be deleted)`);
+        }
+      } catch (findError) {
+        console.error(`[!] Failed to find/remove peer ${peerName} from OPNsense:`, findError.message);
+      }
+    }
+
+    // Soft delete (mark as inactive) - do this even if OPNsense removal failed
     const query = `
       UPDATE user_devices
       SET is_active = false
@@ -737,11 +760,24 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
 
     const result = await pool.query(query, [deviceId, username]);
 
-    res.json({ message: 'Device removed successfully' });
+    // Return success with warning if OPNsense removal failed
+    if (!opnsenseRemoved) {
+      console.warn(`[!] Device ${deviceId} marked inactive but OPNsense peer may still exist`);
+      return res.json({ 
+        message: 'Device removed from database',
+        warning: 'Peer may still exist in OPNsense. Please verify manually.',
+        opnsenseRemoved: false
+      });
+    }
+
+    res.json({ 
+      message: 'Device removed successfully',
+      opnsenseRemoved: true
+    });
 
   } catch (error) {
     console.error('[!] Delete device error:', error);
-    res.status(500).json({ error: 'Failed to remove device' });
+    res.status(500).json({ error: 'Failed to remove device', details: error.message });
   }
 });
 
