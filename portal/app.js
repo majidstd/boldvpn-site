@@ -200,6 +200,14 @@ class BoldVPNPortal {
     navigateTo(section) {
         console.log('=== navigateTo called with section:', section, '(was:', this.currentSection, ')');
         console.trace('navigateTo trace');
+        
+        // Prevent navigation to overview if we just added a device
+        if (section === 'overview' && this.currentSection === 'devices' && this._justAddedDevice) {
+            console.warn('BLOCKED navigation to overview - just added device, staying on devices');
+            this._justAddedDevice = false;
+            return;
+        }
+        
         this.currentSection = section;
 
         // Update active nav item
@@ -836,6 +844,9 @@ class BoldVPNPortal {
 
             if (response.ok) {
                 console.log('Device added successfully, navigating to devices section');
+                // Mark that we just added a device to prevent navigation away
+                this._justAddedDevice = true;
+                
                 // Close modal first
                 modal.style.display = 'none';
                 modal.remove();
@@ -857,6 +868,11 @@ class BoldVPNPortal {
                     } else {
                         console.error('devices-container not found after navigation!');
                     }
+                    // Clear the flag after 2 seconds to allow normal navigation
+                    setTimeout(() => {
+                        this._justAddedDevice = false;
+                        console.log('Cleared _justAddedDevice flag');
+                    }, 2000);
                 }, 200);
             } else {
                 errorDiv.textContent = data.error || 'Failed to add device';
