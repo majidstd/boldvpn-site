@@ -66,25 +66,35 @@ login() {
 }
 
 get_credentials() {
-    printf "Username: "
-    username=$(read_input)
+    while true; do
+        printf "Username: "
+        username=$(read_input)
+        
+        if [ -z "$username" ]; then
+            echo "Error: Username cannot be empty. Please try again."
+            echo ""
+            continue
+        fi
+        
+        break
+    done
     
-    if [ -z "$username" ]; then
-        echo "Error: Username cannot be empty"
-        return 1
-    fi
-    
-    printf "Password: "
-    # Try to hide password input, but don't fail if stty doesn't work
-    stty -echo 2>/dev/null || true
-    password=$(read_input)
-    stty echo 2>/dev/null || true
-    echo ""
-    
-    if [ -z "$password" ]; then
-        echo "Error: Password cannot be empty"
-        return 1
-    fi
+    while true; do
+        printf "Password: "
+        # Try to hide password input, but don't fail if stty doesn't work
+        stty -echo 2>/dev/null || true
+        password=$(read_input)
+        stty echo 2>/dev/null || true
+        echo ""
+        
+        if [ -z "$password" ]; then
+            echo "Error: Password cannot be empty. Please try again."
+            echo ""
+            continue
+        fi
+        
+        break
+    done
     
     echo "$username|$password"
     return 0
@@ -92,8 +102,10 @@ get_credentials() {
 
 cmd_create() {
     print_header
-    echo "${GREEN}Create New Device${NC}"
+    echo "Create New Device"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Please provide the following information:"
     echo ""
     
     creds=$(get_credentials)
@@ -109,16 +121,22 @@ cmd_create() {
     username=$(echo "$creds" | cut -d'|' -f1)
     password=$(echo "$creds" | cut -d'|' -f2)
     
-    if [ -z "$username" ] || [ -z "$password" ]; then
-        echo "Error: Invalid credentials"
-        echo ""
-        printf "Press Enter to continue... "
-        read_input > /dev/null 2>&1 || true
-        return 1
-    fi
+    echo ""
+    echo "Device Information:"
+    echo ""
     
-    printf "${YELLOW}Device Name: ${NC}"
-    device_name=$(read_input)
+    while true; do
+        printf "Device Name (or press Enter for auto-generated): "
+        device_name=$(read_input)
+        
+        if [ -z "$device_name" ]; then
+            device_name="Device-$(date +%s)"
+            echo "Using auto-generated name: $device_name"
+            break
+        fi
+        
+        break
+    done
     
     if [ -z "$device_name" ]; then
         device_name="Device-$(date +%s)"
@@ -210,6 +228,8 @@ cmd_list() {
     echo "List All Devices"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
+    echo "Please login to view your devices:"
+    echo ""
     
     creds=$(get_credentials)
     if [ $? -ne 0 ] || [ -z "$creds" ]; then
@@ -287,28 +307,50 @@ except Exception as e:
 
 cmd_check() {
     print_header
-    echo "${GREEN}Check Device Status${NC}"
+    echo "Check Device Status"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
-    echo "Check by:"
-    echo "  1) Device ID"
-    echo "  2) Username and Device Name"
+    echo "How would you like to check the device?"
+    echo "  1) By Device ID"
+    echo "  2) By Username and Device Name"
     echo ""
-    printf "${YELLOW}Enter your choice [1-2]: ${NC}"
-    choice=$(read_input)
+    
+    while true; do
+        printf "Enter your choice [1-2]: "
+        choice=$(read_input)
+        
+        if [ "$choice" != "1" ] && [ "$choice" != "2" ]; then
+            echo "Error: Please enter 1 or 2"
+            echo ""
+            continue
+        fi
+        
+        break
+    done
+    
+    echo ""
     
     if [ "$choice" = "1" ]; then
-        printf "${YELLOW}Device ID: ${NC}"
-        device_id=$(read_input)
-        
-        if [ -z "$device_id" ]; then
-            echo "${RED}❌ Device ID required${NC}"
-            echo ""
-            printf "${YELLOW}Press Enter to continue...${NC}"
-            read_input > /dev/null
-            return 1
-        fi
+        while true; do
+            printf "Device ID: "
+            device_id=$(read_input)
+            
+            if [ -z "$device_id" ]; then
+                echo "Error: Device ID cannot be empty. Please try again."
+                echo ""
+                continue
+            fi
+            
+            # Check if it's a number
+            if ! echo "$device_id" | grep -q '^[0-9][0-9]*$'; then
+                echo "Error: Device ID must be a number. Please try again."
+                echo ""
+                continue
+            fi
+            
+            break
+        done
         
         echo ""
         echo "${BLUE}🔍 Checking device ID: $device_id${NC}"
@@ -327,19 +369,33 @@ cmd_check() {
         WHERE id = $device_id;
         "
     else
-        printf "${YELLOW}Username: ${NC}"
-        username=$(read_input)
+        while true; do
+            printf "Username: "
+            username=$(read_input)
+            
+            if [ -z "$username" ]; then
+                echo "Error: Username cannot be empty. Please try again."
+                echo ""
+                continue
+            fi
+            
+            break
+        done
         
-        printf "${YELLOW}Device Name: ${NC}"
-        device_name=$(read_input)
+        echo ""
         
-        if [ -z "$username" ] || [ -z "$device_name" ]; then
-            echo "${RED}❌ Username and device name required${NC}"
-            echo ""
-            printf "${YELLOW}Press Enter to continue...${NC}"
-            read_input > /dev/null
-            return 1
-        fi
+        while true; do
+            printf "Device Name: "
+            device_name=$(read_input)
+            
+            if [ -z "$device_name" ]; then
+                echo "Error: Device name cannot be empty. Please try again."
+                echo ""
+                continue
+            fi
+            
+            break
+        done
         
         echo ""
         echo "${BLUE}🔍 Checking device: $username / $device_name${NC}"
@@ -467,23 +523,39 @@ cmd_remove() {
 
 cmd_diagnose() {
     print_header
-    echo "${GREEN}Diagnose Device Issues${NC}"
+    echo "Diagnose Device Issues"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
+    echo "Please provide the following information:"
+    echo ""
     
-    printf "${YELLOW}Username: ${NC}"
-    username=$(read_input)
+    while true; do
+        printf "Username: "
+        username=$(read_input)
+        
+        if [ -z "$username" ]; then
+            echo "Error: Username cannot be empty. Please try again."
+            echo ""
+            continue
+        fi
+        
+        break
+    done
     
-    printf "${YELLOW}Device Name: ${NC}"
-    device_name=$(read_input)
+    echo ""
     
-    if [ -z "$username" ] || [ -z "$device_name" ]; then
-        echo "${RED}❌ Username and device name required${NC}"
-        echo ""
-        printf "${YELLOW}Press Enter to continue...${NC}"
-        read_input > /dev/null
-        return 1
-    fi
+    while true; do
+        printf "Device Name: "
+        device_name=$(read_input)
+        
+        if [ -z "$device_name" ]; then
+            echo "Error: Device name cannot be empty. Please try again."
+            echo ""
+            continue
+        fi
+        
+        break
+    done
     
     echo ""
     echo "${BLUE}🔍 Device Visibility Diagnostic${NC}"
