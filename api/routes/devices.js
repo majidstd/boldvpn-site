@@ -800,40 +800,43 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
       }
     }
 
-    // Only mark inactive if device is currently active
-    // If already inactive, we're just cleaning up OPNsense
-    if (isActive) {
-      const query = `
-        UPDATE user_devices
-        SET is_active = false
-        WHERE id = $1 AND username = $2
-        RETURNING *
-      `;
-      await pool.query(query, [deviceId, username]);
-      console.log(`[OK] Device ${deviceId} marked inactive in database`);
-    } else {
-      console.log(`[i] Device ${deviceId} already inactive, skipping DB update`);
+    // Hard delete from database (IPs automatically go back to pool)
+    const deleteQuery = `
+      DELETE FROM user_devices
+      WHERE id = $1 AND username = $2
+      RETURNING assigned_ip, device_name
+    `;
+    const deleteResult = await pool.query(deleteQuery, [deviceId, username]);
+    
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Device not found or already deleted' });
     }
+    
+    const deletedDevice = deleteResult.rows[0];
+    console.log(`[OK] Device ${deviceId} deleted from database. IP ${deletedDevice.assigned_ip} returned to pool`);
 
     // Return appropriate response based on OPNsense removal status
     if (opnsenseRemoved) {
       return res.json({ 
         message: 'Device removed successfully',
-        opnsenseRemoved: true
+        opnsenseRemoved: true,
+        ipFreed: deletedDevice.assigned_ip
       });
     } else if (peerNotFound) {
       // Peer doesn't exist in OPNsense - this is fine, consider it success
       return res.json({ 
         message: 'Device removed successfully (peer was already deleted from OPNsense)',
-        opnsenseRemoved: true
+        opnsenseRemoved: true,
+        ipFreed: deletedDevice.assigned_ip
       });
     } else {
-      // OPNsense removal failed - return error
-      console.error(`[!] CRITICAL: Device ${deviceId} removal failed - peer may still exist in OPNsense`);
+      // OPNsense removal failed - database already deleted, return error
+      console.error(`[!] CRITICAL: Device ${deviceId} deleted from database but peer may still exist in OPNsense`);
       return res.status(500).json({ 
         error: 'Failed to remove peer from OPNsense',
-        message: 'Device marked inactive in database, but peer removal from OPNsense failed. Please verify manually.',
-        opnsenseRemoved: false
+        message: 'Device deleted from database, but peer removal from OPNsense failed. Please check OPNsense manually.',
+        opnsenseRemoved: false,
+        ipFreed: deletedDevice.assigned_ip
       });
     }
 
