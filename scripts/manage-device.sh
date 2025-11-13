@@ -129,18 +129,15 @@ get_credentials() {
     while true; do
         printf "Username: "
         username=$(read_input)
-        
-        choice=$(read_input)
-        # Allow 'help' at any menu
-        if [ "$choice" = "help" ] || [ "$choice" = "7" ]; then
+        if [ "$username" = "help" ] || [ "$username" = "7" ]; then
             show_help
             continue
         fi
+        if [ -z "$username" ]; then
             echo "Error: Username cannot be empty. Please try again."
             echo ""
             continue
         fi
-        
         break
     done
     
