@@ -38,7 +38,7 @@ print_menu() {
 }
 
 read_input() {
-    read -r input
+    read -r input || true
     echo "$input"
 }
 
