@@ -428,8 +428,10 @@ cmd_check() {
 
 cmd_remove() {
     print_header
-    echo "${GREEN}Remove Device${NC}"
+    echo "Remove Device"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Please login:"
     echo ""
     
     creds=$(get_credentials)
