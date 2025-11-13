@@ -859,8 +859,14 @@ class BoldVPNPortal {
             const freshSubmit = submitButton.cloneNode(true);
             submitButton.parentNode.replaceChild(freshSubmit, submitButton);
 
+            console.log('Attaching click handler to freshSubmit button:', freshSubmit);
+            console.log('freshSubmit element:', freshSubmit.outerHTML);
+
             freshSubmit.addEventListener('click', async (e) => {
-                console.log('Add Device submit button clicked');
+                console.log('%c ===== CLICK HANDLER FIRED =====', 'background: blue; color: white; font-size: 16px;');
+                console.log('Event:', e);
+                console.log('Target:', e.target);
+                console.log('Current target:', e.currentTarget);
                 e.preventDefault();
                 e.stopPropagation();
                 // Immediate UI feedback and client-side validation
@@ -1146,5 +1152,16 @@ class BoldVPNPortal {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.boldVPNPortal = new BoldVPNPortal();
+    // Debug function to manually trigger add device handler
+    window.debugAddDevice = function() {
+        const form = document.getElementById('add-device-form');
+        const modal = document.querySelector('.modal');
+        if (form && modal) {
+            console.log('Manually triggering handleAddDevice');
+            window.boldVPNPortal.handleAddDevice(null, form, modal);
+        } else {
+            console.error('Form or modal not found for manual trigger');
+        }
+    };
 });
 
