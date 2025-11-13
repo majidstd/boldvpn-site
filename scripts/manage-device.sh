@@ -33,9 +33,10 @@ print_menu() {
     echo "  3) Check device status"
     echo "  4) Remove a device"
     echo "  5) Diagnose device issues"
-    echo "  6) Exit"
+    echo "  6) Show guide / Help"
+    echo "  7) Exit"
     echo ""
-    printf "${YELLOW}Enter your choice [1-6]: ${NC}"
+    printf "${YELLOW}Enter your choice [1-7]: ${NC}"
 }
 
 read_input() {
@@ -249,8 +250,6 @@ cmd_list() {
     echo "  • Status (Active/Inactive)"
     echo "  • Creation Date"
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     echo "Step 1: Login"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -285,10 +284,7 @@ cmd_list() {
     fi
     
     echo ""
-    echo "Step 2: Fetching Your Devices"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "Fetching devices from server..."
+    echo "Fetching devices..."
     echo ""
     
     devices_response=$(curl -s -X GET "$API_URL/devices?includeInactive=true" \
@@ -299,16 +295,9 @@ cmd_list() {
         device_count=$(echo "$devices_response" | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
         
         if [ "$device_count" = "0" ]; then
-            echo "┌─────────────────────────────────────┐"
-            echo "│  No devices found                  │"
-            echo "│                                     │"
-            echo "│  You can create a new device using  │"
-            echo "│  option 1 from the main menu.      │"
-            echo "└─────────────────────────────────────┘"
+            echo "No devices found."
         else
-            echo "┌─────────────────────────────────────┐"
-            echo "│  Found $device_count device(s)        │"
-            echo "└─────────────────────────────────────┘"
+            echo "Found $device_count device(s):"
             echo ""
             echo "$devices_response" | python3 -c "
 import sys, json
@@ -708,6 +697,9 @@ main() {
                 cmd_diagnose
                 ;;
             6)
+                cmd_guide
+                ;;
+            7)
                 echo ""
                 echo "Goodbye!"
                 echo ""
@@ -715,7 +707,7 @@ main() {
                 ;;
             *)
                 echo ""
-                echo "Invalid choice. Please enter 1-6."
+                echo "Invalid choice. Please enter 1-7."
                 echo ""
                 printf "Press Enter to continue... "
                 read_input > /dev/null 2>&1 || true
