@@ -385,6 +385,16 @@ body>*:not(#vanta-background) {
     animation: fadeIn 0.3s ease;
 }
 
+/* Unified Container - single curved box */
+.unified-container {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    padding: 32px;
+    margin: 32px;
+    animation: fadeIn 0.3s ease;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

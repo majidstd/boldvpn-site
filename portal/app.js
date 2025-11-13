@@ -300,18 +300,16 @@ class BoldVPNPortal {
         const portal = this;
         
         container.innerHTML = `
-            <div class="content-section">
+            <div class="unified-container">
                 <div class="section-header">
                     <h2>Manage Devices</h2>
                     <button id="add-device-btn" class="btn btn-primary" type="button" onclick="window.boldVPNPortal.addDevice(); return false;">+ Add Device</button>
                 </div>
 
-                <div class="content-container">
-                    <div id="devices-container">
-                        <p style="text-align: center; color: var(--muted); padding: 40px;">
-                            Loading devices...
-                        </p>
-                    </div>
+                <div id="devices-container">
+                    <p style="text-align: center; color: var(--muted); padding: 40px;">
+                        Loading devices...
+                    </p>
                 </div>
             </div>
         `;
