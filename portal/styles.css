@@ -392,6 +392,7 @@ body>*:not(#vanta-background) {
     padding: 0;
     background: transparent;
     animation: fadeIn 0.3s ease;
+    height: 100%;
 }
 
 /* Unified Container - seamless connection with sidebar */
