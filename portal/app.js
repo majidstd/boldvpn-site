@@ -186,7 +186,9 @@ class BoldVPNPortal {
 
     bindNavigationEvents() {
         document.querySelectorAll('.nav-item').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                console.log('Nav item clicked:', btn.getAttribute('data-section'), 'Current section:', this.currentSection);
+                console.trace('Navigation click trace:');
                 const section = btn.getAttribute('data-section');
                 this.navigateTo(section);
             });
@@ -196,7 +198,8 @@ class BoldVPNPortal {
     }
 
     navigateTo(section) {
-        console.log('navigateTo called with section:', section);
+        console.log('=== navigateTo called with section:', section, '(was:', this.currentSection, ')');
+        console.trace('navigateTo trace');
         this.currentSection = section;
 
         // Update active nav item
