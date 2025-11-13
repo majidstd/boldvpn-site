@@ -39,7 +39,7 @@ print_menu() {
 }
 
 read_input() {
-    read -r input || true
+    read -r input
     echo "$input"
 }
 
@@ -66,36 +66,44 @@ login() {
 }
 
 get_credentials() {
-    echo "Please enter your login credentials:"
+    echo "┌─────────────────────────────────────┐"
+    echo "│  Login Form                        │"
+    echo "└─────────────────────────────────────┘"
     echo ""
     
     while true; do
-        printf "  Username: "
-        username=$(read_input)
+        printf "┌─ Username: "
+        read -r username
         
         if [ -z "$username" ]; then
-            echo "  Error: Username cannot be empty. Please try again."
+            echo "│  Error: Username cannot be empty."
+            echo "│  Please try again."
             echo ""
             continue
         fi
         
+        echo "└─────────────────────────────────────"
         break
     done
     
+    echo ""
+    
     while true; do
-        printf "  Password: "
+        printf "┌─ Password: "
         # Try to hide password input, but don't fail if stty doesn't work
         stty -echo 2>/dev/null || true
-        password=$(read_input)
+        read -r password
         stty echo 2>/dev/null || true
         echo ""
         
         if [ -z "$password" ]; then
-            echo "  Error: Password cannot be empty. Please try again."
+            echo "│  Error: Password cannot be empty."
+            echo "│  Please try again."
             echo ""
             continue
         fi
         
+        echo "└─────────────────────────────────────"
         break
     done
     
