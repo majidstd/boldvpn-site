@@ -136,6 +136,9 @@ cmd_create() {
     password=$(echo "$creds" | cut -d'|' -f2)
     
     echo ""
+    printf "${YELLOW}Press Enter to continue to device setup...${NC} "
+    read_input > /dev/null 2>&1 || true
+    echo ""
     echo "Step 2: Device Information"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -249,6 +252,9 @@ cmd_list() {
     echo "  • Assigned IP Address"
     echo "  • Status (Active/Inactive)"
     echo "  • Creation Date"
+    echo ""
+    printf "${YELLOW}Press Enter to login and continue...${NC} "
+    read_input > /dev/null 2>&1 || true
     echo ""
     echo "Step 1: Login"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -453,6 +459,9 @@ cmd_remove() {
     print_header
     echo "Remove Device"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    printf "${YELLOW}Press Enter to login and continue...${NC} "
+    read_input > /dev/null 2>&1 || true
     echo ""
     echo "Step 1: Login"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
