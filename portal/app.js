@@ -231,7 +231,7 @@ class BoldVPNPortal {
 
     renderOverview(container) {
         container.innerHTML = `
-            <div class="content-section">
+            <div class="unified-container">
                 <div class="section-header">
                     <h2>Welcome back, ${this.user?.username || 'User'}!</h2>
                 </div>
@@ -289,7 +289,7 @@ class BoldVPNPortal {
                             </div>
                         </div>
                     </div>
-            </div>
+                </div>
         `;
         
         this.loadOverviewData();
@@ -357,15 +357,13 @@ class BoldVPNPortal {
 
     renderUsage(container) {
         container.innerHTML = `
-            <div class="content-section">
+            <div class="unified-container">
                 <div class="section-header">
                     <h2>Usage History</h2>
                 </div>
 
-                <div class="content-container">
-                    <h3>Data Usage (Last 30 Days)</h3>
-                    <canvas id="usage-chart" style="max-height: 400px;"></canvas>
-                </div>
+                <h3>Data Usage (Last 30 Days)</h3>
+                <canvas id="usage-chart" style="max-height: 400px;"></canvas>
             </div>
         `;
 
@@ -374,25 +372,23 @@ class BoldVPNPortal {
 
     renderProfile(container) {
         container.innerHTML = `
-            <div class="content-section">
+            <div class="unified-container form-container">
                 <div class="section-header">
                     <h2>Profile Settings</h2>
                 </div>
 
-                <div class="content-container form-container">
-                    <form id="profile-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="profile-username">Username</label>
-                            <input type="text" id="profile-username" value="${this.user?.username || ''}" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label for="profile-email">Email</label>
-                            <input type="email" id="profile-email" value="${this.user?.email || ''}" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Update Profile</button>
-                    </form>
-                    <div id="profile-message" class="alert" style="display: none; margin-top: 15px;"></div>
-                </div>
+                <form id="profile-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="profile-username">Username</label>
+                        <input type="text" id="profile-username" value="${this.user?.username || ''}" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-email">Email</label>
+                        <input type="email" id="profile-email" value="${this.user?.email || ''}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                </form>
+                <div id="profile-message" class="alert" style="display: none; margin-top: 15px;"></div>
             </div>
         `;
 
@@ -401,29 +397,27 @@ class BoldVPNPortal {
 
     renderPassword(container) {
         container.innerHTML = `
-            <div class="content-section">
+            <div class="unified-container form-container">
                 <div class="section-header">
                     <h2>Change Password</h2>
                 </div>
 
-                <div class="content-container form-container">
-                    <form id="password-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="current-password">Current Password</label>
-                            <input type="password" id="current-password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="new-password">New Password</label>
-                            <input type="password" id="new-password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="confirm-password">Confirm New Password</label>
-                            <input type="password" id="confirm-password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Update Password</button>
-                    </form>
-                    <div id="password-message" class="alert" style="display: none; margin-top: 15px;"></div>
-                </div>
+                <form id="password-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="current-password">Current Password</label>
+                        <input type="password" id="current-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm New Password</label>
+                        <input type="password" id="confirm-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </form>
+                <div id="password-message" class="alert" style="display: none; margin-top: 15px;"></div>
             </div>
         `;
 
@@ -432,24 +426,22 @@ class BoldVPNPortal {
 
     renderBilling(container) {
         container.innerHTML = `
-            <div class="content-section">
+            <div class="unified-container">
                 <div class="section-header">
                     <h2>Billing & Plans</h2>
                 </div>
 
-                <div class="content-container">
-                    <div class="dashboard-grid">
-                        <div class="dashboard-card">
-                            <h3>Current Plan</h3>
-                            <p><strong>Plan:</strong> ${this.user?.plan || 'Basic'}</p>
-                            <p><strong>Status:</strong> <span class="status-active">Active</span></p>
-                            <button class="btn btn-primary" style="margin-top: 10px;">Upgrade Plan</button>
-                        </div>
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Current Plan</h3>
+                        <p><strong>Plan:</strong> ${this.user?.plan || 'Basic'}</p>
+                        <p><strong>Status:</strong> <span class="status-active">Active</span></p>
+                        <button class="btn btn-primary" style="margin-top: 10px;">Upgrade Plan</button>
+                    </div>
 
-                        <div class="dashboard-card">
-                            <h3>Billing History</h3>
-                            <p style="color: var(--muted);">No billing history available.</p>
-                        </div>
+                    <div class="dashboard-card">
+                        <h3>Billing History</h3>
+                        <p style="color: var(--muted);">No billing history available.</p>
                     </div>
                 </div>
             </div>
