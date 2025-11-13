@@ -67,21 +67,16 @@ login() {
 }
 
 get_credentials() {
-    echo "Please enter your credentials:"
-    echo ""
-    echo "+-------------------------------------+"
-    echo "|  LOGIN FORM                        |"
-    echo "+-------------------------------------+"
+    echo "════════════════════════════════════════"
     echo ""
 
     while true; do
-        printf "  Username= "
+        echo "Enter your Username:"
+        printf "> "
         read -r username
 
         if [ -z "$username" ]; then
-            echo ""
-            echo "  [ERROR] Username cannot be empty."
-            echo "  Please try again."
+            echo "[ERROR] Username cannot be empty. Try again."
             echo ""
             continue
         fi
@@ -92,17 +87,16 @@ get_credentials() {
     echo ""
 
     while true; do
-        printf "  Password= "
+        echo "Enter your Password:"
+        printf "> "
         # Hide password input (no echo to terminal)
         stty -echo 2>/dev/null || true
         read -r password
         stty echo 2>/dev/null || true
-        echo "(hidden)"
+        echo ""
 
         if [ -z "$password" ]; then
-            echo ""
-            echo "  [ERROR] Password cannot be empty."
-            echo "  Please try again."
+            echo "[ERROR] Password cannot be empty. Try again."
             echo ""
             continue
         fi
@@ -110,8 +104,7 @@ get_credentials() {
         break
     done
 
-    echo ""
-    echo "+-------------------------------------+"
+    echo "════════════════════════════════════════"
     echo ""
     echo "$username|$password"
     return 0
