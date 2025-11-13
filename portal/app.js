@@ -190,7 +190,7 @@ class BoldVPNPortal {
                 <div class="section-header">
                     <h2>Manage Devices</h2>
                     <div style="display: flex; gap: 10px;">
-                        <button id="refresh-devices-btn" class="btn btn-secondary" type="button">🔄 Refresh</button>
+                        <button id="refresh-devices-btn" class="icon-button" type="button" title="Refresh device list"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004 12.582m0 0V19m15.418-2.582A8.001 8.001 0 0020 12.582m0 0V5"></path></svg></button>
                         <button id="add-device-btn" class="btn btn-primary" type="button">+ Add Device</button>
                     </div>
                 </div>

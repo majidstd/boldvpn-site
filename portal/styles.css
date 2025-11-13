@@ -857,3 +857,30 @@ body>*:not(#vanta-background) {
     font-size: 14px;
     margin: 0;
 }
+/* Icon Button */
+.icon-button {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: var(--muted);
+}
+
+.icon-button:hover {
+    background: rgba(14, 165, 233, 0.1);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.icon-button svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+
