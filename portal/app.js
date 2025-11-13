@@ -638,13 +638,32 @@ class BoldVPNPortal {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
             
-            let servers = [];
+            let allServers = [];
             if (serversResponse.ok) {
-                servers = await serversResponse.json();
-                console.log('Servers loaded:', servers.length);
+                allServers = await serversResponse.json();
+                console.log('All servers loaded:', allServers.length);
             } else {
                 console.warn('Failed to load servers:', serversResponse.status);
             }
+
+            // Filter servers based on user plan
+            const userPlan = this.user?.plan || 'basic';
+            const isPremium = userPlan === 'premium' || userPlan === 'family';
+            
+            // Filter: show only available servers, and filter premium based on plan
+            const servers = allServers.filter(server => {
+                // Only show available servers
+                if (!server.available && server.status !== 'active') {
+                    return false;
+                }
+                // Basic users can't see premium servers
+                if (!isPremium && server.isPremium) {
+                    return false;
+                }
+                return true;
+            });
+
+            console.log('Filtered servers for', userPlan, 'plan:', servers.length);
 
             // Create modal
             const modal = document.createElement('div');
@@ -670,12 +689,19 @@ class BoldVPNPortal {
                             <label for="device-server">Server Location</label>
                             <select id="device-server" name="serverId" required>
                                 <option value="">Select a server</option>
-                                ${servers.map(s => `
-                                    <option value="${s.id}">${s.location || s.name}</option>
-                                `).join('')}
+                                ${servers.map(s => {
+                                    const location = s.location || `${s.country}, ${s.city}` || s.name;
+                                    const loadInfo = s.load !== undefined ? ` (${s.load.toFixed(0)}% load)` : '';
+                                    const premiumBadge = s.isPremium ? ' ⭐' : '';
+                                    return `<option value="${s.id}">${location}${loadInfo}${premiumBadge}</option>`;
+                                }).join('')}
                             </select>
                         </div>
-                        ` : ''}
+                        ` : `
+                        <div class="alert alert-info">
+                            No servers available. Please contact support.
+                        </div>
+                        `}
                         <div id="add-device-error" class="alert alert-error" style="display: none;"></div>
                         <div style="display: flex; gap: 12px; margin-top: 8px;">
                             <button type="submit" class="btn btn-primary" style="flex: 1;">
