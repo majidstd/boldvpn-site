@@ -2,7 +2,8 @@
 # Interactive Device Management Script
 # Usage: ./scripts/manage-device.sh
 
-set -e
+# Don't exit on error - handle errors explicitly
+set +e
 
 API_URL="${API_URL:-https://api.boldvpn.net/api}"
 DB_USER="${DB_USER:-radiususer}"
@@ -65,16 +66,28 @@ login() {
 }
 
 get_credentials() {
-    printf "${YELLOW}Username: ${NC}"
+    printf "Username: "
     username=$(read_input)
     
-    printf "${YELLOW}Password: ${NC}"
-    stty -echo
+    if [ -z "$username" ]; then
+        echo "Error: Username cannot be empty"
+        return 1
+    fi
+    
+    printf "Password: "
+    # Try to hide password input, but don't fail if stty doesn't work
+    stty -echo 2>/dev/null || true
     password=$(read_input)
-    stty echo
+    stty echo 2>/dev/null || true
     echo ""
     
+    if [ -z "$password" ]; then
+        echo "Error: Password cannot be empty"
+        return 1
+    fi
+    
     echo "$username|$password"
+    return 0
 }
 
 cmd_create() {
@@ -177,19 +190,36 @@ cmd_create() {
 
 cmd_list() {
     print_header
-    echo "${GREEN}List All Devices${NC}"
+    echo "List All Devices"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
     creds=$(get_credentials)
+    if [ $? -ne 0 ] || [ -z "$creds" ]; then
+        echo ""
+        echo "Failed to get credentials"
+        echo ""
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
+    
     username=$(echo "$creds" | cut -d'|' -f1)
     password=$(echo "$creds" | cut -d'|' -f2)
     
-    token=$(login "$username" "$password")
-    if [ $? -ne 0 ]; then
+    if [ -z "$username" ] || [ -z "$password" ]; then
+        echo "Error: Invalid credentials"
         echo ""
-        printf "${YELLOW}Press Enter to continue...${NC}"
-        read_input > /dev/null
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
+    
+    token=$(login "$username" "$password")
+    if [ $? -ne 0 ] || [ -z "$token" ]; then
+        echo ""
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
         return 1
     fi
     
