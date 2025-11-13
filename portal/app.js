@@ -823,6 +823,7 @@ class BoldVPNPortal {
             
             console.log('Attaching form submit handler');
             newForm.addEventListener('submit', async (e) => {
+                alert('FORM SUBMITTED!'); // Visible alert to confirm handler runs
                 console.log('%c FORM SUBMIT FIRED!', 'background: green; color: white; font-size: 16px;', e);
                 e.preventDefault();
                 e.stopPropagation();
@@ -833,6 +834,7 @@ class BoldVPNPortal {
                     console.log('%c handleAddDevice completed', 'background: blue; color: white;');
                 } catch (err) {
                     console.error('%c handleAddDevice ERROR:', 'background: red; color: white;', err);
+                    alert('ERROR: ' + err.message);
                 }
                 document.removeEventListener('keydown', handleEscape);
             });
