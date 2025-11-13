@@ -433,7 +433,7 @@ cmd_list_opnsense() {
     opnsense_response=$(curl -s -k -u "${OPNSENSE_KEY}:${OPNSENSE_SECRET}" \
       -X GET "https://${OPNSENSE_HOST}:${OPNSENSE_PORT}/api/wireguard/client/get")
     
-    # Parse and display the response
+    # Parse and display the response (using pipe instead of here-string for FreeBSD compatibility)
     echo "$opnsense_response" | python3 -c "
 import sys, json
 try:
@@ -458,8 +458,8 @@ try:
 except Exception as e:
     print('Error parsing response: ' + str(e))
     print('Raw response:')
-    print(sys.stdin.read())
-" <<< "$opnsense_response" 2>/dev/null || echo "$opnsense_response"
+    print(data)
+" 2>/dev/null || echo "$opnsense_response"
     
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
