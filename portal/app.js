@@ -374,7 +374,7 @@ class BoldVPNPortal {
             modal.className = 'modal';
             modal.innerHTML = `
                 <div class="modal-content">
-                    <div class="modal-header"><h3 id="modal-title">Add New Device</h3><button class="modal-close" type="button" aria-label="Close modal">&times;</button></div>
+                    <div class="modal-header"><h3 id="modal-title">Add New Device</h3><button class="modal-close" type="button" aria-label="Close modal"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
                     <form id="add-device-form" class="auth-form">
                         <div class="form-group"><label for="device-name">Device Name</label><input type="text" id="device-name" name="deviceName" required placeholder="e.g., My Laptop, iPhone, etc." autofocus></div>
                         <div class="form-group"><label for="device-server">Server Location</label><select id="device-server" name="serverId" required><option value="">Select a server</option>${servers.map(s => `<option value="${s.id}">${s.location}</option>`).join('')}</select></div>
@@ -420,7 +420,7 @@ class BoldVPNPortal {
         const alert = document.createElement('div');
         alert.className = `alert alert-${type}`;
         alert.textContent = message;
-        alert.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 1001; min-width: 300px; animation: slideUp 0.3s ease;';
+        alert.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; min-width: 300px; animation: fadeIn 0.3s ease; text-align: center;';
         document.body.appendChild(alert);
         setTimeout(() => {
             alert.style.opacity = '0';
