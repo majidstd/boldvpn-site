@@ -329,7 +329,10 @@ class BoldVPNPortal {
             <div class="unified-container">
                 <div class="section-header">
                     <h2>Manage Devices</h2>
-                    <button id="add-device-btn" class="btn btn-primary" type="button" onclick="window.boldVPNPortal.addDevice(); return false;">+ Add Device</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="refresh-devices-btn" class="btn btn-secondary" type="button" onclick="window.boldVPNPortal.loadDevices(); return false;" title="Refresh device list">🔄 Refresh</button>
+                        <button id="add-device-btn" class="btn btn-primary" type="button" onclick="window.boldVPNPortal.addDevice(); return false;">+ Add Device</button>
+                    </div>
                 </div>
 
                 <div id="devices-container">
@@ -491,6 +494,7 @@ class BoldVPNPortal {
 
     async loadDevices() {
         try {
+            console.log('Loading devices from:', `${this.apiBase}/devices`);
             const response = await fetch(`${this.apiBase}/devices`, {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
@@ -498,11 +502,12 @@ class BoldVPNPortal {
             const container = document.getElementById('devices-container');
             if (!container) {
                 console.error('devices-container not found!');
-            return;
-        }
+                return;
+            }
 
             if (response.ok) {
                 const devices = await response.json();
+                console.log('Devices loaded:', devices.length, devices);
                 
                 if (devices.length === 0) {
                     container.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;">No devices yet. Click "Add Device" to get started!</p>';
@@ -532,8 +537,10 @@ class BoldVPNPortal {
                         `).join('')}
                     </div>
                 `;
-        } else {
-                container.innerHTML = '<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices</p>';
+            } else {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('Failed to load devices:', response.status, errorData);
+                container.innerHTML = `<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices: ${errorData.error || 'Unknown error'}</p>`;
             }
         } catch (error) {
             console.error('Failed to load devices:', error);
