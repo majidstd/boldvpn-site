@@ -1,13 +1,6 @@
 #!/bin/sh
-# Unified device management script
-# Usage: ./scripts/manage-device.sh [command] [args...]
-#
-# Commands:
-#   create [username] [password] [device_name] [server_name]  - Create a new device
-#   list [username] [password]                                 - List all devices for user
-#   check [device_id] | [username] [device_name]              - Check device status
-#   remove [username] [password] [device_id]                  - Remove device (via API)
-#   diagnose [username] [device_name]                         - Diagnose device visibility issues
+# Interactive Device Management Script
+# Usage: ./scripts/manage-device.sh
 
 set -e
 
@@ -15,51 +8,44 @@ API_URL="${API_URL:-https://api.boldvpn.net/api}"
 DB_USER="${DB_USER:-radiususer}"
 DB_NAME="${DB_NAME:-radius}"
 
-COMMAND="${1}"
-shift || true
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-show_usage() {
-    cat <<EOF
-Device Management Script
-=======================
+print_header() {
+    clear
+    echo "${BLUE}╔════════════════════════════════════════╗${NC}"
+    echo "${BLUE}║   Device Management Tool              ║${NC}"
+    echo "${BLUE}╚════════════════════════════════════════╝${NC}"
+    echo ""
+}
 
-Usage: $0 [command] [args...]
+print_menu() {
+    echo "${GREEN}What would you like to do?${NC}"
+    echo ""
+    echo "  1) Create a new device"
+    echo "  2) List all devices"
+    echo "  3) Check device status"
+    echo "  4) Remove a device"
+    echo "  5) Diagnose device issues"
+    echo "  6) Exit"
+    echo ""
+    printf "${YELLOW}Enter your choice [1-6]: ${NC}"
+}
 
-Commands:
-  create [username] [password] [device_name] [server_name]
-    Create a new WireGuard device/peer
-    Example: $0 create testuser Test@123! MyLaptop Vancouver-01
-
-  list [username] [password]
-    List all devices for a user (via API)
-    Example: $0 list testuser Test@123!
-
-  check [device_id] | [username] [device_name]
-    Check device status in database
-    Example: $0 check 26
-    Example: $0 check testuser MyLaptop
-
-  remove [username] [password] [device_id]
-    Remove device via API (handles active/inactive devices)
-    Example: $0 remove testuser Test@123! 26
-
-  diagnose [username] [device_name]
-    Diagnose why device is not showing in portal
-    Example: $0 diagnose testuser MyLaptop
-
-Environment Variables:
-  API_URL      - API base URL (default: https://api.boldvpn.net/api)
-  DB_USER      - Database user (default: radiususer)
-  DB_NAME      - Database name (default: radius)
-
-EOF
+read_input() {
+    read -r input
+    echo "$input"
 }
 
 login() {
     local username="$1"
     local password="$2"
     
-    echo "🔐 Logging in as $username..."
+    printf "${BLUE}🔐 Logging in as $username...${NC}\n"
     LOGIN_RESPONSE=$(curl -s -X POST "$API_URL/auth/login" \
       -H "Content-Type: application/json" \
       -d "{\"username\":\"$username\",\"password\":\"$password\"}")
@@ -67,24 +53,66 @@ login() {
     TOKEN=$(echo "$LOGIN_RESPONSE" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
     
     if [ -z "$TOKEN" ]; then
-        echo "❌ Login failed!"
+        echo "${RED}❌ Login failed!${NC}"
         echo "$LOGIN_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$LOGIN_RESPONSE"
-        exit 1
+        return 1
     fi
     
-    echo "✅ Login successful"
+    echo "${GREEN}✅ Login successful${NC}"
     echo "$TOKEN"
+    return 0
+}
+
+get_credentials() {
+    printf "${YELLOW}Username: ${NC}"
+    username=$(read_input)
+    
+    printf "${YELLOW}Password: ${NC}"
+    stty -echo
+    password=$(read_input)
+    stty echo
+    echo ""
+    
+    echo "$username|$password"
 }
 
 cmd_create() {
-    local username="${1}"
-    local password="${2}"
-    local device_name="${3:-TestDevice-$(date +%s)}"
-    local server_arg="${4:-Vancouver-01}"
+    print_header
+    echo "${GREEN}Create New Device${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     
-    if [ -z "$username" ] || [ -z "$password" ]; then
-        echo "❌ Usage: $0 create [username] [password] [device_name] [server_name]"
-        exit 1
+    creds=$(get_credentials)
+    username=$(echo "$creds" | cut -d'|' -f1)
+    password=$(echo "$creds" | cut -d'|' -f2)
+    
+    printf "${YELLOW}Device Name: ${NC}"
+    device_name=$(read_input)
+    
+    if [ -z "$device_name" ]; then
+        device_name="Device-$(date +%s)"
+        echo "${BLUE}Using default name: $device_name${NC}"
+    fi
+    
+    echo ""
+    echo "${BLUE}Available Servers:${NC}"
+    psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT id, name, country, city FROM vpn_servers ORDER BY name;" | while IFS='|' read -r id name country city; do
+        id=$(echo "$id" | tr -d ' ')
+        name=$(echo "$name" | tr -d ' ')
+        country=$(echo "$country" | tr -d ' ')
+        city=$(echo "$city" | tr -d ' ')
+        if [ -n "$id" ]; then
+            echo "  $id) $name - $country, $city"
+        fi
+    done
+    echo ""
+    
+    printf "${YELLOW}Server ID or Name: ${NC}"
+    server_arg=$(read_input)
+    
+    if [ -z "$server_arg" ]; then
+        server_arg="Vancouver-01"
+        echo "${BLUE}Using default: $server_arg${NC}"
     fi
     
     # Get server ID
@@ -93,16 +121,25 @@ cmd_create() {
     else
         server_id=$(psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT id FROM vpn_servers WHERE name = '$server_arg' LIMIT 1" | tr -d ' ')
         if [ -z "$server_id" ]; then
-            echo "❌ Server '$server_arg' not found in database"
-            exit 1
+            echo "${RED}❌ Server '$server_arg' not found${NC}"
+            echo ""
+            printf "${YELLOW}Press Enter to continue...${NC}"
+            read_input > /dev/null
+            return 1
         fi
-        echo "📋 Found server: $server_arg (ID: $server_id)"
+        echo "${GREEN}📋 Found server: $server_arg (ID: $server_id)${NC}"
     fi
     
     token=$(login "$username" "$password")
+    if [ $? -ne 0 ]; then
+        echo ""
+        printf "${YELLOW}Press Enter to continue...${NC}"
+        read_input > /dev/null
+        return 1
+    fi
     
     echo ""
-    echo "📱 Creating device: $device_name on server ID $server_id..."
+    echo "${BLUE}📱 Creating device: $device_name on server ID $server_id...${NC}"
     
     create_response=$(curl -s -X POST "$API_URL/devices" \
       -H "Authorization: Bearer $token" \
@@ -114,65 +151,88 @@ cmd_create() {
         assigned_ip=$(echo "$create_response" | grep -o '"assignedIP":"[^"]*' | cut -d'"' -f4)
         public_key=$(echo "$create_response" | grep -o '"publicKey":"[^"]*' | cut -d'"' -f4)
         
-        echo "✅ Device created successfully!"
+        echo "${GREEN}✅ Device created successfully!${NC}"
         echo ""
-        echo "📋 Device Details:"
+        echo "${BLUE}📋 Device Details:${NC}"
         echo "   Device ID: $device_id"
         echo "   Device Name: $device_name"
         echo "   Assigned IP: $assigned_ip"
         public_key_short=$(echo "$public_key" | cut -c1-50)
         echo "   Public Key: ${public_key_short}..."
         echo ""
-        echo "🔍 Verify in OPNsense:"
+        echo "${BLUE}🔍 Verify in OPNsense:${NC}"
         echo "   VPN → WireGuard → Clients"
         echo "   Look for peer: $username-$device_name"
         echo "   IP: $assigned_ip"
-        echo ""
-        echo "📥 Download config:"
-        echo "   curl -X GET \"$API_URL/devices/$device_id/config\" -H \"Authorization: Bearer $token\" -o wireguard.conf"
-        echo ""
-        echo "📱 Get QR code:"
-        echo "   curl -X GET \"$API_URL/devices/$device_id/qrcode\" -H \"Authorization: Bearer $token\" -o qrcode.png"
     else
-        echo "❌ Device creation failed!"
+        echo "${RED}❌ Device creation failed!${NC}"
         echo "$create_response" | python3 -m json.tool 2>/dev/null || echo "$create_response"
-        exit 1
     fi
+    
+    echo ""
+    printf "${YELLOW}Press Enter to continue...${NC}"
+    read_input > /dev/null
 }
 
 cmd_list() {
-    local username="${1}"
-    local password="${2}"
+    print_header
+    echo "${GREEN}List All Devices${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     
-    if [ -z "$username" ] || [ -z "$password" ]; then
-        echo "❌ Usage: $0 list [username] [password]"
-        exit 1
-    fi
+    creds=$(get_credentials)
+    username=$(echo "$creds" | cut -d'|' -f1)
+    password=$(echo "$creds" | cut -d'|' -f2)
     
     token=$(login "$username" "$password")
+    if [ $? -ne 0 ]; then
+        echo ""
+        printf "${YELLOW}Press Enter to continue...${NC}"
+        read_input > /dev/null
+        return 1
+    fi
     
     echo ""
-    echo "📋 Fetching devices..."
+    echo "${BLUE}📋 Fetching devices...${NC}"
+    echo ""
     
     devices_response=$(curl -s -X GET "$API_URL/devices?includeInactive=true" \
       -H "Authorization: Bearer $token")
     
     echo "$devices_response" | python3 -m json.tool 2>/dev/null || echo "$devices_response"
+    
+    echo ""
+    printf "${YELLOW}Press Enter to continue...${NC}"
+    read_input > /dev/null
 }
 
 cmd_check() {
-    local arg1="${1}"
-    local arg2="${2}"
+    print_header
+    echo "${GREEN}Check Device Status${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     
-    if [ -z "$arg1" ]; then
-        echo "❌ Usage: $0 check [device_id] | [username] [device_name]"
-        exit 1
-    fi
+    echo "Check by:"
+    echo "  1) Device ID"
+    echo "  2) Username and Device Name"
+    echo ""
+    printf "${YELLOW}Enter your choice [1-2]: ${NC}"
+    choice=$(read_input)
     
-    if echo "$arg1" | grep -q '^[0-9]*$'; then
-        # Device ID provided
-        device_id="$arg1"
-        echo "🔍 Checking device ID: $device_id"
+    if [ "$choice" = "1" ]; then
+        printf "${YELLOW}Device ID: ${NC}"
+        device_id=$(read_input)
+        
+        if [ -z "$device_id" ]; then
+            echo "${RED}❌ Device ID required${NC}"
+            echo ""
+            printf "${YELLOW}Press Enter to continue...${NC}"
+            read_input > /dev/null
+            return 1
+        fi
+        
+        echo ""
+        echo "${BLUE}🔍 Checking device ID: $device_id${NC}"
         echo ""
         
         psql -U "$DB_USER" -d "$DB_NAME" -c "
@@ -188,10 +248,22 @@ cmd_check() {
         WHERE id = $device_id;
         "
     else
-        # Username and device name provided
-        username="$arg1"
-        device_name="${arg2:-MyTestDevice}"
-        echo "🔍 Checking device: $username / $device_name"
+        printf "${YELLOW}Username: ${NC}"
+        username=$(read_input)
+        
+        printf "${YELLOW}Device Name: ${NC}"
+        device_name=$(read_input)
+        
+        if [ -z "$username" ] || [ -z "$device_name" ]; then
+            echo "${RED}❌ Username and device name required${NC}"
+            echo ""
+            printf "${YELLOW}Press Enter to continue...${NC}"
+            read_input > /dev/null
+            return 1
+        fi
+        
+        echo ""
+        echo "${BLUE}🔍 Checking device: $username / $device_name${NC}"
         echo ""
         
         psql -U "$DB_USER" -d "$DB_NAME" -c "
@@ -210,26 +282,58 @@ cmd_check() {
     fi
     
     echo ""
-    echo "📋 Notes:"
+    echo "${BLUE}📋 Notes:${NC}"
     echo "  - opnsense_peer_id: UUID in OPNsense (NULL if never stored)"
     echo "  - is_active: false means device was soft-deleted"
     echo "  - Check API logs if removal failed: tail -f /var/log/boldvpn-api.log"
+    echo ""
+    printf "${YELLOW}Press Enter to continue...${NC}"
+    read_input > /dev/null
 }
 
 cmd_remove() {
-    local username="${1}"
-    local password="${2}"
-    local device_id="${3}"
+    print_header
+    echo "${GREEN}Remove Device${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     
-    if [ -z "$username" ] || [ -z "$password" ] || [ -z "$device_id" ]; then
-        echo "❌ Usage: $0 remove [username] [password] [device_id]"
-        exit 1
+    creds=$(get_credentials)
+    username=$(echo "$creds" | cut -d'|' -f1)
+    password=$(echo "$creds" | cut -d'|' -f2)
+    
+    printf "${YELLOW}Device ID: ${NC}"
+    device_id=$(read_input)
+    
+    if [ -z "$device_id" ]; then
+        echo "${RED}❌ Device ID required${NC}"
+        echo ""
+        printf "${YELLOW}Press Enter to continue...${NC}"
+        read_input > /dev/null
+        return 1
+    fi
+    
+    echo ""
+    printf "${RED}⚠️  Are you sure you want to remove device ID $device_id? (yes/no): ${NC}"
+    confirm=$(read_input)
+    
+    if [ "$confirm" != "yes" ]; then
+        echo "${BLUE}Cancelled${NC}"
+        echo ""
+        printf "${YELLOW}Press Enter to continue...${NC}"
+        read_input > /dev/null
+        return 0
     fi
     
     token=$(login "$username" "$password")
+    if [ $? -ne 0 ]; then
+        echo ""
+        printf "${YELLOW}Press Enter to continue...${NC}"
+        read_input > /dev/null
+        return 1
+    fi
     
     echo ""
-    echo "🗑️  Removing device ID $device_id..."
+    echo "${BLUE}🗑️  Removing device ID $device_id...${NC}"
     
     delete_response=$(curl -s -w "\n%{http_code}" -X DELETE "$API_URL/devices/$device_id" \
       -H "Authorization: Bearer $token" \
@@ -238,46 +342,63 @@ cmd_remove() {
     http_code=$(echo "$delete_response" | tail -n1)
     response_body=$(echo "$delete_response" | sed '$d')
     
-    echo "HTTP Status: $http_code"
-    echo "Response:"
+    echo ""
+    echo "${BLUE}HTTP Status: $http_code${NC}"
+    echo "${BLUE}Response:${NC}"
     echo "$response_body" | python3 -m json.tool 2>/dev/null || echo "$response_body"
     echo ""
     
     if [ "$http_code" = "200" ]; then
-        echo "✅ Device removed successfully!"
+        echo "${GREEN}✅ Device removed successfully!${NC}"
         
         if echo "$response_body" | grep -q '"opnsenseRemoved":true'; then
-            echo "✅ Peer removed from OPNsense"
+            echo "${GREEN}✅ Peer removed from OPNsense${NC}"
         elif echo "$response_body" | grep -q '"opnsenseRemoved":false'; then
-            echo "⚠️  Warning: Peer may still exist in OPNsense"
+            echo "${YELLOW}⚠️  Warning: Peer may still exist in OPNsense${NC}"
             echo "   Check manually: VPN → WireGuard → Clients"
         fi
     elif [ "$http_code" = "500" ]; then
-        echo "❌ Error: OPNsense removal failed"
+        echo "${RED}❌ Error: OPNsense removal failed${NC}"
         echo "   Check API logs: tail -f /var/log/boldvpn-api.log"
     else
-        echo "❌ Failed to remove device"
+        echo "${RED}❌ Failed to remove device${NC}"
     fi
+    
+    echo ""
+    printf "${YELLOW}Press Enter to continue...${NC}"
+    read_input > /dev/null
 }
 
 cmd_diagnose() {
-    local username="${1}"
-    local device_name="${2}"
+    print_header
+    echo "${GREEN}Diagnose Device Issues${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    
+    printf "${YELLOW}Username: ${NC}"
+    username=$(read_input)
+    
+    printf "${YELLOW}Device Name: ${NC}"
+    device_name=$(read_input)
     
     if [ -z "$username" ] || [ -z "$device_name" ]; then
-        echo "❌ Usage: $0 diagnose [username] [device_name]"
-        exit 1
+        echo "${RED}❌ Username and device name required${NC}"
+        echo ""
+        printf "${YELLOW}Press Enter to continue...${NC}"
+        read_input > /dev/null
+        return 1
     fi
     
-    echo "🔍 Device Visibility Diagnostic"
-    echo "================================"
+    echo ""
+    echo "${BLUE}🔍 Device Visibility Diagnostic${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "Checking: $username / $device_name"
     echo ""
     
     # Step 1: Check database
-    echo "📊 Step 1: Database State"
-    echo "-------------------------"
+    echo "${BLUE}📊 Step 1: Database State${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     db_result=$(psql -U "$DB_USER" -d "$DB_NAME" -t -c "
     SELECT 
         id,
@@ -293,8 +414,11 @@ cmd_diagnose() {
     " 2>/dev/null)
     
     if [ -z "$db_result" ]; then
-        echo "❌ Device NOT found in database!"
-        exit 1
+        echo "${RED}❌ Device NOT found in database!${NC}"
+        echo ""
+        printf "${YELLOW}Press Enter to continue...${NC}"
+        read_input > /dev/null
+        return 1
     fi
     
     echo "$db_result" | awk -F'|' '{print "  ID: " $1; print "  Name: " $2; print "  OPNsense Peer ID: " ($3 ? $3 : "NULL"); print "  Is Active: " $4; print "  IP: " $5; print "  Created: " $6}'
@@ -304,61 +428,79 @@ cmd_diagnose() {
     is_active=$(echo "$db_result" | awk -F'|' '{print $4}' | tr -d ' ')
     
     # Step 2: Check if device would be returned by API
-    echo "🔍 Step 2: API Query Check"
-    echo "-------------------------"
+    echo "${BLUE}🔍 Step 2: API Query Check${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     if [ "$is_active" = "t" ] || [ "$is_active" = "true" ] || [ "$is_active" = "1" ]; then
-        echo "✅ Device is_active = true (will be queried by API)"
+        echo "${GREEN}✅ Device is_active = true (will be queried by API)${NC}"
     else
-        echo "❌ Device is_active = false (WILL NOT be returned by API)"
+        echo "${RED}❌ Device is_active = false (WILL NOT be returned by API)${NC}"
         echo ""
-        echo "💡 This is why device is not showing in portal!"
+        echo "${YELLOW}💡 This is why device is not showing in portal!${NC}"
         echo "   The sync check marked it inactive because peer wasn't found in OPNsense"
         echo ""
-        echo "🔧 To fix:"
+        echo "${BLUE}🔧 To fix:${NC}"
         echo "   1. Check if peer exists in OPNsense: VPN → WireGuard → Clients"
         echo "   2. If peer exists, check API logs for sync errors"
-        echo "   3. If peer doesn't exist, remove device: $0 remove $username <password> $device_id"
-        exit 0
+        echo "   3. If peer doesn't exist, remove device using option 4"
+        echo ""
+        printf "${YELLOW}Press Enter to continue...${NC}"
+        read_input > /dev/null
+        return 0
     fi
     echo ""
     
     # Step 3: Test API endpoint
-    echo "🔍 Step 3: Test API Endpoint"
-    echo "---------------------------"
+    echo "${BLUE}🔍 Step 3: Test API Endpoint${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Testing: GET $API_URL/devices"
     echo ""
-    echo "💡 Run this command to test:"
-    echo "   $0 list $username <password>"
+    echo "${BLUE}💡 Run 'List all devices' (option 2) to test API${NC}"
     echo ""
-    echo "🔧 Check API logs for sync check errors:"
+    echo "${BLUE}🔧 Check API logs for sync check errors:${NC}"
     echo "   tail -f /var/log/boldvpn-api.log | grep -E 'not found in OPNsense|Sync check failed'"
+    echo ""
+    printf "${YELLOW}Press Enter to continue...${NC}"
+    read_input > /dev/null
 }
 
-# Main command dispatcher
-case "$COMMAND" in
-    create)
-        cmd_create "$@"
-        ;;
-    list)
-        cmd_list "$@"
-        ;;
-    check)
-        cmd_check "$@"
-        ;;
-    remove)
-        cmd_remove "$@"
-        ;;
-    diagnose)
-        cmd_diagnose "$@"
-        ;;
-    help|--help|-h|"")
-        show_usage
-        ;;
-    *)
-        echo "❌ Unknown command: $COMMAND"
-        echo ""
-        show_usage
-        exit 1
-        ;;
-esac
+# Main loop
+main() {
+    while true; do
+        print_header
+        print_menu
+        
+        choice=$(read_input)
+        
+        case "$choice" in
+            1)
+                cmd_create
+                ;;
+            2)
+                cmd_list
+                ;;
+            3)
+                cmd_check
+                ;;
+            4)
+                cmd_remove
+                ;;
+            5)
+                cmd_diagnose
+                ;;
+            6)
+                echo ""
+                echo "${GREEN}Goodbye!${NC}"
+                echo ""
+                exit 0
+                ;;
+            *)
+                echo ""
+                echo "${RED}Invalid choice. Please enter 1-6.${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
 
+# Run main loop
+main
