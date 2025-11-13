@@ -199,7 +199,13 @@ cmd_create() {
     fi
     
     token=$(login "$username" "$password")
-    if [ $? -ne 0 ]; then
+    login_result=$?
+    
+    if [ $login_result -ne 0 ] || [ -z "$token" ]; then
+        echo ""
+        echo "ERROR: Login failed or token is empty"
+        echo "Login result code: $login_result"
+        echo "Token value: ${token:-EMPTY}"
         echo ""
         printf "${YELLOW}Press Enter to continue...${NC}"
         read_input > /dev/null
@@ -207,21 +213,23 @@ cmd_create() {
     fi
     
     echo ""
+    echo "DEBUG: Token captured successfully (length: ${#token} chars)"
+    echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Creating Device"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "Commands being executed:"
+    echo "Commands to run manually (if needed):"
     echo ""
-    echo "# Step 1: Login (already completed)"
+    echo "# Step 1: Get token"
     echo "TOKEN=\$(curl -s -X POST \"$API_URL/auth/login\" \\"
     echo "  -H \"Content-Type: application/json\" \\"
-    echo "  -d '{\"username\":\"$username\",\"password\":\"********\"}' \\"
+    echo "  -d '{\"username\":\"$username\",\"password\":\"YOUR_PASSWORD\"}' \\"
     echo "  | grep -o '\"token\":\"[^\"]*' | cut -d'\"' -f4)"
     echo ""
-    echo "# Step 2: Create device using token"
+    echo "# Step 2: Create device"
     echo "curl -X POST \"$API_URL/devices\" \\"
-    echo "  -H \"Authorization: Bearer \$TOKEN\" \\"
+    echo "  -H \"Authorization: Bearer \\\$TOKEN\" \\"
     echo "  -H \"Content-Type: application/json\" \\"
     echo "  -d '{\"deviceName\":\"$device_name\",\"serverId\":$server_id}'"
     echo ""
