@@ -66,12 +66,15 @@ login() {
 }
 
 get_credentials() {
+    echo "Please enter your login credentials:"
+    echo ""
+    
     while true; do
-        printf "Username: "
+        printf "  Username: "
         username=$(read_input)
         
         if [ -z "$username" ]; then
-            echo "Error: Username cannot be empty. Please try again."
+            echo "  Error: Username cannot be empty. Please try again."
             echo ""
             continue
         fi
@@ -80,7 +83,7 @@ get_credentials() {
     done
     
     while true; do
-        printf "Password: "
+        printf "  Password: "
         # Try to hide password input, but don't fail if stty doesn't work
         stty -echo 2>/dev/null || true
         password=$(read_input)
@@ -88,7 +91,7 @@ get_credentials() {
         echo ""
         
         if [ -z "$password" ]; then
-            echo "Error: Password cannot be empty. Please try again."
+            echo "  Error: Password cannot be empty. Please try again."
             echo ""
             continue
         fi
@@ -96,6 +99,7 @@ get_credentials() {
         break
     done
     
+    echo ""
     echo "$username|$password"
     return 0
 }
@@ -105,7 +109,8 @@ cmd_create() {
     echo "Create New Device"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "Please provide the following information:"
+    echo "Step 1: Login"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
     creds=$(get_credentials)
@@ -228,7 +233,8 @@ cmd_list() {
     echo "List All Devices"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "Please login to view your devices:"
+    echo "Step 1: Login"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
     creds=$(get_credentials)
@@ -431,7 +437,8 @@ cmd_remove() {
     echo "Remove Device"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "Please login:"
+    echo "Step 1: Login"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
     creds=$(get_credentials)
