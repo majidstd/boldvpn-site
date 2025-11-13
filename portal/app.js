@@ -863,12 +863,36 @@ class BoldVPNPortal {
                 console.log('Add Device submit button clicked');
                 e.preventDefault();
                 e.stopPropagation();
+                // Immediate UI feedback and client-side validation
+                const btnText = freshSubmit.querySelector('.btn-text');
+                const spinner = freshSubmit.querySelector('.spinner');
                 try {
+                    // Client-side validation
+                    const deviceName = form.querySelector('#device-name')?.value?.trim();
+                    const serverId = form.querySelector('#device-server')?.value;
+                    const errorDiv = document.getElementById('add-device-error');
+                    if (!deviceName) {
+                        if (errorDiv) { errorDiv.textContent = 'Please enter a device name.'; errorDiv.style.display = 'block'; }
+                        return;
+                    }
+                    if (!serverId) {
+                        if (errorDiv) { errorDiv.textContent = 'Please select a server location.'; errorDiv.style.display = 'block'; }
+                        return;
+                    }
+
+                    if (btnText) btnText.style.display = 'none';
+                    if (spinner) spinner.style.display = 'inline-block';
+                    freshSubmit.disabled = true;
+
                     await this.handleAddDevice(e, form, modal);
                 } catch (err) {
                     console.error('handleAddDevice ERROR:', err);
                     this.showAlert('Error adding device: ' + (err.message || 'Unknown'), 'error');
                 } finally {
+                    // restore immediate UI indicator (handleAddDevice will clear spinner too)
+                    try { if (btnText) btnText.style.display = 'inline'; } catch (e) {}
+                    try { if (spinner) spinner.style.display = 'none'; } catch (e) {}
+                    freshSubmit.disabled = false;
                     document.removeEventListener('keydown', handleEscape);
                 }
             });
