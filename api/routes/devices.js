@@ -393,6 +393,32 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const deviceLimit = limitResult.rows.length > 0 ? parseInt(limitResult.rows[0].value) : 2;
 
+    // *** SYNC CHECK before counting devices ***
+    // Check all active devices exist in OPNsense and mark inactive if deleted
+    const activeDevices = await pool.query(
+      'SELECT id, device_name FROM user_devices WHERE username = $1 AND is_active = true',
+      [username]
+    );
+
+    for (const device of activeDevices.rows) {
+      const peerName = `${username}-${device.device_name}`;
+      try {
+        const opnsensePeer = await opnsense.findPeerByName(peerName);
+        if (!opnsensePeer) {
+          // Peer doesn't exist in OPNsense - mark device as inactive
+          console.log(`[!] Device ${device.id} (${peerName}) not found in OPNsense, marking inactive before limit check`);
+          await pool.query(
+            'UPDATE user_devices SET is_active = false WHERE id = $1',
+            [device.id]
+          );
+        }
+      } catch (syncError) {
+        console.error(`[!] Sync check failed for device ${device.id}:`, syncError.message);
+        // Don't mark inactive if sync check fails (OPNsense might be temporarily unavailable)
+      }
+    }
+
+    // Now count devices AFTER sync
     const deviceCount = await pool.query(
       'SELECT COUNT(*) FROM user_devices WHERE username = $1 AND is_active = true',
       [username]
