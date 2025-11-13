@@ -211,12 +211,21 @@ cmd_create() {
     echo "Creating Device"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "Running command:"
+    echo "Commands being executed:"
+    echo ""
+    echo "# Step 1: Login (already completed)"
+    echo "TOKEN=\$(curl -s -X POST \"$API_URL/auth/login\" \\"
+    echo "  -H \"Content-Type: application/json\" \\"
+    echo "  -d '{\"username\":\"$username\",\"password\":\"********\"}' \\"
+    echo "  | grep -o '\"token\":\"[^\"]*' | cut -d'\"' -f4)"
+    echo ""
+    echo "# Step 2: Create device using token"
     echo "curl -X POST \"$API_URL/devices\" \\"
     echo "  -H \"Authorization: Bearer \$TOKEN\" \\"
     echo "  -H \"Content-Type: application/json\" \\"
     echo "  -d '{\"deviceName\":\"$device_name\",\"serverId\":$server_id}'"
     echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Creating device: $device_name on server ID $server_id..."
     echo ""
     
@@ -248,7 +257,8 @@ cmd_create() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
-    if echo "$response_body" | grep -q '"message":"Device added successfully"'; then
+    # Also check http_code for success (200 or 201)
+    if echo "$response_body" | grep -q '"message":"Device added successfully"' || [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
         device_id=$(echo "$response_body" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
         assigned_ip=$(echo "$response_body" | grep -o '"assignedIP":"[^"]*' | cut -d'"' -f4)
         public_key=$(echo "$response_body" | grep -o '"publicKey":"[^"]*' | cut -d'"' -f4)
