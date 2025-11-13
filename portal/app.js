@@ -885,9 +885,19 @@ class BoldVPNPortal {
         if (!form) {
             form = e.target;
         }
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const btnText = submitBtn.querySelector('.btn-text');
-        const spinner = submitBtn.querySelector('.spinner');
+        // Find the submit button. We used to rely on a <button type="submit"> but
+        // the modal now uses an explicit button (type="button"). Accept either.
+        let submitBtn = form.querySelector('button[type="submit"]');
+        if (!submitBtn) {
+            submitBtn = form.querySelector('#add-device-submit') || form.querySelector('button[data-action="submit"]');
+        }
+
+        if (!submitBtn) {
+            console.warn('Submit button not found in form - proceeding without UI spinner controls');
+        }
+
+        const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
+        const spinner = submitBtn ? submitBtn.querySelector('.spinner') : null;
         const errorDiv = document.getElementById('add-device-error');
         
         const deviceName = document.getElementById('device-name').value.trim();
@@ -897,10 +907,14 @@ class BoldVPNPortal {
         console.log('API Base:', this.apiBase);
         console.log('Token:', this.token ? 'Present' : 'MISSING!');
 
-        // Show loading state
-        submitBtn.classList.add('loading');
-        btnText.style.display = 'none';
-        spinner.style.display = 'inline-block';
+        // Show loading state (if UI elements exist)
+        try {
+            if (submitBtn) submitBtn.classList.add('loading');
+            if (btnText) btnText.style.display = 'none';
+            if (spinner) spinner.style.display = 'inline-block';
+        } catch (err) {
+            console.warn('Failed to set loading UI state:', err);
+        }
         errorDiv.style.display = 'none';
 
         try {
@@ -931,8 +945,12 @@ class BoldVPNPortal {
                 
                 // Close modal first
                 console.log('Closing modal...');
-                modal.style.display = 'none';
-                modal.remove();
+                try {
+                    modal.style.display = 'none';
+                    modal.remove();
+                } catch (err) {
+                    console.warn('Failed to remove modal DOM node:', err);
+                }
                 console.log('Modal closed');
                 
                 // Show success message
@@ -963,15 +981,21 @@ class BoldVPNPortal {
             } else {
                 errorDiv.textContent = data.error || 'Failed to add device';
                 errorDiv.style.display = 'block';
+                console.error('Add device API returned error:', response.status, data);
             }
         } catch (error) {
             errorDiv.textContent = 'Network error. Please try again.';
             errorDiv.style.display = 'block';
+            console.error('Network error while adding device:', error);
         } finally {
             // Reset loading state
-            submitBtn.classList.remove('loading');
-            btnText.style.display = 'inline';
-            spinner.style.display = 'none';
+            try {
+                if (submitBtn) submitBtn.classList.remove('loading');
+                if (btnText) btnText.style.display = 'inline';
+                if (spinner) spinner.style.display = 'none';
+            } catch (err) {
+                console.warn('Failed to reset loading UI state:', err);
+            }
         }
     }
 
