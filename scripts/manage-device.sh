@@ -67,47 +67,52 @@ login() {
 }
 
 get_credentials() {
-    echo "┌─────────────────────────────────────┐"
-    echo "│  Login Form                        │"
-    echo "└─────────────────────────────────────┘"
+    echo "Login Credentials:"
     echo ""
-    
+
     while true; do
-        printf "┌─ Username: "
+        printf "Username= "
         read -r username
-        
+
         if [ -z "$username" ]; then
-            echo "│  Error: Username cannot be empty."
-            echo "│  Please try again."
+            echo "Error: Username cannot be empty. Please try again."
             echo ""
             continue
         fi
-        
-        echo "└─────────────────────────────────────"
+
         break
     done
-    
+
     echo ""
-    
+
     while true; do
-        printf "┌─ Password: "
-        # Try to hide password input, but don't fail if stty doesn't work
-        stty -echo 2>/dev/null || true
-        read -r password
-        stty echo 2>/dev/null || true
+        printf "Password= "
+        password=""
+        while IFS= read -r -s -n1 char; do
+            if [ "$char" = $'\n' ] || [ "$char" = $'\r' ]; then
+                break
+            elif [ "$char" = $'\177' ] || [ "$char" = $'\b' ]; then
+                # Handle backspace
+                if [ ${#password} -gt 0 ]; then
+                    password="${password%?}"
+                    printf '\b \b'
+                fi
+            else
+                password="$password$char"
+                printf '*'
+            fi
+        done
         echo ""
-        
+
         if [ -z "$password" ]; then
-            echo "│  Error: Password cannot be empty."
-            echo "│  Please try again."
+            echo "Error: Password cannot be empty. Please try again."
             echo ""
             continue
         fi
-        
-        echo "└─────────────────────────────────────"
+
         break
     done
-    
+
     echo ""
     echo "$username|$password"
     return 0
