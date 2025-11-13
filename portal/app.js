@@ -678,8 +678,7 @@ class BoldVPNPortal {
     }
 
     addDevice() {
-        console.log('%c ===== addDevice() called =====', 'background: red; color: white; font-size: 16px;');
-        console.log('addDevice() called', this);
+        console.log('addDevice() called');
         // Prevent multiple modals
         const existingModal = document.querySelector('.modal');
         if (existingModal) {
@@ -696,7 +695,7 @@ class BoldVPNPortal {
     }
 
     async showAddDeviceModal() {
-        console.log('%c ===== showAddDeviceModal() called =====', 'background: green; color: white; font-size: 16px;');
+        console.log('showAddDeviceModal() called');
         try {
             // Fetch servers
             const serversResponse = await fetch(`${this.apiBase}/servers`, {
@@ -855,20 +854,13 @@ class BoldVPNPortal {
                 console.error('add-device-submit button not found!');
                 return;
             }
-            console.log('Submit button found:', submitButton);
 
             // Remove any previous click handlers by replacing the button node
             const freshSubmit = submitButton.cloneNode(true);
             submitButton.parentNode.replaceChild(freshSubmit, submitButton);
 
-            console.log('Attaching click handler to freshSubmit button:', freshSubmit);
-            console.log('freshSubmit element:', freshSubmit.outerHTML);
-
             freshSubmit.addEventListener('click', async (e) => {
-                console.log('%c ===== CLICK HANDLER FIRED =====', 'background: blue; color: white; font-size: 16px;');
-                console.log('Event:', e);
-                console.log('Target:', e.target);
-                console.log('Current target:', e.currentTarget);
+                console.log('Add Device submit button clicked');
                 e.preventDefault();
                 e.stopPropagation();
                 // Immediate UI feedback and client-side validation
@@ -904,7 +896,6 @@ class BoldVPNPortal {
                     document.removeEventListener('keydown', handleEscape);
                 }
             });
-            console.log('Click handler attached to freshSubmit');
         } catch (error) {
             console.error('Error showing add device modal:', error);
             this.showAlert('Failed to load server list. Please try again.', 'error');
@@ -1155,22 +1146,5 @@ class BoldVPNPortal {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.boldVPNPortal = new BoldVPNPortal();
-    // Debug function to manually trigger add device handler
-    window.debugAddDevice = function() {
-        const form = document.getElementById('add-device-form');
-        const modal = document.querySelector('.modal');
-        if (form && modal) {
-            console.log('Manually triggering handleAddDevice');
-            window.boldVPNPortal.handleAddDevice(null, form, modal);
-        } else {
-            console.error('Form or modal not found for manual trigger');
-        }
-    };
-    // Debug: log clicks on add-device-submit button
-    document.addEventListener('click', (e) => {
-        if (e.target.id === 'add-device-submit' || e.target.closest('#add-device-submit')) {
-            console.log('%c DOCUMENT CLICK on add-device-submit', 'background: yellow; color: black; font-size: 14px;', e);
-        }
-    });
 });
 
