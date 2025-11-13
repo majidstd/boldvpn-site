@@ -299,9 +299,16 @@ cmd_list() {
         device_count=$(echo "$devices_response" | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
         
         if [ "$device_count" = "0" ]; then
-            echo "No devices found."
+            echo "┌─────────────────────────────────────┐"
+            echo "│  No devices found                  │"
+            echo "│                                     │"
+            echo "│  You can create a new device using  │"
+            echo "│  option 1 from the main menu.      │"
+            echo "└─────────────────────────────────────┘"
         else
-            echo "Found $device_count device(s):"
+            echo "┌─────────────────────────────────────┐"
+            echo "│  Found $device_count device(s)        │"
+            echo "└─────────────────────────────────────┘"
             echo ""
             echo "$devices_response" | python3 -c "
 import sys, json
