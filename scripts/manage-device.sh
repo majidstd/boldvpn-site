@@ -97,8 +97,25 @@ cmd_create() {
     echo ""
     
     creds=$(get_credentials)
+    if [ $? -ne 0 ] || [ -z "$creds" ]; then
+        echo ""
+        echo "Failed to get credentials"
+        echo ""
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
+    
     username=$(echo "$creds" | cut -d'|' -f1)
     password=$(echo "$creds" | cut -d'|' -f2)
+    
+    if [ -z "$username" ] || [ -z "$password" ]; then
+        echo "Error: Invalid credentials"
+        echo ""
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
     
     printf "${YELLOW}Device Name: ${NC}"
     device_name=$(read_input)
@@ -360,8 +377,25 @@ cmd_remove() {
     echo ""
     
     creds=$(get_credentials)
+    if [ $? -ne 0 ] || [ -z "$creds" ]; then
+        echo ""
+        echo "Failed to get credentials"
+        echo ""
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
+    
     username=$(echo "$creds" | cut -d'|' -f1)
     password=$(echo "$creds" | cut -d'|' -f2)
+    
+    if [ -z "$username" ] || [ -z "$password" ]; then
+        echo "Error: Invalid credentials"
+        echo ""
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
     
     printf "${YELLOW}Device ID: ${NC}"
     device_id=$(read_input)
