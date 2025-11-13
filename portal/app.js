@@ -350,16 +350,13 @@ class BoldVPNPortal {
     }
 
     renderDevices(container) {
-        // Store reference to this for use in inline handlers
-        const portal = this;
-        
         container.innerHTML = `
             <div class="unified-container">
                 <div class="section-header">
                     <h2>Manage Devices</h2>
                     <div style="display: flex; gap: 10px;">
-                        <button id="refresh-devices-btn" class="btn btn-secondary" type="button" onclick="window.boldVPNPortal.loadDevices(); return false;" title="Refresh device list">🔄 Refresh</button>
-                        <button id="add-device-btn" class="btn btn-primary" type="button" onclick="window.boldVPNPortal.addDevice(); return false;">+ Add Device</button>
+                        <button id="refresh-devices-btn" class="btn btn-secondary" type="button" onclick="window.boldVPNPortal.loadDevices()">🔄 Refresh</button>
+                        <button id="add-device-btn" class="btn btn-primary" type="button" onclick="window.boldVPNPortal.addDevice()">+ Add Device</button>
                     </div>
                 </div>
 
@@ -370,44 +367,6 @@ class BoldVPNPortal {
                 </div>
             </div>
         `;
-
-        // Bind event listener - use event delegation for reliability
-        const contentArea = document.getElementById('content-area');
-        if (contentArea) {
-            // Remove old listener if exists
-            contentArea.removeEventListener('click', portal.handleAddDeviceClick);
-            portal.handleAddDeviceClick = (e) => {
-                console.log('Content area click delegation fired, target:', e.target, 'id:', e.target.id);
-                if (e.target && (e.target.id === 'add-device-btn' || e.target.closest('#add-device-btn'))) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Add Device button clicked via delegation');
-                    portal.addDevice();
-                }
-            };
-            contentArea.addEventListener('click', portal.handleAddDeviceClick);
-        }
-        
-        // Also bind directly as fallback
-        setTimeout(() => {
-            const addBtn = document.getElementById('add-device-btn');
-            if (addBtn) {
-                console.log('Direct binding: found add-device-btn', addBtn);
-                // Remove old listener
-                const newBtn = addBtn.cloneNode(true);
-                addBtn.parentNode.replaceChild(newBtn, addBtn);
-                
-                newBtn.addEventListener('click', (e) => {
-                    console.log('Direct binding click handler fired');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Add Device button clicked (direct)');
-                    portal.addDevice();
-                });
-            } else {
-                console.error('Add Device button not found!');
-            }
-        }, 100);
         
         this.loadDevices();
     }
