@@ -91,7 +91,7 @@ class BoldVPNPortal {
         const submitBtn = form.querySelector('button[type="submit"]');
         const btnText = submitBtn.textContent;
         const errorDiv = document.getElementById('login-error');
-        
+
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('remember-me').checked;
@@ -442,33 +442,21 @@ class BoldVPNPortal {
                         <p style="color: var(--muted);">No billing history available.</p>
                     </div>
                 </div>
-            </div>
+                </div>
         `;
     }
 
     // Data loading methods
     async loadOverviewData() {
         try {
-            // Load profile data (usage, limits)
-            const profileResponse = await fetch(`${this.apiBase}/user/profile`, {
+            const response = await fetch(`${this.apiBase}/user/profile`, {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
-            if (profileResponse.ok) {
-                const data = await profileResponse.json();
+            if (response.ok) {
+                const data = await response.json();
                 // Update UI with real data
                 document.getElementById('data-used').textContent = `${data.usage?.used || 0} GB`;
                 document.getElementById('data-limit').textContent = `${data.limits?.maxTrafficGB || 50} GB`;
-                document.getElementById('devices-limit').textContent = data.limits?.maxDevices || '--';
-            }
-
-            // Load device count for overview
-            const devicesResponse = await fetch(`${this.apiBase}/devices`, {
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
-            if (devicesResponse.ok) {
-                const devices = await devicesResponse.json();
-                const activeDevices = devices.filter(d => d.is_active !== false);
-                document.getElementById('devices-count').textContent = activeDevices.length;
             }
         } catch (error) {
             console.error('Failed to load overview data:', error);
@@ -484,9 +472,9 @@ class BoldVPNPortal {
             const container = document.getElementById('devices-container');
             if (!container) {
                 console.error('devices-container not found!');
-                return;
-            }
-            
+            return;
+        }
+
             if (response.ok) {
                 const devices = await response.json();
                 
@@ -518,7 +506,7 @@ class BoldVPNPortal {
                         `).join('')}
                     </div>
                 `;
-            } else {
+        } else {
                 container.innerHTML = '<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices</p>';
             }
         } catch (error) {
@@ -535,22 +523,22 @@ class BoldVPNPortal {
         const ctx = document.getElementById('usage-chart');
         if (ctx && typeof Chart !== 'undefined') {
             new Chart(ctx, {
-                type: 'line',
-                data: {
+            type: 'line',
+            data: {
                     labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'],
-                    datasets: [{
+                datasets: [{
                         label: 'Data Usage (GB)',
                         data: [2, 3, 5, 4, 6],
                         borderColor: '#0ea5e9',
                         tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
+                }]
+            },
+            options: {
+                responsive: true,
                     maintainAspectRatio: true
-                }
-            });
-        }
+            }
+        });
+    }
     }
 
     async handleProfileUpdate(e) {
@@ -689,7 +677,7 @@ class BoldVPNPortal {
                     <div class="modal-header">
                         <h3 id="modal-title">Add New Device</h3>
                         <button class="modal-close" type="button" aria-label="Close modal">&times;</button>
-                    </div>
+            </div>
                     <form id="add-device-form" class="auth-form">
                         <div class="form-group">
                             <label for="device-name">Device Name</label>
@@ -716,7 +704,7 @@ class BoldVPNPortal {
                                         locationStr = `${country}, ${city}`;
                                     } else if (name) {
                                         locationStr = name;
-                                    } else {
+            } else {
                                         locationStr = 'Unknown Server';
                                     }
 
@@ -834,15 +822,8 @@ class BoldVPNPortal {
                 modal.remove();
                 // Show success message
                 this.showAlert('Device added successfully!', 'success');
-                // Reload data based on current section
-                if (this.currentSection === 'devices') {
-                    this.loadDevices();
-                } else if (this.currentSection === 'overview') {
-                    // Refresh overview data to show updated device count
-                    this.loadOverviewData();
-                } else {
-                    this.navigateTo('devices');
-                }
+                // Always stay on devices section and reload
+                this.navigateTo('devices');
             } else {
                 errorDiv.textContent = data.error || 'Failed to add device';
                 errorDiv.style.display = 'block';
@@ -895,7 +876,7 @@ class BoldVPNPortal {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
                 this.showAlert('Configuration downloaded successfully', 'success');
-            } else {
+        } else {
                 this.showAlert('Failed to download configuration', 'error');
             }
         } catch (error) {
