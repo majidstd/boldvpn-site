@@ -455,19 +455,29 @@ cmd_remove() {
         return 1
     fi
     
-    printf "${YELLOW}Device ID: ${NC}"
-    device_id=$(read_input)
-    
-    if [ -z "$device_id" ]; then
-        echo "${RED}❌ Device ID required${NC}"
-        echo ""
-        printf "${YELLOW}Press Enter to continue...${NC}"
-        read_input > /dev/null
-        return 1
-    fi
+    echo ""
+    while true; do
+        printf "Device ID to remove: "
+        device_id=$(read_input)
+        
+        if [ -z "$device_id" ]; then
+            echo "Error: Device ID cannot be empty. Please try again."
+            echo ""
+            continue
+        fi
+        
+        # Check if it's a number
+        if ! echo "$device_id" | grep -q '^[0-9][0-9]*$'; then
+            echo "Error: Device ID must be a number. Please try again."
+            echo ""
+            continue
+        fi
+        
+        break
+    done
     
     echo ""
-    printf "${RED}⚠️  Are you sure you want to remove device ID $device_id? (yes/no): ${NC}"
+    printf "Are you sure you want to remove device ID $device_id? (yes/no): "
     confirm=$(read_input)
     
     if [ "$confirm" != "yes" ]; then
