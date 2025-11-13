@@ -673,44 +673,39 @@ cmd_remove() {
         return 0
     fi
     
-    token=$(login "$username" "$password")
-    if [ $? -ne 0 ]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Removing Device ID: $device_id"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Running command:"
+    echo "TOKEN=\$(curl -s -X POST \"$API_URL/auth/login\" -H \"Content-Type: application/json\" -d '{\"username\":\"$username\",\"password\":\"...\"}' | grep -o '\"token\":\"[^\"]*' | cut -d'\"' -f4) && curl -X DELETE \"$API_URL/devices/$device_id\" -H \"Authorization: Bearer \$TOKEN\""
+    echo ""
+    
+    # Execute using one-liner approach
+    delete_response=$(TOKEN=$(curl -s -X POST "$API_URL/auth/login" \
+      -H "Content-Type: application/json" \
+      -d "{\"username\":\"$username\",\"password\":\"$password\"}" \
+      | grep -o '"token":"[^"]*' | cut -d'"' -f4) && \
+    curl -s -X DELETE "$API_URL/devices/$device_id" \
+      -H "Authorization: Bearer $TOKEN")
+    
+    if echo "$delete_response" | grep -q '"message"'; then
+        echo "✅ Device removed successfully!"
         echo ""
-        printf "${YELLOW}Press Enter to continue...${NC}"
-        read_input > /dev/null
-        return 1
-    fi
-    
-    echo ""
-    echo "${BLUE}🗑️  Removing device ID $device_id...${NC}"
-    
-    delete_response=$(curl -s -w "\n%{http_code}" -X DELETE "$API_URL/devices/$device_id" \
-      -H "Authorization: Bearer $token" \
-      -H "Content-Type: application/json")
-    
-    http_code=$(echo "$delete_response" | tail -n1)
-    response_body=$(echo "$delete_response" | sed '$d')
-    
-    echo ""
-    echo "${BLUE}HTTP Status: $http_code${NC}"
-    echo "${BLUE}Response:${NC}"
-    echo "$response_body" | python3 -m json.tool 2>/dev/null || echo "$response_body"
-    echo ""
-    
-    if [ "$http_code" = "200" ]; then
-        echo "${GREEN}✅ Device removed successfully!${NC}"
+        echo "Response:"
+        echo "$delete_response" | python3 -m json.tool 2>/dev/null || echo "$delete_response"
+        echo ""
         
-        if echo "$response_body" | grep -q '"opnsenseRemoved":true'; then
-            echo "${GREEN}✅ Peer removed from OPNsense${NC}"
-        elif echo "$response_body" | grep -q '"opnsenseRemoved":false'; then
-            echo "${YELLOW}⚠️  Warning: Peer may still exist in OPNsense${NC}"
-            echo "   Check manually: VPN → WireGuard → Clients"
+        if echo "$delete_response" | grep -q '"ipFreed"'; then
+            ip_freed=$(echo "$delete_response" | grep -o '"ipFreed":"[^"]*' | cut -d'"' -f4)
+            echo "IP Address $ip_freed has been returned to the pool"
         fi
-    elif [ "$http_code" = "500" ]; then
-        echo "${RED}❌ Error: OPNsense removal failed${NC}"
-        echo "   Check API logs: tail -f /var/log/boldvpn-api.log"
     else
-        echo "${RED}❌ Failed to remove device${NC}"
+        echo "❌ Device removal failed!"
+        echo ""
+        echo "Response:"
+        echo "$delete_response"
     fi
     
     echo ""
