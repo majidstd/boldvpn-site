@@ -678,11 +678,11 @@ class BoldVPNPortal {
     }
 
     addDevice() {
-        console.log('addDevice() called');
+        console.log('addDevice() called - opening modal');
         // Prevent multiple modals
         const existingModal = document.querySelector('.modal');
         if (existingModal) {
-            console.log('Modal already exists, removing it first');
+            console.log('Removing existing modal');
             existingModal.remove();
         }
         // Fetch available servers first
@@ -695,7 +695,7 @@ class BoldVPNPortal {
     }
 
     async showAddDeviceModal() {
-        console.log('showAddDeviceModal() called');
+        console.log('showAddDeviceModal() - fetching servers');
         try {
             // Fetch servers
             const serversResponse = await fetch(`${this.apiBase}/servers`, {
@@ -805,7 +805,7 @@ class BoldVPNPortal {
             `;
 
             document.body.appendChild(modal);
-            console.log('Modal added to DOM', modal);
+            console.log('Modal appended to body - should be visible now');
             console.log('Modal computed style:', window.getComputedStyle(modal).display);
             console.log('Modal z-index:', window.getComputedStyle(modal).zIndex);
             
