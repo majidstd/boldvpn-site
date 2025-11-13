@@ -8,12 +8,22 @@ API_URL="${API_URL:-https://api.boldvpn.net/api}"
 DB_USER="${DB_USER:-radiususer}"
 DB_NAME="${DB_NAME:-radius}"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colors for output (disabled for FreeBSD compatibility)
+# Check if terminal supports colors
+if [ -t 1 ] && command -v tput >/dev/null 2>&1 && [ "$(tput colors)" -ge 8 ]; then
+    RED=$(tput setaf 1)
+    GREEN=$(tput setaf 2)
+    YELLOW=$(tput setaf 3)
+    BLUE=$(tput setaf 4)
+    NC=$(tput sgr0)
+else
+    # No colors - use empty strings
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+fi
 
 print_header() {
     clear
