@@ -449,14 +449,26 @@ class BoldVPNPortal {
     // Data loading methods
     async loadOverviewData() {
         try {
-            const response = await fetch(`${this.apiBase}/user/profile`, {
+            // Load profile data (usage, limits)
+            const profileResponse = await fetch(`${this.apiBase}/user/profile`, {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
-            if (response.ok) {
-                const data = await response.json();
+            if (profileResponse.ok) {
+                const data = await profileResponse.json();
                 // Update UI with real data
                 document.getElementById('data-used').textContent = `${data.usage?.used || 0} GB`;
                 document.getElementById('data-limit').textContent = `${data.limits?.maxTrafficGB || 50} GB`;
+                document.getElementById('devices-limit').textContent = data.limits?.maxDevices || '--';
+            }
+
+            // Load device count for overview
+            const devicesResponse = await fetch(`${this.apiBase}/devices`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            if (devicesResponse.ok) {
+                const devices = await devicesResponse.json();
+                const activeDevices = devices.filter(d => d.is_active !== false);
+                document.getElementById('devices-count').textContent = activeDevices.length;
             }
         } catch (error) {
             console.error('Failed to load overview data:', error);
@@ -822,9 +834,12 @@ class BoldVPNPortal {
                 modal.remove();
                 // Show success message
                 this.showAlert('Device added successfully!', 'success');
-                // Reload devices list
+                // Reload data based on current section
                 if (this.currentSection === 'devices') {
                     this.loadDevices();
+                } else if (this.currentSection === 'overview') {
+                    // Refresh overview data to show updated device count
+                    this.loadOverviewData();
                 } else {
                     this.navigateTo('devices');
                 }
