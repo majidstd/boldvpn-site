@@ -142,45 +142,47 @@ class BoldVPNPortal {
     renderDashboardStructure() {
         const portalContainer = document.getElementById('portal-container');
         portalContainer.innerHTML = `
-            <!-- Sidebar -->
-            <aside class="portal-sidebar">
-                <div class="sidebar-header">
-                    <div class="user-info">
-                        <h3 id="sidebar-username">${this.user?.username || 'User'}</h3>
-                        <p id="sidebar-plan">${this.user?.plan || 'Basic'} Plan</p>
+            <div class="portal-wrapper">
+                <!-- Sidebar -->
+                <aside class="portal-sidebar">
+                    <div class="sidebar-header">
+                        <div class="user-info">
+                            <h3 id="sidebar-username">${this.user?.username || 'User'}</h3>
+                            <p id="sidebar-plan">${this.user?.plan || 'Basic'} Plan</p>
+                        </div>
                     </div>
-                </div>
-                
-                <nav class="sidebar-nav">
-                    <button class="nav-item active" data-section="overview">
-                        <span>📊</span> Overview
-                    </button>
-                    <button class="nav-item" data-section="devices">
-                        <span>📱</span> Manage Devices
-                    </button>
-                    <button class="nav-item" data-section="usage">
-                        <span>📈</span> Usage History
-                    </button>
-                    <button class="nav-item" data-section="profile">
-                        <span>👤</span> Profile Settings
-                    </button>
-                    <button class="nav-item" data-section="password">
-                        <span>🔒</span> Change Password
-                    </button>
-                    <button class="nav-item" data-section="billing">
-                        <span>💳</span> Billing & Plans
-                    </button>
-                </nav>
+                    
+                    <nav class="sidebar-nav">
+                        <button class="nav-item active" data-section="overview">
+                            <span>📊</span> Overview
+                        </button>
+                        <button class="nav-item" data-section="devices">
+                            <span>📱</span> Manage Devices
+                        </button>
+                        <button class="nav-item" data-section="usage">
+                            <span>📈</span> Usage History
+                        </button>
+                        <button class="nav-item" data-section="profile">
+                            <span>👤</span> Profile Settings
+                        </button>
+                        <button class="nav-item" data-section="password">
+                            <span>🔒</span> Change Password
+                        </button>
+                        <button class="nav-item" data-section="billing">
+                            <span>💳</span> Billing & Plans
+                        </button>
+                    </nav>
 
-                <div class="sidebar-footer">
-                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
-                </div>
-            </aside>
+                    <div class="sidebar-footer">
+                        <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                    </div>
+                </aside>
 
-            <!-- Main Content -->
-            <main class="portal-content">
-                <div id="content-area"></div>
-            </main>
+                <!-- Main Content -->
+                <main class="portal-content">
+                    <div id="content-area"></div>
+                </main>
+            </div>
         `;
     }
 
