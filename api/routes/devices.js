@@ -719,26 +719,41 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
     const deviceName = device.device_name;
     const peerName = `${username}-${deviceName}`;
 
+    console.log(`[DEBUG] Device removal request:`, {
+      deviceId,
+      deviceName,
+      peerName,
+      opnsensePeerId: opnsensePeerId || 'NULL',
+      hasPeerId: !!opnsensePeerId
+    });
+
     // Remove from OPNsense - try multiple methods
     let opnsenseRemoved = false;
     
     // Method 1: Use stored peer ID
     if (opnsensePeerId) {
+      console.log(`[DEBUG] Attempting removal with stored peer ID: ${opnsensePeerId}`);
       try {
-        await opnsense.removeWireGuardPeer(opnsensePeerId);
-        console.log(`[OK] Removed peer ${opnsensePeerId} from OPNsense`);
+        const removeResult = await opnsense.removeWireGuardPeer(opnsensePeerId);
+        console.log(`[OK] Removed peer ${opnsensePeerId} from OPNsense`, removeResult);
         opnsenseRemoved = true;
       } catch (opnsenseError) {
         console.error(`[!] Failed to remove peer ${opnsensePeerId} from OPNsense:`, opnsenseError.message);
+        console.error(`[!] Error details:`, opnsenseError);
         // Try method 2: find by name
       }
+    } else {
+      console.log(`[DEBUG] No stored peer ID, will try finding by name`);
     }
 
     // Method 2: Find peer by name if peer ID method failed or doesn't exist
     if (!opnsenseRemoved) {
+      console.log(`[DEBUG] Attempting to find peer by name: ${peerName}`);
       try {
         const peer = await opnsense.findPeerByName(peerName);
+        console.log(`[DEBUG] findPeerByName result:`, peer);
         if (peer && peer.uuid) {
+          console.log(`[DEBUG] Found peer with UUID: ${peer.uuid}, attempting removal`);
           await opnsense.removeWireGuardPeer(peer.uuid);
           console.log(`[OK] Found and removed peer ${peer.uuid} (${peerName}) from OPNsense`);
           opnsenseRemoved = true;
@@ -747,6 +762,7 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
         }
       } catch (findError) {
         console.error(`[!] Failed to find/remove peer ${peerName} from OPNsense:`, findError.message);
+        console.error(`[!] Find error details:`, findError);
       }
     }
 

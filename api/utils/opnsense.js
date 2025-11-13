@@ -257,7 +257,12 @@ async function addWireGuardPeer(peerName, publicKey, assignedIP, presharedKey = 
  */
 async function removeWireGuardPeer(peerId) {
   try {
+    console.log(`[DEBUG] removeWireGuardPeer called with peerId: ${peerId}`);
+    console.log(`[DEBUG] Calling OPNsense API: POST /wireguard/client/delPeer/${peerId}`);
+    
     const response = await makeRequest('POST', `/wireguard/client/delPeer/${peerId}`);
+    
+    console.log(`[DEBUG] OPNsense API response:`, JSON.stringify(response, null, 2));
 
     if (response.result === 'deleted') {
       console.log(`[OK] WireGuard peer ${peerId} removed`);
@@ -267,12 +272,14 @@ async function removeWireGuardPeer(peerId) {
       
       return { success: true };
     } else {
-      throw new Error('Failed to delete peer');
+      console.error(`[!] OPNsense did not return 'deleted' result. Response:`, response);
+      throw new Error(`Failed to delete peer. Response: ${JSON.stringify(response)}`);
     }
 
   } catch (error) {
     console.error('[!] OPNsense remove peer error:', error.message);
-    throw new Error('Failed to remove WireGuard peer from firewall');
+    console.error('[!] Full error:', error);
+    throw new Error(`Failed to remove WireGuard peer from firewall: ${error.message}`);
   }
 }
 
