@@ -494,6 +494,28 @@ class BoldVPNPortal {
 
     async loadDevices(includeInactive = false) {
         try {
+            const container = document.getElementById('devices-container');
+            if (!container) {
+                console.error('devices-container not found!');
+                return;
+            }
+
+            // Fetch inactive count separately if not including inactive devices
+            let inactiveCount = 0;
+            if (!includeInactive) {
+                try {
+                    const inactiveResponse = await fetch(`${this.apiBase}/devices?includeInactive=true`, {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (inactiveResponse.ok) {
+                        const allDevices = await inactiveResponse.json();
+                        inactiveCount = allDevices.filter(d => d.isActive === false).length;
+                    }
+                } catch (e) {
+                    console.warn('Failed to fetch inactive count:', e);
+                }
+            }
+
             const url = includeInactive 
                 ? `${this.apiBase}/devices?includeInactive=true`
                 : `${this.apiBase}/devices`;
@@ -501,12 +523,6 @@ class BoldVPNPortal {
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
-            
-            const container = document.getElementById('devices-container');
-            if (!container) {
-                console.error('devices-container not found!');
-                return;
-            }
 
             if (response.ok) {
                 const devices = await response.json();
@@ -517,7 +533,10 @@ class BoldVPNPortal {
                     return;
                 }
 
-                const inactiveCount = devices.filter(d => d.isActive === false).length;
+                // Update inactive count if we're showing all devices
+                if (includeInactive) {
+                    inactiveCount = devices.filter(d => d.isActive === false).length;
+                }
                 const inactiveLabel = inactiveCount > 0 ? ` (${inactiveCount})` : '';
 
                 let html = `
