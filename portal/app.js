@@ -1,6 +1,8 @@
 // BoldVPN Customer Portal JavaScript
 // Single-page application for account management
 
+import { api } from './api.js';
+
 class BoldVPNPortal {
     constructor() {
         // Use Config from config.js if available, fallback to localhost
