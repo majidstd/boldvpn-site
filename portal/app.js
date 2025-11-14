@@ -144,8 +144,44 @@ class BoldVPNPortal {
         if (template) {
             const clonedContent = template.content.cloneNode(true);
             container.appendChild(clonedContent);
-            document.getElementById('refresh-devices-btn').addEventListener('click', () => this.loadDevices());
-            document.getElementById('add-device-btn').addEventListener('click', () => this.addDevice());
+            
+            // Bind button events
+            const refreshBtn = document.getElementById('refresh-devices-btn');
+            const addBtn = document.getElementById('add-device-btn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', () => this.loadDevices());
+            }
+            if (addBtn) {
+                addBtn.addEventListener('click', () => this.addDevice());
+            }
+            
+            // Setup device action listener on the container
+            const devicesContainer = document.getElementById('devices-container');
+            if (devicesContainer) {
+                // Remove existing listener if it exists
+                if (this._deviceActionListener) {
+                    devicesContainer.removeEventListener('click', this._deviceActionListener);
+                }
+                
+                // Create event handler for device actions
+                this._deviceActionListener = (e) => {
+                    const target = e.target.closest('button[data-action]');
+                    if (!target) return;
+                    const { deviceId, deviceName, action } = target.dataset;
+                    if (!deviceId || !action) return;
+                    
+                    if (action === 'config') {
+                        this.downloadConfig(deviceId);
+                    } else if (action === 'qr') {
+                        this.downloadQRCode(deviceId);
+                    } else if (action === 'remove') {
+                        this.removeDevice(deviceId, deviceName);
+                    }
+                };
+                
+                // Attach listener to container
+                devicesContainer.addEventListener('click', this._deviceActionListener);
+            }
             
             this.loadDevices();
         } else {
@@ -250,19 +286,6 @@ class BoldVPNPortal {
                     `).join('')}
                 </div>
             `;
-            // Remove existing event listener to prevent duplicates
-            container.removeEventListener('click', this._deviceActionListener);
-            
-            // Attach a single event listener to the container for delegation
-            this._deviceActionListener = (e) => {
-                const target = e.target.closest('button');
-                if (!target) return;
-                const { deviceId, deviceName, action } = target.dataset;
-                if (action === 'config') this.downloadConfig(deviceId);
-                if (action === 'qr') this.downloadQRCode(deviceId);
-                if (action === 'remove') this.removeDevice(deviceId, deviceName);
-            };
-            container.addEventListener('click', this._deviceActionListener);
         } catch (error) {
             container.innerHTML = `<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices: ${error.message}</p>`;
         }
@@ -493,6 +516,9 @@ class BoldVPNPortal {
 }
 
 new BoldVPNPortal();
+
+
+
 
 
 
