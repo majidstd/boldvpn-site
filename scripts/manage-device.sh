@@ -947,43 +947,63 @@ cmd_sync() {
     echo "${YELLOW}Note: Database is the source of truth.${NC}"
     echo "      OPNsense will be updated to match the database."
     echo ""
-    echo "${BLUE}Using OPNsense API key from .env file${NC}"
-    echo ""
-    printf "Press Enter to continue... "
-    read_input > /dev/null 2>&1 || true
-    
-    echo ""
-    echo "${BLUE}🔄 Running sync...${NC}"
+    echo "${BLUE}Step 1: Login (Admin required)${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     
-    # Get script directory and project root
-    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-    PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-    ENV_FILE="$PROJECT_ROOT/api/.env"
-    
-    if [ ! -f "$ENV_FILE" ]; then
-        echo "${RED}❌ .env file not found: $ENV_FILE${NC}"
+    creds=$(get_credentials)
+    if [ $? -ne 0 ] || [ -z "$creds" ]; then
+        echo ""
+        echo "Failed to get credentials"
         echo ""
         printf "Press Enter to continue... "
         read_input > /dev/null 2>&1 || true
         return 1
     fi
     
+    username=$(echo "$creds" | cut -d'|' -f1)
+    password=$(echo "$creds" | cut -d'|' -f2)
+    
+    TOKEN=$(login "$username" "$password")
+    if [ $? -ne 0 ] || [ -z "$TOKEN" ]; then
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
+    
+    echo ""
+    echo "${BLUE}Step 2: Trigger Sync${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     echo "Running command:"
-    echo "cd $PROJECT_ROOT/api && node -e \"require('dotenv').config(); require('./utils/syncOpnsense').syncOpnsensePeers().then(() => process.exit(0)).catch(e => { console.error('Sync failed:', e.message); process.exit(1); });\""
+    echo "curl -X POST \"$API_URL/admin/sync/opnsense\" \\"
+    echo "  -H \"Authorization: Bearer \$TOKEN\" \\"
+    echo "  -H \"Content-Type: application/json\""
     echo ""
     
-    # Run sync directly using Node.js inline
-    cd "$PROJECT_ROOT/api" || exit 1
-    node -e "require('dotenv').config(); require('./utils/syncOpnsense').syncOpnsensePeers().then(() => process.exit(0)).catch(e => { console.error('Sync failed:', e.message); process.exit(1); });"
-    SYNC_EXIT_CODE=$?
+    echo "${BLUE}🔄 Triggering sync...${NC}"
+    SYNC_RESPONSE=$(curl -s -X POST "$API_URL/admin/sync/opnsense" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json")
     
     echo ""
-    if [ $SYNC_EXIT_CODE -eq 0 ]; then
-        echo "${GREEN}✅ Sync completed successfully!${NC}"
+    echo "Response:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "$SYNC_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$SYNC_RESPONSE"
+    echo ""
+    
+    if echo "$SYNC_RESPONSE" | grep -q "sync started"; then
+        echo "${GREEN}✅ Sync started successfully!${NC}"
+        echo ""
+        echo "${BLUE}💡 Check server logs for sync progress:${NC}"
+        echo "   tail -f /var/log/boldvpn-api.log | grep SYNC"
+        echo ""
     else
-        echo "${RED}❌ Sync failed (exit code: $SYNC_EXIT_CODE)${NC}"
+        echo "${RED}❌ Failed to trigger sync${NC}"
+        echo ""
+        if echo "$SYNC_RESPONSE" | grep -q "Admin access required"; then
+            echo "${YELLOW}⚠️  Admin access required for manual sync${NC}"
+        fi
     fi
     
     echo ""
