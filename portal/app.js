@@ -147,17 +147,6 @@ class BoldVPNPortal {
             document.getElementById('refresh-devices-btn').addEventListener('click', () => this.loadDevices());
             document.getElementById('add-device-btn').addEventListener('click', () => this.addDevice());
             
-            const devicesContainer = clonedContent.querySelector('#devices-container');
-            if (devicesContainer) {
-                devicesContainer.addEventListener('click', (e) => {
-                    const target = e.target.closest('button');
-                    if (!target) return;
-                    const { deviceId, deviceName, action } = target.dataset;
-                    if (action === 'config') this.downloadConfig(deviceId);
-                    if (action === 'qr') this.downloadQRCode(deviceId);
-                    if (action === 'remove') this.removeDevice(deviceId, deviceName);
-                });
-            }
             this.loadDevices();
         } else {
             console.error('Devices template not found!');
@@ -261,7 +250,15 @@ class BoldVPNPortal {
                     `).join('')}
                 </div>
             `;
-            // Event listener is now attached in renderDevices()
+            // Event listener is now attached in loadDevices()
+            container.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                const { deviceId, deviceName, action } = target.dataset;
+                if (action === 'config') this.downloadConfig(deviceId);
+                if (action === 'qr') this.downloadQRCode(deviceId);
+                if (action === 'remove') this.removeDevice(deviceId, deviceName);
+            });
         } catch (error) {
             container.innerHTML = `<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices: ${error.message}</p>`;
         }
