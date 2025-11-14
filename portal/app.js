@@ -333,8 +333,8 @@ class BoldVPNPortal {
             const isPremium = userPlan === 'premium' || userPlan === 'family';
             
             const servers = allServers.filter(server => {
-                // Only show available servers
-                if (!server.available && server.status !== 'active') {
+                // Only show available and active servers
+                if (!server.available || server.status !== 'active') {
                     return false;
                 }
                 // Basic users can't see premium servers
@@ -357,9 +357,9 @@ class BoldVPNPortal {
                     <form id="add-device-form" class="auth-form">
                         <div class="form-group"><label for="device-name">Device Name</label><input type="text" id="device-name" name="deviceName" required placeholder="e.g., My Laptop, iPhone, etc." autofocus></div>
                         <div class="form-group"><label for="device-server">Server Location</label><select id="device-server" name="serverId" required><option value="">Select a server</option>${servers.map(s => {
-                            const loadInfo = s.load !== undefined ? ` - ${s.load.toFixed(0)}% load` : '';
                             const premiumBadge = s.isPremium ? ' ⭐' : '';
-                            return `<option value="${s.id}">${s.location}${loadInfo}${premiumBadge}</option>`;
+                            const displayName = `${s.location}, ${s.name}${premiumBadge}`;
+                            return `<option value="${s.id}">${displayName}</option>`;
                         }).join('')}</select></div>
                         <div id="add-device-error" class="alert alert-error" style="display: none;"></div>
                         <div style="display: flex; gap: 12px; margin-top: 8px;"><button id="add-device-submit" type="button" class="btn btn-primary" style="flex: 1;"><span class="btn-text">Add Device</span><div class="spinner" style="display: none;"></div></button><button type="button" class="btn btn-secondary" id="cancel-add-device">Cancel</button></div>
@@ -388,9 +388,12 @@ class BoldVPNPortal {
                     await api.devices.create(deviceName, serverId);
                     closeModal();
                     this.showAlert('Device added successfully!', 'success');
+                    // Navigate to devices section to show the new device
+                    this.navigateTo('devices');
                     this.loadDevices();
                 } catch (error) {
-                    errorDiv.textContent = error.message || 'Failed to add device';
+                    console.error('Device creation error:', error);
+                    errorDiv.textContent = error.message || 'Failed to add device. Please try again.';
                     errorDiv.style.display = 'block';
                 }
             });
@@ -480,5 +483,8 @@ class BoldVPNPortal {
 }
 
 new BoldVPNPortal();
+
+
+
 
 

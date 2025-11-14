@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { pool } = require('./utils/database');
+const { startOpnsenseSyncJob } = require('./utils/syncOpnsense');
 
 // Validate required environment variables
 const requiredEnv = ['JWT_SECRET', 'DB_PASSWORD'];
@@ -155,6 +156,7 @@ pool.connect((err, client, release) => {
   }
   console.log('[OK] Database connected successfully');
   release();
+  startOpnsenseSyncJob(); // Start the OPNsense sync job
 });
 
 // Routes
