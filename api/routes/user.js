@@ -9,11 +9,9 @@ router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
 
-    // Get user details from user_details table (including subscription status)
+    // Get user details from user_details table (including plan_tier)
     const userResult = await pool.query(
-      `SELECT username, email, created_at, subscription_status, 
-              subscription_expires_at, payment_provider, payment_customer_id
-       FROM user_details WHERE username = $1`,
+      'SELECT username, email, created_at, plan_tier FROM user_details WHERE username = $1',
       [username]
     );
 
@@ -23,7 +21,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Get user plan limits from radreply
+    // Get user plan limits from radreply (for actual enforcement)
     const limitsResult = await pool.query(
       'SELECT attribute, value FROM radreply WHERE username = $1',
       [username]
@@ -51,15 +49,18 @@ router.get('/profile', authenticateToken, async (req, res) => {
       }
     });
 
-    // Determine plan name based on limits
-    let planName = 'Free';
-    if (limits.monthlyBandwidthGB >= 100) {
-      planName = 'Premium';
-    } else if (limits.monthlyBandwidthGB >= 50) {
-      planName = 'Pro';
-    } else if (limits.monthlyBandwidthGB >= 10) {
-      planName = 'Basic';
-    }
+    // Use plan_tier from database (default to 'free' if null)
+    const planTier = user.plan_tier || 'free';
+    
+    // Map tier to display name (for backward compatibility)
+    const planDisplayNames = {
+      'free': 'Free',
+      'basic': 'Basic',
+      'pro': 'Pro',
+      'premium': 'Premium',
+      'family': 'Family'
+    };
+    const planName = planDisplayNames[planTier] || 'Free';
 
     res.json({
       user: {
@@ -67,11 +68,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
         email: user.email,
         createdAt: user.created_at,
         plan: planName,
-        subscriptionStatus: user.subscription_status || 'trial',
-        subscriptionExpiresAt: user.subscription_expires_at,
-        paymentProvider: user.payment_provider,
-        isActive: user.subscription_status === 'active' && 
-                  (!user.subscription_expires_at || new Date(user.subscription_expires_at) > new Date())
+        planTier: planTier
       },
       limits
     });
