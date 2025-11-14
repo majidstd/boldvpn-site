@@ -250,15 +250,19 @@ class BoldVPNPortal {
                     `).join('')}
                 </div>
             `;
-            // Event listener is now attached in loadDevices()
-            container.addEventListener('click', (e) => {
+            // Remove existing event listener to prevent duplicates
+            container.removeEventListener('click', this._deviceActionListener);
+            
+            // Attach a single event listener to the container for delegation
+            this._deviceActionListener = (e) => {
                 const target = e.target.closest('button');
                 if (!target) return;
                 const { deviceId, deviceName, action } = target.dataset;
                 if (action === 'config') this.downloadConfig(deviceId);
                 if (action === 'qr') this.downloadQRCode(deviceId);
                 if (action === 'remove') this.removeDevice(deviceId, deviceName);
-            });
+            };
+            container.addEventListener('click', this._deviceActionListener);
         } catch (error) {
             container.innerHTML = `<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices: ${error.message}</p>`;
         }
