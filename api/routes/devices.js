@@ -107,7 +107,6 @@ router.get('/', authenticateToken, async (req, res) => {
       FROM user_devices d
       LEFT JOIN vpn_servers s ON d.server_id = s.id
       WHERE d.username = $1
-      AND d.is_active = true
       ORDER BY d.created_at DESC
     `;
 
