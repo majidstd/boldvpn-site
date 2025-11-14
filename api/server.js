@@ -99,9 +99,11 @@ const allowedOrigins = [
   'https://www.boldvpn.net',
   'https://login.boldvpn.net',
   'https://www.boldvpn.net/portal',
+  'https://api.boldvpn.net', // Added for API as an allowed origin
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  process.env.FRONTEND_URL
+  process.env.FRONTEND_URL,
+  '*' // WARNING: Remove in production. Allows all origins for development.
 ].filter(Boolean);
 
 app.use(cors({
