@@ -231,7 +231,13 @@ class BoldVPNPortal {
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('remember-me').checked;
 
-        this.setLoading('login-btn', true);
+        // Find submit button in the form
+        const loginForm = document.getElementById('login-form');
+        const submitButton = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Signing in...';
+        }
         this.clearErrors('login-form');
 
         try {
@@ -1074,17 +1080,19 @@ class BoldVPNPortal {
     // Utility methods
     setLoading(buttonId, loading) {
         const button = document.getElementById(buttonId);
+        if (!button) return; // Button not found, skip
+        
         const textSpan = button.querySelector('.btn-text');
         const spinner = button.querySelector('.btn-spinner');
 
         if (loading) {
             button.disabled = true;
-            textSpan.style.opacity = '0.5';
-            spinner.style.display = 'block';
+            if (textSpan) textSpan.style.opacity = '0.5';
+            if (spinner) spinner.style.display = 'block';
         } else {
             button.disabled = false;
-            textSpan.style.opacity = '1';
-            spinner.style.display = 'none';
+            if (textSpan) textSpan.style.opacity = '1';
+            if (spinner) spinner.style.display = 'none';
         }
     }
 
