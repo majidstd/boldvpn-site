@@ -947,43 +947,34 @@ cmd_sync() {
     echo "${YELLOW}Note: Database is the source of truth.${NC}"
     echo "      OPNsense will be updated to match the database."
     echo ""
-    echo "${BLUE}Step 1: Login (Admin required)${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    # Read OPNsense credentials from .env (like option 4)
+    OPNSENSE_KEY=$(grep -E '^OPNSENSE_API_KEY=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    OPNSENSE_SECRET=$(grep -E '^OPNSENSE_API_SECRET=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    
+    echo "OPNsense Configuration:"
+    echo "  Source: /usr/local/boldvpn-site/api/.env"
     echo ""
     
-    creds=$(get_credentials)
-    if [ $? -ne 0 ] || [ -z "$creds" ]; then
-        echo ""
-        echo "Failed to get credentials"
+    if [ -z "$OPNSENSE_KEY" ] || [ -z "$OPNSENSE_SECRET" ]; then
+        echo "${RED}Error: OPNsense API credentials not found in /usr/local/boldvpn-site/api/.env${NC}"
         echo ""
         printf "Press Enter to continue... "
         read_input > /dev/null 2>&1 || true
         return 1
     fi
     
-    username=$(echo "$creds" | cut -d'|' -f1)
-    password=$(echo "$creds" | cut -d'|' -f2)
-    
-    TOKEN=$(login "$username" "$password")
-    if [ $? -ne 0 ] || [ -z "$TOKEN" ]; then
-        printf "Press Enter to continue... "
-        read_input > /dev/null 2>&1 || true
-        return 1
-    fi
-    
-    echo ""
-    echo "${BLUE}Step 2: Trigger Sync${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
     echo "Running command:"
     echo "curl -X POST \"$API_URL/admin/sync/opnsense\" \\"
-    echo "  -H \"Authorization: Bearer \$TOKEN\" \\"
+    echo "  -H \"X-OPNSENSE-API-KEY: \$OPNSENSE_API_KEY\" \\"
+    echo "  -H \"X-OPNSENSE-API-SECRET: \$OPNSENSE_API_SECRET\" \\"
     echo "  -H \"Content-Type: application/json\""
     echo ""
     
     echo "${BLUE}🔄 Triggering sync...${NC}"
     SYNC_RESPONSE=$(curl -s -X POST "$API_URL/admin/sync/opnsense" \
-        -H "Authorization: Bearer $TOKEN" \
+        -H "X-OPNSENSE-API-KEY: $OPNSENSE_KEY" \
+        -H "X-OPNSENSE-API-SECRET: $OPNSENSE_SECRET" \
         -H "Content-Type: application/json")
     
     echo ""
@@ -1001,8 +992,8 @@ cmd_sync() {
     else
         echo "${RED}❌ Failed to trigger sync${NC}"
         echo ""
-        if echo "$SYNC_RESPONSE" | grep -q "Admin access required"; then
-            echo "${YELLOW}⚠️  Admin access required for manual sync${NC}"
+        if echo "$SYNC_RESPONSE" | grep -q "Invalid OPNsense API credentials"; then
+            echo "${YELLOW}⚠️  Invalid OPNsense API credentials${NC}"
         fi
     fi
     

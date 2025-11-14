@@ -125,7 +125,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-OPNSENSE-API-KEY', 'X-OPNSENSE-API-SECRET'],
 }));
 
 // Body parsing middleware

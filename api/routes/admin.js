@@ -595,28 +595,61 @@ router.post('/servers/:serverId/verify-subnet', authenticateToken, requireAdmin,
 });
 
 /**
- * Manually trigger OPNsense sync (admin only)
+ * Manually trigger OPNsense sync (admin only or API key)
  * POST /api/admin/sync/opnsense
  * Syncs database to OPNsense: adds missing devices, removes orphaned peers
+ * Can authenticate via admin token OR OPNsense API key from headers
  */
-router.post('/sync/opnsense', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    console.log('[SYNC] Manual sync triggered by admin');
+router.post('/sync/opnsense', 
+  // First middleware: check API key OR authenticate token
+  async (req, res, next) => {
+    const providedKey = req.headers['x-opnsense-api-key'];
+    const providedSecret = req.headers['x-opnsense-api-secret'];
     
-    // Run sync in background (don't wait for completion)
-    syncOpnsensePeers().catch(error => {
-      console.error('[SYNC] Manual sync error:', error);
-    });
+    if (providedKey && providedSecret) {
+      // Authenticate using OPNsense API key
+      const envKey = process.env.OPNSENSE_API_KEY;
+      const envSecret = process.env.OPNSENSE_API_SECRET;
+      
+      if (providedKey !== envKey || providedSecret !== envSecret) {
+        return res.status(401).json({ error: 'Invalid OPNsense API credentials' });
+      }
+      
+      // API key auth successful, skip to sync handler
+      console.log('[SYNC] Manual sync triggered via OPNsense API key');
+      return next();
+    }
     
-    res.json({ 
-      message: 'OPNsense sync started. Check server logs for progress.',
-      note: 'Sync runs asynchronously. Database is source of truth - OPNsense will be updated to match.'
-    });
-  } catch (error) {
-    console.error('[!] Manual sync trigger error:', error);
-    res.status(500).json({ error: 'Failed to trigger sync' });
+    // No API key, use token auth - call authenticateToken
+    authenticateToken(req, res, next);
+  },
+  // Second middleware: require admin (only if token auth was used)
+  async (req, res, next) => {
+    // If we got here via API key, skip admin check
+    if (req.headers['x-opnsense-api-key']) {
+      return next();
+    }
+    // Otherwise require admin
+    requireAdmin(req, res, next);
+  },
+  // Sync handler
+  async (req, res) => {
+    try {
+      // Run sync in background (don't wait for completion)
+      syncOpnsensePeers().catch(error => {
+        console.error('[SYNC] Manual sync error:', error);
+      });
+      
+      res.json({ 
+        message: 'OPNsense sync started. Check server logs for progress.',
+        note: 'Sync runs asynchronously. Database is source of truth - OPNsense will be updated to match.'
+      });
+    } catch (error) {
+      console.error('[!] Manual sync trigger error:', error);
+      res.status(500).json({ error: 'Failed to trigger sync' });
+    }
   }
-});
+);
 
 module.exports = router;
 
