@@ -7,7 +7,8 @@ INSERT INTO vpn_servers (
     name, hostname, ip_address, country_code, country, city, flag_emoji,
     wireguard_port, wireguard_public_key, wireguard_endpoint,
     max_connections, status, bandwidth_mbps,
-    wireguard_subnet, ip_range_start, ip_range_end, city_index
+    wireguard_subnet, ip_range_start, ip_range_end, city_index,
+    is_premium
 ) VALUES
 (
     'Vancouver-01',
@@ -26,7 +27,8 @@ INSERT INTO vpn_servers (
     '10.11.0.0/24',
     '10.11.0.2',
     '10.11.0.254',
-    0
+    0,
+    FALSE  -- Basic server (free for all users)
 ),
 (
     'Vancouver-02', 
@@ -45,7 +47,8 @@ INSERT INTO vpn_servers (
     '10.11.1.0/24',
     '10.11.1.2',
     '10.11.1.254',
-    1
+    1,
+    FALSE  -- Basic server (free for all users)
 ),
 (
     'Amsterdam',
@@ -64,10 +67,11 @@ INSERT INTO vpn_servers (
     '10.12.0.0/24',
     '10.12.0.2',
     '10.12.0.254',
-    0
+    0,
+    TRUE   -- Premium server (only for premium/family plan users)
 );
 
 -- Verify the inserts
-SELECT id, name, country, city, flag_emoji, status, wireguard_subnet 
+SELECT id, name, country, city, flag_emoji, status, wireguard_subnet, is_premium
 FROM vpn_servers 
-ORDER BY name;
+ORDER BY is_premium DESC, name;
