@@ -137,26 +137,9 @@ class BoldVPNPortal {
     }
 
     showLogin() {
-        const authContainer = document.getElementById('auth-container');
-        if (!authContainer) return;
-        
-        // Clone and render login template
-        const loginTemplate = document.getElementById('login-template');
-        if (loginTemplate) {
-            authContainer.innerHTML = '';
-            const loginContent = loginTemplate.content.cloneNode(true);
-            authContainer.appendChild(loginContent);
-        }
-        
-        // Hide portal container
-        const portalContainer = document.getElementById('portal-container');
-        if (portalContainer) portalContainer.style.display = 'none';
-        
-        // Re-bind login form events
-        const loginForm = document.getElementById('login-form');
-        if (loginForm) {
-            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
-        }
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('register-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'none';
     }
 
     showRegister() {
@@ -231,13 +214,7 @@ class BoldVPNPortal {
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('remember-me').checked;
 
-        // Find submit button in the form
-        const loginForm = document.getElementById('login-form');
-        const submitButton = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.textContent = 'Signing in...';
-        }
+        this.setLoading('login-btn', true);
         this.clearErrors('login-form');
 
         try {
@@ -283,13 +260,7 @@ class BoldVPNPortal {
             
             this.showError('login-error', errorMessage);
         } finally {
-            // Re-enable submit button
-            const loginForm = document.getElementById('login-form');
-            const submitButton = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Sign In';
-            }
+            this.setLoading('login-btn', false);
         }
     }
 
@@ -1086,19 +1057,17 @@ class BoldVPNPortal {
     // Utility methods
     setLoading(buttonId, loading) {
         const button = document.getElementById(buttonId);
-        if (!button) return; // Button not found, skip
-        
         const textSpan = button.querySelector('.btn-text');
         const spinner = button.querySelector('.btn-spinner');
 
         if (loading) {
             button.disabled = true;
-            if (textSpan) textSpan.style.opacity = '0.5';
-            if (spinner) spinner.style.display = 'block';
+            textSpan.style.opacity = '0.5';
+            spinner.style.display = 'block';
         } else {
             button.disabled = false;
-            if (textSpan) textSpan.style.opacity = '1';
-            if (spinner) spinner.style.display = 'none';
+            textSpan.style.opacity = '1';
+            spinner.style.display = 'none';
         }
     }
 
