@@ -8,6 +8,7 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { pool } = require('../utils/database');
 const opnsense = require('../utils/opnsense');
+const { syncOpnsensePeers } = require('../utils/syncOpnsense');
 
 // Middleware to check if user is admin
 const requireAdmin = async (req, res, next) => {
@@ -75,9 +76,9 @@ router.get('/overview', authenticateToken, requireAdmin, async (req, res) => {
     `);
     const servers = serversQuery.rows[0];
 
-    // Total devices
+    // Total devices (hard delete - all devices in DB are active)
     const devicesQuery = await pool.query(`
-      SELECT COUNT(*) as total FROM user_devices WHERE is_active = true
+      SELECT COUNT(*) as total FROM user_devices
     `);
     const totalDevices = parseInt(devicesQuery.rows[0].total);
 
@@ -130,7 +131,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         MAX(r.acctstarttime) as last_connection,
         SUM(r.acctinputoctets + r.acctoutputoctets) as total_bytes
       FROM user_details u
-      LEFT JOIN user_devices d ON u.username = d.username AND d.is_active = true
+      LEFT JOIN user_devices d ON u.username = d.username
       LEFT JOIN radacct r ON u.username = r.username
       WHERE 1=1
     `;
@@ -188,9 +189,9 @@ router.get('/users/:userId', authenticateToken, requireAdmin, async (req, res) =
 
     const user = userQuery.rows[0];
 
-    // User devices
+    // User devices (hard delete - all devices in DB are active)
     const devicesQuery = await pool.query(
-      'SELECT * FROM user_devices WHERE username = $1 AND is_active = true',
+      'SELECT * FROM user_devices WHERE username = $1',
       [user.username]
     );
 
@@ -590,6 +591,30 @@ router.post('/servers/:serverId/verify-subnet', authenticateToken, requireAdmin,
   } catch (error) {
     console.error('[!] Verify subnet error:', error);
     res.status(500).json({ error: 'Failed to verify subnet' });
+  }
+});
+
+/**
+ * Manually trigger OPNsense sync (admin only)
+ * POST /api/admin/sync/opnsense
+ * Syncs database to OPNsense: adds missing devices, removes orphaned peers
+ */
+router.post('/sync/opnsense', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('[SYNC] Manual sync triggered by admin');
+    
+    // Run sync in background (don't wait for completion)
+    syncOpnsensePeers().catch(error => {
+      console.error('[SYNC] Manual sync error:', error);
+    });
+    
+    res.json({ 
+      message: 'OPNsense sync started. Check server logs for progress.',
+      note: 'Sync runs asynchronously. Database is source of truth - OPNsense will be updated to match.'
+    });
+  } catch (error) {
+    console.error('[!] Manual sync trigger error:', error);
+    res.status(500).json({ error: 'Failed to trigger sync' });
   }
 });
 

@@ -154,13 +154,11 @@ PersistentKeepalive = ${device.persistent_keepalive || 25}
 
 /**
  * Get all devices for authenticated user
- * Query params:
- *   - includeInactive: if 'true', include inactive devices
+ * Note: Hard delete is used - devices are permanently removed from database
  */
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { username } = req.user;
-    const includeInactive = req.query.includeInactive === 'true';
 
     const query = `
       SELECT 
@@ -177,43 +175,9 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const result = await pool.query(query, [username]);
 
-    // *** SYNC CHECK: Verify each device exists in OPNsense ***
-    const validDevices = [];
-    for (const device of result.rows) {
-      const peerName = `${username}-${device.device_name}`;
-      
-      try {
-        // Check if peer exists in OPNsense
-        const opnsensePeer = await opnsense.findPeerByName(peerName);
-        
-        if (opnsensePeer) {
-          // Peer exists - sync peer ID if different
-          if (device.opnsense_peer_id !== opnsensePeer.uuid) {
-            await pool.query(
-              'UPDATE user_devices SET opnsense_peer_id = $1 WHERE id = $2',
-              [opnsensePeer.uuid, device.id]
-            );
-            console.log(`[OK] Synced peer ID for device ${device.id}`);
-          }
-          // Add to valid devices
-          validDevices.push(device);
-        } else {
-          // Peer doesn't exist in OPNsense - hard delete from database
-          console.log(`[!] Device ${device.id} (${peerName}) not found in OPNsense, deleting from database. IP ${device.assigned_ip} freed.`);
-          await pool.query(
-            'DELETE FROM user_devices WHERE id = $1',
-            [device.id]
-          );
-        }
-      } catch (syncError) {
-        // If sync check fails, still include device but log warning
-        console.error(`[!] Sync check failed for device ${device.id}:`, syncError.message);
-        // Include device anyway (OPNsense might be temporarily unavailable)
-        validDevices.push(device);
-      }
-    }
-
-    const devices = validDevices.map(device => ({
+    // Database is source of truth - return all devices from database
+    // Daily sync script ensures OPNsense matches database
+    const devices = result.rows.map(device => ({
       id: device.id,
       deviceName: device.device_name,
       server: device.server_name ? {
@@ -288,64 +252,7 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    // *** CRITICAL: Sync with OPNsense before creating device ***
-    // Check if peer with this specific name exists in OPNsense
-    const peerName = `${username}-${deviceName}`;
-    const opnsensePeer = await opnsense.findPeerByName(peerName);
-    
-    if (opnsensePeer) {
-      // Peer exists in OPNsense - check if we have it in database
-      console.log(`[i] Found peer in OPNsense: ${peerName} (UUID: ${opnsensePeer.uuid})`);
-      
-      const dbDevice = await pool.query(
-        'SELECT id, opnsense_peer_id, is_active FROM user_devices WHERE username = $1 AND device_name = $2',
-        [username, deviceName]
-      );
-      
-      if (dbDevice.rows.length > 0) {
-        const dev = dbDevice.rows[0];
-        // Sync peer ID if different
-        if (dev.opnsense_peer_id !== opnsensePeer.uuid) {
-          await pool.query(
-            'UPDATE user_devices SET is_active = true, opnsense_peer_id = $1 WHERE id = $2',
-            [opnsensePeer.uuid, dev.id]
-          );
-          console.log(`[OK] Synced database: device ${dev.id} now has peer ${opnsensePeer.uuid}`);
-        } else if (!dev.is_active) {
-          // Reactivate if it was marked inactive
-          await pool.query(
-            'UPDATE user_devices SET is_active = true WHERE id = $1',
-            [dev.id]
-          );
-          console.log(`[OK] Reactivated device ${dev.id} (peer exists in OPNsense)`);
-        }
-        return res.status(409).json({ 
-          error: 'Device name already exists',
-          deviceId: dev.id,
-          message: 'This device already exists in OPNsense. Please use a different name or remove the existing device first.'
-        });
-      }
-    } else {
-      // Peer doesn't exist in OPNsense - check if we have this device in DB
-      // If device exists in DB but not in OPNsense, mark as inactive (was deleted from OPNsense)
-      const dbDevice = await pool.query(
-        'SELECT id, opnsense_peer_id FROM user_devices WHERE username = $1 AND device_name = $2',
-        [username, deviceName]
-      );
-      
-      if (dbDevice.rows.length > 0) {
-        const dev = dbDevice.rows[0];
-        
-        // Hard delete from database
-        await pool.query(
-          'DELETE FROM user_devices WHERE id = $1',
-          [dev.id]
-        );
-        console.log(`[OK] Deleted device ${dev.id} from database (peer was deleted from OPNsense)`);
-      }
-    }
-    
-    // Check if device name already exists for this user
+    // Check if device name already exists for this user (database is source of truth)
     const existingDevice = await pool.query(
       'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2',
       [username, deviceName]
@@ -363,32 +270,8 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const deviceLimit = limitResult.rows.length > 0 ? parseInt(limitResult.rows[0].value) : 2;
 
-    // *** SYNC CHECK before counting devices ***
-    // Check all devices exist in OPNsense and delete if not found
-    const activeDevices = await pool.query(
-      'SELECT id, device_name FROM user_devices WHERE username = $1',
-      [username]
-    );
-
-    for (const device of activeDevices.rows) {
-      const peerName = `${username}-${device.device_name}`;
-      try {
-        const opnsensePeer = await opnsense.findPeerByName(peerName);
-        if (!opnsensePeer) {
-          // Peer doesn't exist in OPNsense - delete device from database
-          console.log(`[!] Device ${device.id} (${peerName}) not found in OPNsense, deleting from database before limit check`);
-          await pool.query(
-            'DELETE FROM user_devices WHERE id = $1',
-            [device.id]
-          );
-        }
-      } catch (syncError) {
-        console.error(`[!] Sync check failed for device ${device.id}:`, syncError.message);
-        // Don't delete if sync check fails (OPNsense might be temporarily unavailable)
-      }
-    }
-
-    // Now count devices AFTER sync
+    // Count devices from database (source of truth)
+    // Daily sync script ensures OPNsense matches database
     const deviceCount = await pool.query(
       'SELECT COUNT(*) FROM user_devices WHERE username = $1',
       [username]
@@ -704,9 +587,9 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
     const { username } = req.user;
     const { deviceId } = req.params;
 
-    // Get device info first (including is_active status)
+    // Get device info first
     const deviceQuery = await pool.query(
-      'SELECT opnsense_peer_id, device_name, is_active FROM user_devices WHERE id = $1 AND username = $2',
+      'SELECT opnsense_peer_id, device_name FROM user_devices WHERE id = $1 AND username = $2',
       [deviceId, username]
     );
 
@@ -717,7 +600,6 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
     const device = deviceQuery.rows[0];
     const opnsensePeerId = device.opnsense_peer_id;
     const deviceName = device.device_name;
-    const isActive = device.is_active;
     const peerName = `${username}-${deviceName}`;
 
     console.log(`[DEBUG] Device removal request:`, {
@@ -725,7 +607,6 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
       deviceName,
       peerName,
       opnsensePeerId: opnsensePeerId || 'NULL',
-      isActive,
       hasPeerId: !!opnsensePeerId
     });
 

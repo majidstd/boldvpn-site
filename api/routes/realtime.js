@@ -179,10 +179,10 @@ router.get('/health', authenticateToken, async (req, res) => {
 
     const isConnected = parseInt(activeQuery.rows[0].count) > 0;
 
-    // Check if user has devices configured
+    // Check if user has devices configured (hard delete - all devices in DB are active)
     const devicesQuery = await pool.query(`
       SELECT COUNT(*) as count FROM user_devices
-      WHERE username = $1 AND is_active = true
+      WHERE username = $1
     `, [username]);
 
     const hasDevices = parseInt(devicesQuery.rows[0].count) > 0;

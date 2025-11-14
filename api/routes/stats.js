@@ -79,8 +79,7 @@ router.get('/overview', authenticateToken, async (req, res) => {
     const devicesQuery = `
       SELECT COUNT(*) as device_count
       FROM user_devices 
-      WHERE username = $1 
-      AND is_active = true
+      WHERE username = $1
     `;
 
     const devicesResult = await pool.query(devicesQuery, [username]);

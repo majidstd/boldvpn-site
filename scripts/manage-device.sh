@@ -36,9 +36,10 @@ print_menu() {
     echo "  6) Remove a device"
     echo "  7) Diagnose device issues"
     echo "  8) Show guide / Help"
-    echo "  9) Exit"
+    echo "  9) Sync DB to OPNsense (Manual)"
+    echo " 10) Exit"
     echo ""
-    printf "${YELLOW}Enter your choice [1-9]: ${NC}"
+    printf "${YELLOW}Enter your choice [1-10]: ${NC}"
 }
 
 read_input() {
@@ -933,6 +934,63 @@ cmd_diagnose() {
     read_input > /dev/null 2>&1 || true
 }
 
+cmd_sync() {
+    print_header
+    echo "${BLUE}Sync DB to OPNsense${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "This will synchronize the database to OPNsense:"
+    echo "  • Add missing devices from DB to OPNsense"
+    echo "  • Remove orphaned peers from OPNsense (not in DB)"
+    echo "  • Sync peer IDs in database"
+    echo ""
+    echo "${YELLOW}Note: Database is the source of truth.${NC}"
+    echo "      OPNsense will be updated to match the database."
+    echo ""
+    echo "${BLUE}Using OPNsense API key from .env file${NC}"
+    echo ""
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
+    
+    echo ""
+    echo "${BLUE}🔄 Running sync...${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    
+    # Get script directory and project root
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+    ENV_FILE="$PROJECT_ROOT/api/.env"
+    
+    if [ ! -f "$ENV_FILE" ]; then
+        echo "${RED}❌ .env file not found: $ENV_FILE${NC}"
+        echo ""
+        printf "Press Enter to continue... "
+        read_input > /dev/null 2>&1 || true
+        return 1
+    fi
+    
+    echo "Running command:"
+    echo "cd $PROJECT_ROOT/api && node -e \"require('dotenv').config(); require('./utils/syncOpnsense').syncOpnsensePeers().then(() => process.exit(0)).catch(e => { console.error('Sync failed:', e.message); process.exit(1); });\""
+    echo ""
+    
+    # Run sync directly using Node.js inline
+    cd "$PROJECT_ROOT/api" || exit 1
+    node -e "require('dotenv').config(); require('./utils/syncOpnsense').syncOpnsensePeers().then(() => process.exit(0)).catch(e => { console.error('Sync failed:', e.message); process.exit(1); });"
+    SYNC_EXIT_CODE=$?
+    
+    echo ""
+    if [ $SYNC_EXIT_CODE -eq 0 ]; then
+        echo "${GREEN}✅ Sync completed successfully!${NC}"
+    else
+        echo "${RED}❌ Sync failed (exit code: $SYNC_EXIT_CODE)${NC}"
+    fi
+    
+    echo ""
+    printf "Press Enter to continue... "
+    read_input > /dev/null 2>&1 || true
+}
+
 # Main loop
 main() {
     while true; do
@@ -972,6 +1030,9 @@ main() {
                 cmd_guide
                 ;;
             9)
+                cmd_sync
+                ;;
+            10)
                 echo ""
                 echo "Goodbye!"
                 echo ""
@@ -979,7 +1040,7 @@ main() {
                 ;;
             *)
                 echo ""
-                echo "Invalid choice. Please enter 1-9."
+                echo "Invalid choice. Please enter 1-10."
                 echo ""
                 printf "Press Enter to continue... "
                 read_input > /dev/null 2>&1 || true
