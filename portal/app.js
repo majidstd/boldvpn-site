@@ -137,9 +137,26 @@ class BoldVPNPortal {
     }
 
     showLogin() {
-        document.getElementById('login-section').style.display = 'block';
-        document.getElementById('register-section').style.display = 'none';
-        document.getElementById('dashboard-section').style.display = 'none';
+        const authContainer = document.getElementById('auth-container');
+        if (!authContainer) return;
+        
+        // Clone and render login template
+        const loginTemplate = document.getElementById('login-template');
+        if (loginTemplate) {
+            authContainer.innerHTML = '';
+            const loginContent = loginTemplate.content.cloneNode(true);
+            authContainer.appendChild(loginContent);
+        }
+        
+        // Hide portal container
+        const portalContainer = document.getElementById('portal-container');
+        if (portalContainer) portalContainer.style.display = 'none';
+        
+        // Re-bind login form events
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        }
     }
 
     showRegister() {
