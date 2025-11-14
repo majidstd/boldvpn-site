@@ -283,7 +283,13 @@ class BoldVPNPortal {
             
             this.showError('login-error', errorMessage);
         } finally {
-            this.setLoading('login-btn', false);
+            // Re-enable submit button
+            const loginForm = document.getElementById('login-form');
+            const submitButton = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Sign In';
+            }
         }
     }
 
