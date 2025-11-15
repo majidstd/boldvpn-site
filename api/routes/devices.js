@@ -411,16 +411,21 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
     }
 
     const opnsensePeerId = deviceQuery.rows[0].opnsense_peer_id;
+    let opnsenseRemoved = false; // Initialize to false
 
     // Remove from OPNsense first
     if (opnsensePeerId) {
       try {
         await opnsense.removeWireGuardPeer(opnsensePeerId);
         console.log(`[OK] Removed peer ${opnsensePeerId} from OPNsense`);
+        opnsenseRemoved = true; // Set to true on success
       } catch (opnsenseError) {
         console.error('[!] Failed to remove from OPNsense:', opnsenseError.message);
-        // Continue anyway - mark as inactive in DB
+        opnsenseRemoved = false; // Keep as false on failure
+        // Continue anyway - hard delete from DB
       }
+    } else {
+      opnsenseRemoved = true; // No peer ID means nothing to remove, so consider it "removed" from OPNsense perspective
     }
 
     // Hard delete (remove row permanently)
@@ -432,7 +437,15 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
 
     const result = await pool.query(query, [deviceId, username]);
 
-    res.json({ message: 'Device removed successfully' });
+    // Verify deletion succeeded
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Device not found or already deleted' });
+    }
+
+    res.json({ 
+      message: 'Device removed successfully',
+      opnsenseRemoved: opnsenseRemoved
+    });
 
   } catch (error) {
     console.error('[!] Delete device error:', error);
