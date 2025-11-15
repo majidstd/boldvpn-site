@@ -158,6 +158,10 @@ class BoldVPNPortal {
             // Setup device action event listener on the container
             const devicesContainer = document.getElementById('devices-container');
             if (devicesContainer) {
+                // Remove old listener if it exists
+                if (this._deviceActionListener) {
+                    devicesContainer.removeEventListener('click', this._deviceActionListener);
+                }
                 this._deviceActionListener = (e) => {
                     const target = e.target.closest('button[data-action]');
                     if (!target) return;
@@ -478,15 +482,11 @@ class BoldVPNPortal {
     }
 
     async removeDevice(deviceId, deviceName) {
-        console.log('removeDevice called with:', { deviceId, deviceName });
         if (!confirm(`Remove device "${deviceName}"? This action cannot be undone.`)) {
-            console.log('User cancelled remove');
             return;
         }
-        console.log('User confirmed, making API call');
         try {
             const data = await api.devices.remove(deviceId);
-            console.log('API response:', data);
             if (data.opnsenseRemoved === false) {
                 this.showAlert(data.warning || data.message || 'Peer may still exist in OPNsense.', 'warning');
             } else {
