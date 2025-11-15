@@ -41,14 +41,23 @@ async function request(endpoint, options = {}) {
     
     // Handle network errors specifically
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-      if (error.message.includes('ERR_ADDRESS_UNREACHABLE') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
+      // Check error message or stack for specific error codes
+      const errorString = error.message + (error.stack || '');
+      
+      if (errorString.includes('ERR_ADDRESS_UNREACHABLE') || 
+          errorString.includes('ERR_NAME_NOT_RESOLVED') ||
+          errorString.includes('net::ERR_ADDRESS_UNREACHABLE') ||
+          errorString.includes('net::ERR_NAME_NOT_RESOLVED')) {
         throw new Error('Cannot connect to server. Please check your internet connection and try again. If the problem persists, the API server may be temporarily unavailable.');
-      } else if (error.message.includes('ERR_CONNECTION_REFUSED')) {
+      } else if (errorString.includes('ERR_CONNECTION_REFUSED') || 
+                 errorString.includes('net::ERR_CONNECTION_REFUSED')) {
         throw new Error('Connection refused. The API server may be down. Please try again later.');
-      } else if (error.message.includes('ERR_NETWORK')) {
+      } else if (errorString.includes('ERR_NETWORK') || 
+                 errorString.includes('net::ERR_NETWORK')) {
         throw new Error('Network error. Please check your internet connection and try again.');
       } else {
-        throw new Error('Cannot connect to server. Please check your internet connection and try again.');
+        // Generic network error for any "Failed to fetch" that doesn't match above
+        throw new Error('Cannot connect to server. Please check your internet connection and try again. If the problem persists, the API server may be temporarily unavailable.');
       }
     }
     
