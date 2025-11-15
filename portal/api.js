@@ -4,9 +4,19 @@ const API_BASE_URL = (typeof Config !== 'undefined' && Config.API_URL)
   ? Config.API_URL
   : 'http://localhost:3000/api';
 
+// Log API URL on load for debugging (only in development)
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  console.log('[API] Using API URL:', API_BASE_URL);
+}
+
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = localStorage.getItem('boldvpn_token') || sessionStorage.getItem('boldvpn_token');
+  
+  // Debug logging (only in development)
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log(`[API] ${options.method || 'GET'} ${url}`);
+  }
 
   const headers = {
     'Content-Type': 'application/json',
@@ -37,27 +47,43 @@ async function request(endpoint, options = {}) {
     }
     return await response.json();
   } catch (error) {
+    // Enhanced error logging
     console.error(`API request to ${endpoint} failed:`, error);
+    console.error(`[API] Request URL: ${url}`);
+    console.error(`[API] Error details:`, {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.substring(0, 500) // First 500 chars of stack
+    });
     
     // Handle network errors specifically
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       // Check error message or stack for specific error codes
-      const errorString = error.message + (error.stack || '');
+      const errorString = (error.message || '') + (error.stack || '');
       
+      // More comprehensive error detection
       if (errorString.includes('ERR_ADDRESS_UNREACHABLE') || 
           errorString.includes('ERR_NAME_NOT_RESOLVED') ||
           errorString.includes('net::ERR_ADDRESS_UNREACHABLE') ||
           errorString.includes('net::ERR_NAME_NOT_RESOLVED')) {
-        throw new Error('Cannot connect to server. Please check your internet connection and try again. If the problem persists, the API server may be temporarily unavailable.');
+        const friendlyError = new Error(`Cannot connect to API server at ${API_BASE_URL}. Please check your internet connection and verify the API server is accessible. If the problem persists, the server may be temporarily unavailable.`);
+        friendlyError.originalError = error;
+        throw friendlyError;
       } else if (errorString.includes('ERR_CONNECTION_REFUSED') || 
                  errorString.includes('net::ERR_CONNECTION_REFUSED')) {
-        throw new Error('Connection refused. The API server may be down. Please try again later.');
+        const friendlyError = new Error(`Connection refused by ${API_BASE_URL}. The API server may be down. Please try again later.`);
+        friendlyError.originalError = error;
+        throw friendlyError;
       } else if (errorString.includes('ERR_NETWORK') || 
                  errorString.includes('net::ERR_NETWORK')) {
-        throw new Error('Network error. Please check your internet connection and try again.');
+        const friendlyError = new Error('Network error. Please check your internet connection and try again.');
+        friendlyError.originalError = error;
+        throw friendlyError;
       } else {
         // Generic network error for any "Failed to fetch" that doesn't match above
-        throw new Error('Cannot connect to server. Please check your internet connection and try again. If the problem persists, the API server may be temporarily unavailable.');
+        const friendlyError = new Error(`Cannot connect to server at ${API_BASE_URL}. Please check your internet connection and verify the API server is accessible. If the problem persists, the server may be temporarily unavailable.`);
+        friendlyError.originalError = error;
+        throw friendlyError;
       }
     }
     
