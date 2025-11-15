@@ -248,13 +248,12 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // *** CRITICAL: Push peer to OPNsense firewall ***
     try {
-      const peerResult = await opnsense.addWireGuardPeer(
-        username,
-        keys.publicKey,
-        assignedIP,
-        keys.presharedKey
-      );
-      
+          const peerResult = await opnsense.addWireGuardPeer(
+            `${username}-${deviceName}`, // Combine username and deviceName for OPNsense peer name
+            keys.publicKey,
+            assignedIP,
+            keys.presharedKey
+          );      
       // Store OPNsense peer ID for later removal
       if (peerResult.success) {
         await pool.query(
