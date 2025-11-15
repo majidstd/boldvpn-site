@@ -21,16 +21,16 @@ const OPNSENSE_CONFIG = {
 function makeRequest(method, path, data = null) {
   return new Promise((resolve, reject) => {
     const auth = Buffer.from(`${OPNSENSE_CONFIG.apiKey}:${OPNSENSE_CONFIG.apiSecret}`).toString('base64');
-    
+
     const headers = {
       'Authorization': `Basic ${auth}`
     };
-    
+
     // Only add Content-Type for requests with body
     if (data) {
       headers['Content-Type'] = 'application/json';
     }
-    
+
     const options = {
       hostname: OPNSENSE_CONFIG.host,
       port: OPNSENSE_CONFIG.port,
@@ -77,23 +77,23 @@ function makeRequest(method, path, data = null) {
 async function getWireGuardServerUUID() {
   try {
     const response = await makeRequest('GET', '/wireguard/server/get');
-    
+
     console.log('[DEBUG] Server response:', JSON.stringify(response).substring(0, 200));
-    
+
     // Find first enabled server
     if (response && response.server && response.server.servers && response.server.servers.server) {
       const servers = response.server.servers.server;
       const serverUUIDs = Object.keys(servers);
-      
+
       if (serverUUIDs.length === 0) {
         throw new Error('No WireGuard servers configured in OPNsense');
       }
-      
+
       const serverUUID = serverUUIDs[0];
       console.log('[OK] Found WireGuard server UUID:', serverUUID);
       return serverUUID;
     }
-    
+
     console.error('[!] Unexpected server response structure:', response);
     throw new Error('No WireGuard server found in OPNsense');
   } catch (error) {
@@ -110,32 +110,32 @@ async function getWireGuardServerSubnet() {
   try {
     console.log('[DEBUG] Getting WireGuard server subnet from OPNsense...');
     const response = await makeRequest('GET', '/wireguard/server/get');
-    
+
     console.log('[DEBUG] OPNsense response structure:', JSON.stringify(response).substring(0, 500));
-    
+
     if (response && response.server && response.server.servers && response.server.servers.server) {
       const servers = response.server.servers.server;
       const serverUUIDs = Object.keys(servers);
-      
+
       console.log('[DEBUG] Found server UUIDs:', serverUUIDs);
-      
+
       if (serverUUIDs.length === 0) {
         throw new Error('No WireGuard servers configured in OPNsense');
       }
-      
+
       // Get first enabled server
       const serverUUID = serverUUIDs[0];
       const serverConfig = servers[serverUUID];
-      
+
       console.log('[DEBUG] Server UUID:', serverUUID);
       console.log('[DEBUG] Server config keys:', Object.keys(serverConfig));
       console.log('[DEBUG] Server config tunneladdress:', JSON.stringify(serverConfig.tunneladdress));
       console.log('[DEBUG] Tunneladdress type:', typeof serverConfig.tunneladdress);
       console.log('[DEBUG] Tunneladdress value:', serverConfig.tunneladdress);
-      
+
       // Extract tunneladdress - handle different formats
       let tunnelAddress = null;
-      
+
       if (serverConfig.tunneladdress) {
         // Handle object format: {"value": "10.11.0.1/24", "selected": 1}
         if (typeof serverConfig.tunneladdress === 'object') {
@@ -159,12 +159,12 @@ async function getWireGuardServerSubnet() {
           tunnelAddress = serverConfig.tunneladdress;
         }
       }
-      
+
       if (!tunnelAddress) {
         console.error('[!] Tunnel address structure:', JSON.stringify(serverConfig.tunneladdress));
         throw new Error('WireGuard server tunneladdress not found or invalid format in OPNsense');
       }
-      
+
       // Convert to subnet format (e.g., "10.11.0.1/24" -> "10.11.0.0/24")
       const parts = tunnelAddress.split('/');
       if (parts.length === 2) {
@@ -173,10 +173,10 @@ async function getWireGuardServerSubnet() {
         console.log(`[OK] OPNsense WireGuard subnet: ${subnet} (from tunneladdress: ${tunnelAddress})`);
         return subnet;
       }
-      
+
       throw new Error(`Invalid tunneladdress format: ${tunnelAddress}`);
     }
-    
+
     throw new Error('No WireGuard server found in OPNsense');
   } catch (error) {
     console.error('[!] Failed to get WireGuard subnet:', error.message);
@@ -191,14 +191,14 @@ async function getWireGuardServerSubnet() {
 async function verifySubnetMatch(dbSubnet) {
   try {
     const opnsenseSubnet = await getWireGuardServerSubnet();
-    
+
     if (opnsenseSubnet !== dbSubnet) {
       throw new Error(
         `Subnet mismatch! Database: ${dbSubnet}, OPNsense: ${opnsenseSubnet}. ` +
         `Please update OPNsense WireGuard interface subnet to match database configuration.`
       );
     }
-    
+
     console.log(`[OK] Subnet verification passed: ${dbSubnet}`);
     return true;
   } catch (error) {
@@ -218,7 +218,7 @@ async function addWireGuardPeer(peerName, publicKey, assignedIP, presharedKey = 
   try {
     // Get server UUID dynamically
     const serverUUID = await getWireGuardServerUUID();
-    
+
     // OPNsense WireGuard uses "client" not "peer"
     const clientData = {
       client: {
@@ -237,10 +237,10 @@ async function addWireGuardPeer(peerName, publicKey, assignedIP, presharedKey = 
 
     if (response.result === 'saved' || response.uuid) {
       console.log(`[OK] WireGuard client added: ${peerName}, UUID: ${response.uuid}`);
-      
+
       // Apply configuration changes
       await makeRequest('POST', '/wireguard/service/reconfigure');
-      
+
       return {
         success: true,
         peerId: response.uuid
@@ -263,23 +263,23 @@ async function addWireGuardPeer(peerName, publicKey, assignedIP, presharedKey = 
 async function removeWireGuardPeer(peerId) {
   try {
     console.log(`[DEBUG] removeWireGuardPeer called with peerId: ${peerId}`);
-    
+
     // Use the confirmed working endpoint: /wireguard/client/delClient/{uuid}
     // Verified working on OPNsense - matches addClient pattern
     const endpoint = `/wireguard/client/delClient/${peerId}`;
-    
+
     try {
       console.log(`[DEBUG] Calling OPNsense API: POST ${endpoint}`);
       const response = await makeRequest('POST', endpoint);
       console.log(`[DEBUG] OPNsense API response:`, JSON.stringify(response, null, 2));
-      
+
       // Check if deletion succeeded
       if (response.result === 'deleted' || response.result === 'saved') {
         console.log(`[OK] WireGuard peer ${peerId} removed from OPNsense`);
-        
+
         // Restart WireGuard service to apply changes
         await restartWireGuard();
-        
+
         return { success: true };
       } else if (response.errorMessage) {
         // Check if it's an endpoint error (shouldn't happen, but handle gracefully)
@@ -304,7 +304,7 @@ async function removeWireGuardPeer(peerId) {
           const fallbackEndpoint = `/wireguard/client/deleteClient/${peerId}`;
           console.log(`[DEBUG] Trying fallback endpoint: POST ${fallbackEndpoint}`);
           const fallbackResponse = await makeRequest('POST', fallbackEndpoint);
-          
+
           if (fallbackResponse.result === 'deleted' || fallbackResponse.result === 'saved') {
             console.log(`[OK] WireGuard peer ${peerId} removed using fallback endpoint`);
             await restartWireGuard();
@@ -314,7 +314,7 @@ async function removeWireGuardPeer(peerId) {
           console.error(`[!] Fallback endpoint also failed:`, fallbackError.message);
         }
       }
-      
+
       // Re-throw the original error
       throw error;
     }
@@ -332,7 +332,7 @@ async function removeWireGuardPeer(peerId) {
 async function getWireGuardPeers() {
   try {
     const response = await makeRequest('GET', '/wireguard/client/get');
-    
+
     // OPNsense returns peers in different formats, normalize it
     if (response.client && response.client.clients && response.client.clients.client) {
       const clients = response.client.clients.client;
@@ -345,7 +345,7 @@ async function getWireGuardPeers() {
       }
       return Array.isArray(clients) ? clients : [];
     }
-    
+
     return response.peers || [];
   } catch (error) {
     console.error('[!] OPNsense get peers error:', error.message);
@@ -360,7 +360,7 @@ async function getWireGuardPeers() {
 async function findPeerByName(peerName) {
   try {
     const peers = await getWireGuardPeers();
-    
+
     // Search for peer with matching name
     for (const peer of peers) {
       // Handle different response formats
@@ -375,7 +375,7 @@ async function findPeerByName(peerName) {
         };
       }
     }
-    
+
     return null;
   } catch (error) {
     console.error('[!] Find peer by name error:', error.message);
@@ -391,7 +391,7 @@ async function findPeersByUsername(username) {
   try {
     const peers = await getWireGuardPeers();
     const matchingPeers = [];
-    
+
     // Search for peers with name starting with username-
     for (const peer of peers) {
       const pName = peer.name || peer.client?.name || peer.client_name;
@@ -405,7 +405,7 @@ async function findPeersByUsername(username) {
         });
       }
     }
-    
+
     return matchingPeers;
   } catch (error) {
     console.error('[!] Find peers by username error:', error.message);
@@ -472,11 +472,11 @@ async function updateWireGuardPeer(peerId, enabled) {
 async function getActivePeers() {
   try {
     const response = await makeRequest('GET', '/wireguard/service/showconf');
-    
+
     // Parse active connections
     const activePeers = [];
     const peers = response.peers || [];
-    
+
     peers.forEach(peer => {
       if (peer.latest_handshake && peer.latest_handshake > 0) {
         activePeers.push({
