@@ -158,10 +158,7 @@ cmd_create() {
         break
     done
     
-    if [ -z "$device_name" ]; then
-        device_name="Device-$(date +%s)"
-        echo "${BLUE}Using default name: $device_name${NC}"
-    fi
+
     
     echo ""
     echo "${BLUE}Available Servers:${NC}"
@@ -171,7 +168,7 @@ cmd_create() {
         country=$(echo "$country" | tr -d ' ')
         city=$(echo "$city" | tr -d ' ')
         if [ -n "$id" ]; then
-            echo "  $id) $name - $country, $city"
+            echo "  ${id}) ${name} - ${country}, ${city}"
         fi
     done
     echo ""
@@ -417,8 +414,8 @@ cmd_list_opnsense() {
     OPNSENSE_PORT=$(grep -E '^OPNSENSE_PORT=' /usr/local/boldvpn-site/api/.env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || echo "8443")
     
     echo "OPNsense Configuration:"
-    echo "  Host: $OPNSENSE_HOST"
-    echo "  Port: $OPNSENSE_PORT"
+    echo "  Host: ${OPNSENSE_HOST}"
+    echo "  Port: ${OPNSENSE_PORT}"
     echo "  Source: /usr/local/boldvpn-site/api/.env"
     echo ""
     echo "Running command:"
