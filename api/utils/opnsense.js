@@ -37,7 +37,8 @@ function makeRequest(method, path, data = null) {
       path: `/api${path}`,
       method: method,
       headers: headers,
-      rejectUnauthorized: false // For self-signed certs
+      // rejectUnauthorized: false // WARNING: Disabling SSL verification is a security risk.
+                                // For self-signed certs, consider adding the CA to Node.js trusted certificates.
     };
 
     const req = https.request(options, (res) => {
@@ -48,7 +49,8 @@ function makeRequest(method, path, data = null) {
           const jsonData = JSON.parse(body);
           resolve(jsonData);
         } catch (error) {
-          resolve(body);
+          // If JSON parsing fails, reject the promise to indicate an error
+          reject(new Error(`Failed to parse OPNsense API response: ${error.message}. Raw body: ${body}`));
         }
       });
     });
