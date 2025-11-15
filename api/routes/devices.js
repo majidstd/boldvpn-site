@@ -131,7 +131,10 @@ router.get('/', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('[!] Get devices error:', error);
-    res.status(500).json({ error: 'Failed to fetch devices' });
+    res.status(500).json({ 
+      error: error.message || 'Failed to fetch devices',
+      details: process.env.NODE_ENV === 'production' ? undefined : error.stack
+    });
   }
 });
 
@@ -295,7 +298,12 @@ router.post('/', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('[!] Add device error:', error);
-    res.status(500).json({ error: 'Failed to add device' });
+    // Return detailed error message for debugging
+    const errorMessage = error.message || 'Failed to add device';
+    res.status(500).json({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'production' ? undefined : error.stack
+    });
   }
 });
 
@@ -449,7 +457,10 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('[!] Delete device error:', error);
-    res.status(500).json({ error: 'Failed to remove device' });
+    res.status(500).json({ 
+      error: error.message || 'Failed to remove device',
+      details: process.env.NODE_ENV === 'production' ? undefined : error.stack
+    });
   }
 });
 
