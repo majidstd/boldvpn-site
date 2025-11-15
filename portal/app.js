@@ -12,6 +12,11 @@ class BoldVPNPortal {
         this._lastActionTime = {};
         this._actionDebounceMs = 500; // 500ms debounce
 
+        this.ACTION_DEBOUNCE_MS = 500;
+        this.MAX_DEVICE_NAME_LENGTH = 50;
+        this.MIN_DEVICE_NAME_LENGTH = 3;
+        this.DEVICE_NAME_REGEX = /^[a-zA-Z0-9_-]+$/;
+
         this.init();
     }
 
@@ -173,7 +178,7 @@ class BoldVPNPortal {
                     // Debounce rapid clicks
                     const actionKey = `${deviceId}-${action}`;
                     const now = Date.now();
-                    if (this._lastActionTime[actionKey] && (now - this._lastActionTime[actionKey]) < this._actionDebounceMs) {
+                    if (this._lastActionTime[actionKey] && (now - this._lastActionTime[actionKey]) < this.ACTION_DEBOUNCE_MS) {
                         return; // Ignore rapid clicks
                     }
                     this._lastActionTime[actionKey] = now;
@@ -438,13 +443,13 @@ class BoldVPNPortal {
                 }
 
                 // Validate device name
-                if (deviceName.length < 3 || deviceName.length > 50) {
-                    errorDiv.textContent = 'Device name must be between 3 and 50 characters.';
+                if (deviceName.length < this.MIN_DEVICE_NAME_LENGTH || deviceName.length > this.MAX_DEVICE_NAME_LENGTH) {
+                    errorDiv.textContent = `Device name must be between ${this.MIN_DEVICE_NAME_LENGTH} and ${this.MAX_DEVICE_NAME_LENGTH} characters.`;
                     errorDiv.style.display = 'block';
                     return;
                 }
                 // Allow only alphanumeric, dash, underscore
-                if (!/^[a-zA-Z0-9_-]+$/.test(deviceName)) {
+                if (!this.DEVICE_NAME_REGEX.test(deviceName)) {
                     errorDiv.textContent = 'Device name can only contain letters, numbers, dashes, and underscores.';
                     errorDiv.style.display = 'block';
                     return;
@@ -522,6 +527,14 @@ class BoldVPNPortal {
         }
     }
 
+    /**
+     * Removes a device from the user's account.
+     * Prompts for user confirmation before proceeding.
+     * Disables the remove button during the operation and re-enables it afterwards.
+     * @param {string} deviceId - The ID of the device to remove.
+     * @param {string} deviceName - The name of the device for the confirmation dialog.
+     * @returns {Promise<void>}
+     */
     async removeDevice(deviceId, deviceName) {
         if (!confirm(`Remove device "${deviceName}"? This action cannot be undone.`)) {
             return;
