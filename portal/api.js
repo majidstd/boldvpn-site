@@ -4,15 +4,26 @@ const API_BASE_URL = (typeof Config !== 'undefined' && Config.API_URL)
   ? Config.API_URL
   : 'http://localhost:3000/api';
 
-// Log API URL on load for debugging
-console.log('[API] Using API URL:', API_BASE_URL);
+// Log API URL on load for debugging (only in development)
+const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+if (isDevelopment) {
+  console.log('[API] Using API URL:', API_BASE_URL);
+}
+
+// Helper function to get auth headers (reduces code duplication)
+function getAuthHeaders() {
+  const token = localStorage.getItem('boldvpn_token') || sessionStorage.getItem('boldvpn_token');
+  return { 'Authorization': `Bearer ${token}` };
+}
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = localStorage.getItem('boldvpn_token') || sessionStorage.getItem('boldvpn_token');
   
-  // Debug logging
-  console.log(`[API] ${options.method || 'GET'} ${url}`);
+  // Debug logging (only in development)
+  if (isDevelopment) {
+    console.log(`[API] ${options.method || 'GET'} ${url}`);
+  }
 
   const headers = {
     'Content-Type': 'application/json',
@@ -43,14 +54,16 @@ async function request(endpoint, options = {}) {
     }
     return await response.json();
   } catch (error) {
-    // Enhanced error logging
-    console.error(`API request to ${endpoint} failed:`, error);
-    console.error(`[API] Request URL: ${url}`);
-    console.error(`[API] Error details:`, {
-      name: error.name,
-      message: error.message,
-      stack: error.stack?.substring(0, 500) // First 500 chars of stack
-    });
+    // Enhanced error logging (always log errors, but detailed only in development)
+    console.error(`API request to ${endpoint} failed:`, error.message);
+    if (isDevelopment) {
+      console.error(`[API] Request URL: ${url}`);
+      console.error(`[API] Error details:`, {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.substring(0, 500) // First 500 chars of stack
+      });
+    }
     
     // Handle network errors specifically
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
@@ -117,12 +130,12 @@ export const api = {
     },
     getConfig(deviceId) {
         return fetch(`${API_BASE_URL}/devices/${deviceId}/config`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('boldvpn_token') || sessionStorage.getItem('boldvpn_token')}` }
+            headers: getAuthHeaders()
         });
     },
     getQRCode(deviceId) {
         return fetch(`${API_BASE_URL}/devices/${deviceId}/qrcode`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('boldvpn_token') || sessionStorage.getItem('boldvpn_token')}` }
+            headers: getAuthHeaders()
         });
     }
   },

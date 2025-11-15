@@ -116,7 +116,7 @@ class BoldVPNPortal {
         } catch (error) {
             if (errorDiv) {
                 let errorMessage = error.message || 'Login failed';
-                
+
                 // Provide more specific error messages
                 if (errorMessage.includes('Cannot connect to server') || errorMessage.includes('Network error')) {
                     errorMessage = 'Cannot connect to the authentication server. Please check your internet connection and try again. If the problem persists, the server may be temporarily unavailable.';
@@ -125,7 +125,7 @@ class BoldVPNPortal {
                 } else if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
                     errorMessage = errorMessage; // Use the rate limit message as-is
                 }
-                
+
                 errorDiv.textContent = errorMessage;
                 errorDiv.style.display = 'block';
             }
@@ -351,8 +351,8 @@ class BoldVPNPortal {
                     ${devices.map(device => `
                         <div class="device-row">
                             <div><strong>${this.escapeHtml(device.deviceName)}</strong></div>
-                            <div>${device.server?.location || 'N/A'}</div>
-                            <div><code>${device.assignedIP || 'N/A'}</code></div>
+                            <div>${this.escapeHtml(device.server?.location || 'N/A')}</div>
+                            <div><code>${this.escapeHtml(device.assignedIP || 'N/A')}</code></div>
                             <div>${new Date(device.createdAt).toLocaleDateString()}</div>
                             <div>
                                 <button class="btn btn-sm btn-primary" data-device-id="${device.id}" data-action="config">📥 Config</button>

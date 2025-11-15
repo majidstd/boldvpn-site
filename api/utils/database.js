@@ -30,10 +30,30 @@ const query = async (text, params) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('[DB] Query executed in', duration, 'ms:', text);
+    
+    // Only log queries in development
+    if (process.env.NODE_ENV !== 'production') {
+      // Sanitize query text (remove parameter values for security)
+      const sanitizedQuery = text.replace(/\$(\d+)/g, (match, index) => {
+        const paramIndex = parseInt(index) - 1;
+        return params && params[paramIndex] !== undefined ? '[PARAM]' : match;
+      });
+      console.log('[DB] Query executed in', duration, 'ms:', sanitizedQuery);
+    }
+    
+    // In production, only log slow queries (> 1 second)
+    if (process.env.NODE_ENV === 'production' && duration > 1000) {
+      console.warn('[DB] Slow query detected:', duration, 'ms');
+    }
+    
     return res;
   } catch (err) {
-    console.error('[DB] Query error:', err);
+    // Always log errors, but sanitize in production
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[DB] Query error:', err.message);
+    } else {
+      console.error('[DB] Query error:', err);
+    }
     throw err;
   }
 };

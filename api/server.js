@@ -98,12 +98,13 @@ const allowedOrigins = [
   'https://boldvpn.net',
   'https://www.boldvpn.net',
   'https://login.boldvpn.net',
-  'https://www.boldvpn.net/portal',
-  'https://api.boldvpn.net', // Added for API as an allowed origin
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
+  'https://api.boldvpn.net',
   process.env.FRONTEND_URL,
-  '*' // WARNING: Remove in production. Allows all origins for development.
+  // Only include localhost in development
+  ...(process.env.NODE_ENV !== 'production' ? [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ] : [])
 ].filter(Boolean);
 
 app.use(cors({
@@ -111,15 +112,16 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, etc)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn('[!] CORS blocked origin:', origin);
       
-      // In production, block unauthorized origins
+      // In production, always block unauthorized origins
       if (process.env.NODE_ENV === 'production') {
         callback(new Error('Not allowed by CORS'));
       } else {
+        // Development: log but allow
         console.warn('[!] Allowing in development mode');
         callback(null, true);
       }
