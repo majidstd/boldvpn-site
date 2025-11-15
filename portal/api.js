@@ -26,6 +26,13 @@ async function request(endpoint, options = {}) {
     const response = await fetch(url, config);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred' }));
+
+      // Handle rate limiting
+      if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After') || '15';
+          throw new Error(`Too many requests. Please try again in ${retryAfter} seconds.`);
+      }
+
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
     return await response.json();

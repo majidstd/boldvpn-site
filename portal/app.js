@@ -437,6 +437,19 @@ class BoldVPNPortal {
                     return;
                 }
 
+                // Validate device name
+                if (deviceName.length < 3 || deviceName.length > 50) {
+                    errorDiv.textContent = 'Device name must be between 3 and 50 characters.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                // Allow only alphanumeric, dash, underscore
+                if (!/^[a-zA-Z0-9_-]+$/.test(deviceName)) {
+                    errorDiv.textContent = 'Device name can only contain letters, numbers, dashes, and underscores.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
                 // Client-side validation: prevent selecting disabled premium servers
                 if (selectedOption.disabled) {
                     errorDiv.textContent = 'Premium servers are only available for Premium or Family plan users. Please upgrade your plan.';
