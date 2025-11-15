@@ -750,19 +750,21 @@ cmd_guide() {
     echo "   • Shows peer UUID, IP, server"
     echo "   • Direct database access"
     echo ""
+    cat << EOF
 6) Remove a device
    • HARD DELETE from database (row removed permanently)
    • Removes peer from OPNsense
    • IP automatically returned to pool
    • Requires confirmation (type 'yes')
    • Command: Login + DELETE /devices/:id
-...
+
 HARD DELETE IMPLEMENTATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 • Deleted devices are REMOVED from database (not marked inactive)
 • IPs automatically return to pool when device deleted
 • No garbage data in database
 • Sync checks auto-delete orphaned devices
+EOF
 
     echo "TROUBLESHOOTING"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
