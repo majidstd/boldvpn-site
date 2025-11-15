@@ -257,6 +257,9 @@ class BoldVPNPortal {
         const container = document.getElementById('devices-container');
         if (!container) return;
 
+        // Show loading state
+        container.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;">Loading devices...</p>';
+
         try {
             const devices = await api.devices.getAll();
             if (devices.length === 0) {
@@ -284,7 +287,18 @@ class BoldVPNPortal {
                 </div>
             `;
         } catch (error) {
-            container.innerHTML = `<p style="text-align: center; color: var(--error-color); padding: 40px;">Failed to load devices: ${error.message}</p>`;
+            let errorMessage = 'Failed to load devices. ';
+            if (error.message.includes('Network')) {
+                errorMessage += 'Please check your internet connection.';
+            } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                errorMessage += 'Your session has expired. Please log in again.';
+                setTimeout(() => this.logout(), 2000);
+            } else if (error.message.includes('500')) {
+                errorMessage += 'Server error. Please try again later.';
+            } else {
+                errorMessage += error.message || 'Please try again.';
+            }
+            container.innerHTML = `<p style="text-align: center; color: var(--error-color); padding: 40px;">${this.escapeHtml(errorMessage)}</p>`;
         }
     }
 
@@ -485,6 +499,14 @@ class BoldVPNPortal {
         if (!confirm(`Remove device "${deviceName}"? This action cannot be undone.`)) {
             return;
         }
+
+        // Find and disable the remove button
+        const removeBtn = document.querySelector(`button[data-device-id="${deviceId}"][data-action="remove"]`);
+        if (removeBtn) {
+            removeBtn.disabled = true;
+            removeBtn.textContent = 'Removing...';
+        }
+
         try {
             const data = await api.devices.remove(deviceId);
             if (data.opnsenseRemoved === false) {
@@ -497,6 +519,12 @@ class BoldVPNPortal {
             console.error('Remove device error:', error);
             this.showAlert(error.message || 'Failed to remove device', 'error');
             this.loadDevices();
+        } finally {
+            // Re-enable button if still exists (device wasn't removed from DOM yet)
+            if (removeBtn && removeBtn.parentElement) {
+                removeBtn.disabled = false;
+                removeBtn.textContent = 'Remove';
+            }
         }
     }
 
