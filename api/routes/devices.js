@@ -407,7 +407,7 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
     );
 
     if (deviceQuery.rows.length === 0) {
-      return res.status(404).json({ error: 'Device not found' });
+      return res.status(404).json({ error: 'Device not found or already deleted' });
     }
 
     const opnsensePeerId = deviceQuery.rows[0].opnsense_peer_id;
