@@ -10,8 +10,6 @@ class BoldVPNPortal {
         this._navHistory = [];
 
         this._lastActionTime = {};
-        this._actionDebounceMs = 500; // 500ms debounce
-
         this.ACTION_DEBOUNCE_MS = 500;
         this.MAX_DEVICE_NAME_LENGTH = 50;
         this.MIN_DEVICE_NAME_LENGTH = 3;
@@ -44,21 +42,43 @@ class BoldVPNPortal {
     }
 
     showLogin() {
-        document.getElementById('auth-container').style.display = 'flex';
-        document.getElementById('portal-container').style.display = 'none';
+        const authContainer = document.getElementById('auth-container');
+        if (!authContainer) {
+            console.error('Auth container not found!');
+            return;
+        }
+        authContainer.style.display = 'flex';
+        const portalContainer = document.getElementById('portal-container');
+        if (portalContainer) {
+            portalContainer.style.display = 'none';
+        }
         this.renderLoginForm();
     }
 
     renderLoginForm() {
         const authContainer = document.getElementById('auth-container');
+        if (!authContainer) {
+            console.error('Auth container not found!');
+            return;
+        }
+
         authContainer.innerHTML = ''; // Clear previous content
         const template = document.getElementById('login-template');
-        if (template) {
-            const clonedContent = template.content.cloneNode(true);
-            authContainer.appendChild(clonedContent);
-            document.getElementById('login-form').addEventListener('submit', (e) => this.handleLogin(e));
-        } else {
+        if (!template) {
             console.error('Login template not found!');
+            authContainer.innerHTML = '<div class="auth-section"><div class="auth-card"><h2>Error</h2><p>Failed to load login form. Please refresh the page.</p></div></div>';
+            return;
+        }
+
+        const clonedContent = template.content.cloneNode(true);
+        authContainer.appendChild(clonedContent);
+
+        // Find form within the container (more reliable)
+        const loginForm = authContainer.querySelector('#login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        } else {
+            console.error('Login form not found in cloned content!');
         }
     }
 
@@ -66,12 +86,22 @@ class BoldVPNPortal {
         e.preventDefault();
         const form = e.target;
         const submitBtn = form.querySelector('button[type="submit"]');
-        const btnText = submitBtn.textContent;
+        if (!submitBtn) return;
+
+        const btnText = submitBtn.textContent || submitBtn.innerText;
         const errorDiv = document.getElementById('login-error');
 
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const rememberMe = document.getElementById('remember-me').checked;
+        const username = document.getElementById('username')?.value;
+        const password = document.getElementById('password')?.value;
+        const rememberMe = document.getElementById('remember-me')?.checked;
+
+        if (!username || !password) {
+            if (errorDiv) {
+                errorDiv.textContent = 'Please enter both username and password.';
+                errorDiv.style.display = 'block';
+            }
+            return;
+        }
 
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<div class="spinner"></div> Signing in...';
@@ -84,16 +114,24 @@ class BoldVPNPortal {
             storage.setItem(this.tokenKey, this.token);
             this.showDashboard();
         } catch (error) {
-            errorDiv.textContent = error.message || 'Login failed';
-            errorDiv.style.display = 'block';
+            if (errorDiv) {
+                errorDiv.textContent = error.message || 'Login failed';
+                errorDiv.style.display = 'block';
+            }
             submitBtn.disabled = false;
-            submitBtn.textContent = btnText;
+            submitBtn.innerHTML = btnText; // Use innerHTML consistently
         }
     }
 
     showDashboard() {
-        document.getElementById('auth-container').style.display = 'none';
-        document.getElementById('portal-container').style.display = 'grid'; // Use grid for portal layout
+        const authContainer = document.getElementById('auth-container');
+        if (authContainer) {
+            authContainer.style.display = 'none';
+        }
+        const portalContainer = document.getElementById('portal-container');
+        if (portalContainer) {
+            portalContainer.style.display = 'grid'; // Use grid for portal layout
+        }
 
         this.bindNavigationEvents();
         this.navigateTo('overview');
@@ -103,7 +141,10 @@ class BoldVPNPortal {
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', () => this.navigateTo(btn.dataset.section));
         });
-        document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
+        }
     }
 
     navigateTo(section) {
@@ -224,7 +265,10 @@ class BoldVPNPortal {
             if (emailInput) emailInput.value = this.user?.email || '';
 
             container.appendChild(clonedContent);
-            document.getElementById('profile-form').addEventListener('submit', (e) => this.handleProfileUpdate(e));
+            const profileForm = document.getElementById('profile-form');
+            if (profileForm) {
+                profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
+            }
         } else {
             console.error('Profile template not found!');
         }
@@ -236,7 +280,10 @@ class BoldVPNPortal {
         if (template) {
             const clonedContent = template.content.cloneNode(true);
             container.appendChild(clonedContent);
-            document.getElementById('password-form').addEventListener('submit', (e) => this.handlePasswordChange(e));
+            const passwordForm = document.getElementById('password-form');
+            if (passwordForm) {
+                passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
+            }
         } else {
             console.error('Password template not found!');
         }
@@ -278,6 +325,11 @@ class BoldVPNPortal {
             const devices = await api.devices.getAll();
             if (devices.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;">No devices yet. Click "Add Device" to get started!</p>';
+                // Re-attach listener even for empty state
+                if (this._deviceActionListener) {
+                    container.removeEventListener('click', this._deviceActionListener);
+                    container.addEventListener('click', this._deviceActionListener);
+                }
                 return;
             }
             container.innerHTML = `
@@ -431,37 +483,54 @@ class BoldVPNPortal {
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); }, { once: true });
 
             document.getElementById('add-device-submit').addEventListener('click', async () => {
-                const deviceName = document.getElementById('device-name').value.trim();
+                const deviceName = document.getElementById('device-name')?.value.trim();
                 const serverSelect = document.getElementById('device-server');
-                const serverId = serverSelect.value;
-                const selectedOption = serverSelect.options[serverSelect.selectedIndex];
+                const serverId = serverSelect?.value;
+                const selectedOption = serverSelect?.options[serverSelect.selectedIndex];
                 const errorDiv = document.getElementById('add-device-error');
+                const submitBtn = document.getElementById('add-device-submit');
+                const btnText = submitBtn?.querySelector('.btn-text');
+                const spinner = submitBtn?.querySelector('.spinner');
 
                 if (!deviceName || !serverId) {
-                    errorDiv.textContent = 'Please fill in all fields.';
-                    errorDiv.style.display = 'block';
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Please fill in all fields.';
+                        errorDiv.style.display = 'block';
+                    }
                     return;
                 }
 
                 // Validate device name
                 if (deviceName.length < this.MIN_DEVICE_NAME_LENGTH || deviceName.length > this.MAX_DEVICE_NAME_LENGTH) {
-                    errorDiv.textContent = `Device name must be between ${this.MIN_DEVICE_NAME_LENGTH} and ${this.MAX_DEVICE_NAME_LENGTH} characters.`;
-                    errorDiv.style.display = 'block';
+                    if (errorDiv) {
+                        errorDiv.textContent = `Device name must be between ${this.MIN_DEVICE_NAME_LENGTH} and ${this.MAX_DEVICE_NAME_LENGTH} characters.`;
+                        errorDiv.style.display = 'block';
+                    }
                     return;
                 }
                 // Allow only alphanumeric, dash, underscore
                 if (!this.DEVICE_NAME_REGEX.test(deviceName)) {
-                    errorDiv.textContent = 'Device name can only contain letters, numbers, dashes, and underscores.';
-                    errorDiv.style.display = 'block';
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Device name can only contain letters, numbers, dashes, and underscores.';
+                        errorDiv.style.display = 'block';
+                    }
                     return;
                 }
 
                 // Client-side validation: prevent selecting disabled premium servers
-                if (selectedOption.disabled) {
-                    errorDiv.textContent = 'Premium servers are only available for Premium or Family plan users. Please upgrade your plan.';
-                    errorDiv.style.display = 'block';
+                if (selectedOption?.disabled) {
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Premium servers are only available for Premium or Family plan users. Please upgrade your plan.';
+                        errorDiv.style.display = 'block';
+                    }
                     return;
                 }
+
+                // Disable button and show spinner
+                if (submitBtn) submitBtn.disabled = true;
+                if (btnText) btnText.textContent = 'Adding Device...';
+                if (spinner) spinner.style.display = 'inline-block';
+                if (errorDiv) errorDiv.style.display = 'none';
 
                 try {
                     await api.devices.create(deviceName, serverId);
@@ -470,8 +539,15 @@ class BoldVPNPortal {
                     this.loadDevices();
                 } catch (error) {
                     console.error('Device creation error:', error);
-                    errorDiv.textContent = error.message || 'Failed to add device. Please try again.';
-                    errorDiv.style.display = 'block';
+                    if (errorDiv) {
+                        errorDiv.textContent = error.message || 'Failed to add device. Please try again.';
+                        errorDiv.style.display = 'block';
+                    }
+                } finally {
+                    // Re-enable button
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (btnText) btnText.textContent = 'Add Device';
+                    if (spinner) spinner.style.display = 'none';
                 }
             });
         } catch (error) {
@@ -584,7 +660,15 @@ class BoldVPNPortal {
     }
 }
 
-new BoldVPNPortal();
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        new BoldVPNPortal();
+    });
+} else {
+    // DOM is already ready
+    new BoldVPNPortal();
+}
 
 
 
