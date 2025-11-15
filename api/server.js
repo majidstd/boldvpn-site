@@ -112,19 +112,29 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, etc)
     if (!origin) return callback(null, true);
     
+    // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
+      return;
+    }
+    
+    // Check if origin is from boldvpn.net domain (any subdomain)
+    const boldvpnDomainPattern = /^https?:\/\/(.*\.)?boldvpn\.net(:[0-9]+)?$/;
+    if (boldvpnDomainPattern.test(origin)) {
+      callback(null, true);
+      return;
+    }
+    
+    // Log blocked origin
+    console.warn('[!] CORS blocked origin:', origin);
+    
+    // In production, block unauthorized origins
+    if (process.env.NODE_ENV === 'production') {
+      callback(new Error('Not allowed by CORS'));
     } else {
-      console.warn('[!] CORS blocked origin:', origin);
-      
-      // In production, always block unauthorized origins
-      if (process.env.NODE_ENV === 'production') {
-        callback(new Error('Not allowed by CORS'));
-      } else {
-        // Development: log but allow
-        console.warn('[!] Allowing in development mode');
-        callback(null, true);
-      }
+      // Development: log but allow
+      console.warn('[!] Allowing in development mode');
+      callback(null, true);
     }
   },
   credentials: true,
