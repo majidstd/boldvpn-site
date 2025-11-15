@@ -149,54 +149,56 @@ class BoldVPNPortal {
     renderDevices(container) {
         container.innerHTML = ''; // Clear previous content
         const template = document.getElementById('devices-template');
-        if (template) {
-            const clonedContent = template.content.cloneNode(true);
-            container.appendChild(clonedContent);
-
-            // Bind button events
-            const refreshBtn = document.getElementById('refresh-devices-btn');
-            const addBtn = document.getElementById('add-device-btn');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', () => this.loadDevices());
-            }
-            if (addBtn) {
-                addBtn.addEventListener('click', () => this.addDevice());
-            }
-
-            // Setup device action event listener on the container
-            const devicesContainer = document.getElementById('devices-container');
-            if (devicesContainer) {
-                // Remove old listener if it exists
-                if (this._deviceActionListener) {
-                    devicesContainer.removeEventListener('click', this._deviceActionListener);
-                }
-                this._deviceActionListener = (e) => {
-                    const target = e.target.closest('button[data-action]');
-                    if (!target) return;
-                    const { deviceId, deviceName, action } = target.dataset;
-                    if (!deviceId || !action) return;
-                    // Debounce rapid clicks
-                    const actionKey = `${deviceId}-${action}`;
-                    const now = Date.now();
-                    if (this._lastActionTime[actionKey] && (now - this._lastActionTime[actionKey]) < this.ACTION_DEBOUNCE_MS) {
-                        return; // Ignore rapid clicks
-                    }
-                    this._lastActionTime[actionKey] = now;
-                    if (action === 'config') {
-                        this.downloadConfig(deviceId);
-                    } else if (action === 'qr') {
-                        this.downloadQRCode(deviceId);
-                    } else if (action === 'remove') {
-                        this.removeDevice(deviceId, deviceName);
-                    }
-                };
-                devicesContainer.addEventListener('click', this._deviceActionListener);
-            }
-
-            this.loadDevices();
-        } else {
+        const template = document.getElementById('devices-template');
+        if (!template) {
             console.error('Devices template not found!');
+            return;
         }
+
+        const clonedContent = template.content.cloneNode(true);
+        container.appendChild(clonedContent);
+
+        // Bind button events
+        const refreshBtn = document.getElementById('refresh-devices-btn');
+        const addBtn = document.getElementById('add-device-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadDevices());
+        }
+        if (addBtn) {
+            addBtn.addEventListener('click', () => this.addDevice());
+        }
+
+        // Setup device action event listener on the container
+        const devicesContainer = document.getElementById('devices-container');
+        if (devicesContainer) {
+            // Remove old listener if it exists
+            if (this._deviceActionListener) {
+                devicesContainer.removeEventListener('click', this._deviceActionListener);
+            }
+            this._deviceActionListener = (e) => {
+                const target = e.target.closest('button[data-action]');
+                if (!target) return;
+                const { deviceId, deviceName, action } = target.dataset;
+                if (!deviceId || !action) return;
+                // Debounce rapid clicks
+                const actionKey = `${deviceId}-${action}`;
+                const now = Date.now();
+                if (this._lastActionTime[actionKey] && (now - this._lastActionTime[actionKey]) < this.ACTION_DEBOUNCE_MS) {
+                    return; // Ignore rapid clicks
+                }
+                this._lastActionTime[actionKey] = now;
+                if (action === 'config') {
+                    this.downloadConfig(deviceId);
+                } else if (action === 'qr') {
+                    this.downloadQRCode(deviceId);
+                } else if (action === 'remove') {
+                    this.removeDevice(deviceId, deviceName);
+                }
+            };
+            devicesContainer.addEventListener('click', this._deviceActionListener);
+        }
+
+        this.loadDevices();
     }
 
     renderUsage(container) {
