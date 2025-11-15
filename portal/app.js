@@ -159,9 +159,12 @@ class BoldVPNPortal {
             const devicesContainer = document.getElementById('devices-container');
             if (devicesContainer && !this._deviceActionListenerAttached) {
                 this._deviceActionListener = (e) => {
+                    console.log('Device action clicked:', e.target);
                     const target = e.target.closest('button[data-action]');
                     if (!target) return;
+                    console.log('Target button found:', target);
                     const { deviceId, deviceName, action } = target.dataset;
+                    console.log('Button data:', { deviceId, deviceName, action });
                     if (!deviceId || !action) return;
 
                     if (action === 'config') {
@@ -169,6 +172,7 @@ class BoldVPNPortal {
                     } else if (action === 'qr') {
                         this.downloadQRCode(deviceId);
                     } else if (action === 'remove') {
+                        console.log('Calling removeDevice');
                         this.removeDevice(deviceId, deviceName);
                     }
                 };
@@ -478,9 +482,15 @@ class BoldVPNPortal {
     }
 
     async removeDevice(deviceId, deviceName) {
-        if (!confirm(`Remove device "${deviceName}"? This action cannot be undone.`)) return;
+        console.log('removeDevice called with:', { deviceId, deviceName });
+        if (!confirm(`Remove device "${deviceName}"? This action cannot be undone.`)) {
+            console.log('User cancelled remove');
+            return;
+        }
+        console.log('User confirmed, making API call');
         try {
             const data = await api.devices.remove(deviceId);
+            console.log('API response:', data);
             if (data.opnsenseRemoved === false) {
                 this.showAlert(data.warning || data.message || 'Peer may still exist in OPNsense.', 'warning');
             } else {
@@ -488,6 +498,7 @@ class BoldVPNPortal {
             }
             this.loadDevices();
         } catch (error) {
+            console.error('Remove device error:', error);
             this.showAlert(error.message || 'Failed to remove device', 'error');
             this.loadDevices();
         }
@@ -509,6 +520,8 @@ class BoldVPNPortal {
 }
 
 new BoldVPNPortal();
+
+
 
 
 
