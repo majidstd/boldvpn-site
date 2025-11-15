@@ -27,3 +27,4 @@ ORDER BY is_premium DESC, name;
 -- Amsterdam should have is_premium = TRUE
 -- Vancouver-01 and Vancouver-02 should have is_premium = FALSE
 
+

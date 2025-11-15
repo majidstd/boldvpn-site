@@ -42,8 +42,8 @@ psql -U "$DB_USER" -d "$DB_NAME" -h "$DB_HOST" -p "$DB_PORT" -f scripts/cleanup-
 printf "${GREEN}✅ Server cleanup complete!${NC}\n"
 printf "${YELLOW}📊 New servers:${NC}\n"
 psql -U "$DB_USER" -d "$DB_NAME" -h "$DB_HOST" -p "$DB_PORT" -c "
-SELECT id, name, country || ', ' || city as location, wireguard_subnet, status
-FROM vpn_servers
+SELECT id, name, country || ', ' || city as location, wireguard_subnet, status 
+FROM vpn_servers 
 ORDER BY name;"
 
 printf "${BLUE}🔑 Next steps:${NC}\n"

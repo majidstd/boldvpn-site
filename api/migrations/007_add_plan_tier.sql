@@ -50,3 +50,4 @@ END $$;
 -- Add comment to column
 COMMENT ON COLUMN user_details.plan_tier IS 'User subscription tier: free, basic, pro, premium, family';
 
+
