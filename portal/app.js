@@ -86,7 +86,7 @@ class BoldVPNPortal {
     showDashboard() {
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('portal-container').style.display = 'grid'; // Use grid for portal layout
-        
+
         this.bindNavigationEvents();
         this.navigateTo('overview');
     }
@@ -108,8 +108,8 @@ class BoldVPNPortal {
             console.error('Content area not found!');
             return;
         }
-        
-        switch(section) {
+
+        switch (section) {
             case 'overview': this.renderOverview(contentArea); break;
             case 'devices': this.renderDevices(contentArea); break;
             case 'usage': this.renderUsage(contentArea); break;
@@ -144,7 +144,7 @@ class BoldVPNPortal {
         if (template) {
             const clonedContent = template.content.cloneNode(true);
             container.appendChild(clonedContent);
-            
+
             // Bind button events
             const refreshBtn = document.getElementById('refresh-devices-btn');
             const addBtn = document.getElementById('add-device-btn');
@@ -154,35 +154,10 @@ class BoldVPNPortal {
             if (addBtn) {
                 addBtn.addEventListener('click', () => this.addDevice());
             }
-            
-            // Setup device action listener on the container
-            const devicesContainer = document.getElementById('devices-container');
-            if (devicesContainer) {
-                // Remove existing listener if it exists
-                if (this._deviceActionListener) {
-                    devicesContainer.removeEventListener('click', this._deviceActionListener);
-                }
-                
-                // Create event handler for device actions
-                this._deviceActionListener = (e) => {
-                    const target = e.target.closest('button[data-action]');
-                    if (!target) return;
-                    const { deviceId, deviceName, action } = target.dataset;
-                    if (!deviceId || !action) return;
-                    
-                    if (action === 'config') {
-                        this.downloadConfig(deviceId);
-                    } else if (action === 'qr') {
-                        this.downloadQRCode(deviceId);
-                    } else if (action === 'remove') {
-                        this.removeDevice(deviceId, deviceName);
-                    }
-                };
-                
-                // Attach listener to container
-                devicesContainer.addEventListener('click', this._deviceActionListener);
-            }
-            
+
+            // Reset listener flag since container is recreated
+            this._deviceActionListenerAttached = false;
+
             this.loadDevices();
         } else {
             console.error('Devices template not found!');
@@ -259,7 +234,27 @@ class BoldVPNPortal {
     async loadDevices() {
         const container = document.getElementById('devices-container');
         if (!container) return;
-        
+
+        // Setup event listener on container if not already set up
+        if (!this._deviceActionListenerAttached) {
+            this._deviceActionListener = (e) => {
+                const target = e.target.closest('button[data-action]');
+                if (!target) return;
+                const { deviceId, deviceName, action } = target.dataset;
+                if (!deviceId || !action) return;
+
+                if (action === 'config') {
+                    this.downloadConfig(deviceId);
+                } else if (action === 'qr') {
+                    this.downloadQRCode(deviceId);
+                } else if (action === 'remove') {
+                    this.removeDevice(deviceId, deviceName);
+                }
+            };
+            container.addEventListener('click', this._deviceActionListener);
+            this._deviceActionListenerAttached = true;
+        }
+
         try {
             const devices = await api.devices.getAll();
             if (devices.length === 0) {
@@ -359,17 +354,17 @@ class BoldVPNPortal {
             const isPremium = planTier === 'premium' || planTier === 'family';
 
             const allServers = await api.servers.getAll();
-            
+
             // Filter only by availability and status - show ALL servers
             const servers = allServers.filter(server => {
                 return server.available && server.status === 'active';
             });
-            
+
             if (servers.length === 0) {
                 this.showAlert('No servers available. Please contact support.', 'error');
                 return;
             }
-            
+
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `
@@ -378,13 +373,13 @@ class BoldVPNPortal {
                     <form id="add-device-form" class="auth-form">
                         <div class="form-group"><label for="device-name">Device Name</label><input type="text" id="device-name" name="deviceName" required placeholder="e.g., My Laptop, iPhone, etc." autofocus></div>
                         <div class="form-group"><label for="device-server">Server Location</label><select id="device-server" name="serverId" required><option value="">Select a server</option>${servers.map(s => {
-                            const premiumBadge = s.isPremium ? ' ⭐' : '';
-                            const displayName = `${s.location}, ${s.name}${premiumBadge}`;
-                            // Disable premium servers for non-premium users
-                            const disabled = !isPremium && s.isPremium ? 'disabled' : '';
-                            const premiumText = !isPremium && s.isPremium ? ' (Premium Only)' : '';
-                            return `<option value="${s.id}" ${disabled}>${displayName}${premiumText}</option>`;
-                        }).join('')}</select></div>
+                const premiumBadge = s.isPremium ? ' ⭐' : '';
+                const displayName = `${s.location}, ${s.name}${premiumBadge}`;
+                // Disable premium servers for non-premium users
+                const disabled = !isPremium && s.isPremium ? 'disabled' : '';
+                const premiumText = !isPremium && s.isPremium ? ' (Premium Only)' : '';
+                return `<option value="${s.id}" ${disabled}>${displayName}${premiumText}</option>`;
+            }).join('')}</select></div>
                         <div id="add-device-error" class="alert alert-error" style="display: none;"></div>
                         <div style="display: flex; gap: 12px; margin-top: 8px;"><button id="add-device-submit" type="button" class="btn btn-primary" style="flex: 1;"><span class="btn-text">Add Device</span><div class="spinner" style="display: none;"></div></button><button type="button" class="btn btn-secondary" id="cancel-add-device">Cancel</button></div>
                     </form>
@@ -405,20 +400,20 @@ class BoldVPNPortal {
                 const serverId = serverSelect.value;
                 const selectedOption = serverSelect.options[serverSelect.selectedIndex];
                 const errorDiv = document.getElementById('add-device-error');
-                
+
                 if (!deviceName || !serverId) {
                     errorDiv.textContent = 'Please fill in all fields.';
                     errorDiv.style.display = 'block';
                     return;
                 }
-                
+
                 // Client-side validation: prevent selecting disabled premium servers
                 if (selectedOption.disabled) {
                     errorDiv.textContent = 'Premium servers are only available for Premium or Family plan users. Please upgrade your plan.';
                     errorDiv.style.display = 'block';
                     return;
                 }
-                
+
                 try {
                     await api.devices.create(deviceName, serverId);
                     closeModal();
@@ -516,6 +511,10 @@ class BoldVPNPortal {
 }
 
 new BoldVPNPortal();
+
+
+
+
 
 
 
