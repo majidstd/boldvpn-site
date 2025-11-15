@@ -115,7 +115,18 @@ class BoldVPNPortal {
             this.showDashboard();
         } catch (error) {
             if (errorDiv) {
-                errorDiv.textContent = error.message || 'Login failed';
+                let errorMessage = error.message || 'Login failed';
+                
+                // Provide more specific error messages
+                if (errorMessage.includes('Cannot connect to server') || errorMessage.includes('Network error')) {
+                    errorMessage = 'Cannot connect to the authentication server. Please check your internet connection and try again. If the problem persists, the server may be temporarily unavailable.';
+                } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+                    errorMessage = 'Invalid username or password. Please check your credentials and try again.';
+                } else if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
+                    errorMessage = errorMessage; // Use the rate limit message as-is
+                }
+                
+                errorDiv.textContent = errorMessage;
                 errorDiv.style.display = 'block';
             }
             submitBtn.disabled = false;

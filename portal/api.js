@@ -38,6 +38,21 @@ async function request(endpoint, options = {}) {
     return await response.json();
   } catch (error) {
     console.error(`API request to ${endpoint} failed:`, error);
+    
+    // Handle network errors specifically
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      if (error.message.includes('ERR_ADDRESS_UNREACHABLE') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
+        throw new Error('Cannot connect to server. Please check your internet connection and try again. If the problem persists, the API server may be temporarily unavailable.');
+      } else if (error.message.includes('ERR_CONNECTION_REFUSED')) {
+        throw new Error('Connection refused. The API server may be down. Please try again later.');
+      } else if (error.message.includes('ERR_NETWORK')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      } else {
+        throw new Error('Cannot connect to server. Please check your internet connection and try again.');
+      }
+    }
+    
+    // Re-throw the original error if it's already been processed
     throw error;
   }
 }
