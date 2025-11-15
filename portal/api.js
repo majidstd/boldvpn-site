@@ -54,15 +54,19 @@ async function request(endpoint, options = {}) {
     }
     return await response.json();
   } catch (error) {
-    // Enhanced error logging (always log errors, but detailed only in development)
-    console.error(`API request to ${endpoint} failed:`, error.message);
+    // Always log errors with sufficient detail for debugging
+    console.error(`[API] Request to ${endpoint} failed:`, error.message);
+    console.error(`[API] Request URL: ${url}`);
     if (isDevelopment) {
-      console.error(`[API] Request URL: ${url}`);
+      // Full error details in development
       console.error(`[API] Error details:`, {
         name: error.name,
         message: error.message,
         stack: error.stack?.substring(0, 500) // First 500 chars of stack
       });
+    } else {
+      // Production: log message and name only
+      console.error(`[API] Error: ${error.name} - ${error.message}`);
     }
     
     // Handle network errors specifically

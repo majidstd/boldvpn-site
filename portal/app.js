@@ -550,8 +550,19 @@ class BoldVPNPortal {
                     this.loadDevices();
                 } catch (error) {
                     console.error('Device creation error:', error);
+                    let errorMessage = 'Failed to add device. Please try again.';
+                    
+                    // Extract error message from various error types
+                    if (error.message) {
+                        errorMessage = error.message;
+                    } else if (error.error) {
+                        errorMessage = error.error;
+                    } else if (typeof error === 'string') {
+                        errorMessage = error;
+                    }
+                    
                     if (errorDiv) {
-                        errorDiv.textContent = error.message || 'Failed to add device. Please try again.';
+                        errorDiv.textContent = errorMessage;
                         errorDiv.style.display = 'block';
                     }
                 } finally {
