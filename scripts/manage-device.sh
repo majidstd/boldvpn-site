@@ -292,7 +292,7 @@ cmd_list() {
     echo "     Authorization: Bearer <token>"
     echo ""
     echo "What this does:"
-    echo "  • Queries devices from database where is_active=true"
+    echo "  • Queries all devices from the database"
     echo "  • Verifies each device exists in OPNsense"
     echo "  • Marks as inactive if peer deleted from OPNsense"
     echo "  • Returns only devices that exist in OPNsense"
@@ -361,15 +361,14 @@ cmd_list_database() {
     echo " ORDER BY ud.created_at DESC;\""
     echo ""
     echo "What this shows:"
-    echo "  • ALL devices in database (hard delete - no inactive devices)"
+    echo "  • ALL devices currently in the database"
     echo "  • OPNsense peer UUIDs"
     echo "  • Assigned IP addresses"
     echo "  • Server assignments"
     echo "  • No API authentication needed"
     echo "  • Raw data - useful for troubleshooting"
     echo ""
-    echo "Note: is_active column still exists in schema but is no longer used"
-    echo "      All devices shown are active (deleted devices are removed)"
+    echo "Note: Deleted devices are permanently removed from the database."
     echo ""
     echo "Fetching devices..."
     echo ""
@@ -393,8 +392,7 @@ cmd_list_database() {
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Database State:"
-    echo "  • Rows shown = Active devices"
-    echo "  • Deleted devices are removed from database (hard delete)"
+    echo "  • Rows shown = All devices in the database"
     echo "  • Compare with option 4 (OPNsense) to find sync issues"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -544,7 +542,6 @@ cmd_check() {
             username,
             device_name,
             opnsense_peer_id,
-            is_active,
             assigned_ip,
             created_at
         FROM user_devices 
@@ -589,7 +586,6 @@ cmd_check() {
             username,
             device_name,
             opnsense_peer_id,
-            is_active,
             assigned_ip,
             created_at
         FROM user_devices 
@@ -601,7 +597,6 @@ cmd_check() {
     echo ""
     echo "${BLUE}📋 Notes:${NC}"
     echo "  - opnsense_peer_id: UUID in OPNsense (NULL if never stored)"
-    echo "  - is_active: false means device was soft-deleted"
     echo "  - Check API logs if removal failed: tail -f /var/log/boldvpn-api.log"
     echo ""
     printf "Press Enter to continue... "
@@ -755,42 +750,20 @@ cmd_guide() {
     echo "   • Shows peer UUID, IP, server"
     echo "   • Direct database access"
     echo ""
-    echo "6) Remove a device"
-    echo "   • HARD DELETE from database (row removed permanently)"
-    echo "   • Removes peer from OPNsense"
-    echo "   • IP automatically returned to pool"
-    echo "   • Requires confirmation (type 'yes')"
-    echo "   • Command: Login + DELETE /devices/:id"
-    echo ""
-    echo "7) Diagnose device issues"
-    echo "   • Troubleshoot visibility problems"
-    echo "   • Check database vs OPNsense sync"
-    echo "   • Provides fix suggestions"
-    echo ""
-    echo "DATA FLOW"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Portal → API → Database ← Sync → OPNsense"
-    echo ""
-    echo "• Option 2: API (syncs Database ↔ OPNsense)"
-    echo "• Option 3: Database (raw SQL query)"
-    echo "• Option 4: OPNsense (direct firewall API)"
-    echo ""
-    echo "TERMINOLOGY"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "• Device/Peer: WireGuard client configuration"
-    echo "• Hard Delete: Row removed from database (vs soft delete)"
-    echo "• Sync Check: Verify database matches OPNsense state"
-    echo "• OPNsense Peer ID: UUID of peer in firewall"
-    echo "• IP Pool: Available IP addresses from server subnet"
-    echo ""
-    echo "HARD DELETE IMPLEMENTATION"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "• Deleted devices are REMOVED from database (not marked inactive)"
-    echo "• IPs automatically return to pool when device deleted"
-    echo "• No garbage data in database"
-    echo "• Sync checks auto-delete orphaned devices"
-    echo "• is_active column still exists in schema but is unused"
-    echo ""
+6) Remove a device
+   • HARD DELETE from database (row removed permanently)
+   • Removes peer from OPNsense
+   • IP automatically returned to pool
+   • Requires confirmation (type 'yes')
+   • Command: Login + DELETE /devices/:id
+...
+HARD DELETE IMPLEMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Deleted devices are REMOVED from database (not marked inactive)
+• IPs automatically return to pool when device deleted
+• No garbage data in database
+• Sync checks auto-delete orphaned devices
+
     echo "TROUBLESHOOTING"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -871,18 +844,16 @@ cmd_diagnose() {
     echo "${BLUE}📊 Step 1: Database State${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     db_result=$(psql -U "$DB_USER" -d "$DB_NAME" -t -c "
-    SELECT 
-        id,
-        device_name,
-        opnsense_peer_id,
-        is_active,
-        assigned_ip,
-        created_at
-    FROM user_devices 
-    WHERE username = '$username' AND device_name = '$device_name'
-    ORDER BY created_at DESC
-    LIMIT 1;
-    " 2>/dev/null)
+            SELECT 
+                id,
+                device_name,
+                opnsense_peer_id,
+                assigned_ip,
+                created_at
+            FROM user_devices 
+            WHERE username = '$username' AND device_name = '$device_name'
+            ORDER BY created_at DESC
+            LIMIT 1;    " 2>/dev/null)
     
     if [ -z "$db_result" ]; then
         echo "${RED}❌ Device NOT found in database!${NC}"
@@ -892,32 +863,15 @@ cmd_diagnose() {
         return 1
     fi
     
-    echo "$db_result" | awk -F'|' '{print "  ID: " $1; print "  Name: " $2; print "  OPNsense Peer ID: " ($3 ? $3 : "NULL"); print "  Is Active: " $4; print "  IP: " $5; print "  Created: " $6}'
+    echo "$db_result" | awk -F'|' '{print "  ID: " $1; print "  Name: " $2; print "  OPNsense Peer ID: " ($3 ? $3 : "NULL"); print "  IP: " $4; print "  Created: " $5}'
     echo ""
     
     device_id=$(echo "$db_result" | awk -F'|' '{print $1}' | tr -d ' ')
-    is_active=$(echo "$db_result" | awk -F'|' '{print $4}' | tr -d ' ')
     
-    # Step 2: Check if device would be returned by API
+    # Step 2: API Query Check (Devices are always active in DB now)
     echo "${BLUE}🔍 Step 2: API Query Check${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    if [ "$is_active" = "t" ] || [ "$is_active" = "true" ] || [ "$is_active" = "1" ]; then
-        echo "${GREEN}✅ Device is_active = true (will be queried by API)${NC}"
-    else
-        echo "${RED}❌ Device is_active = false (WILL NOT be returned by API)${NC}"
-        echo ""
-        echo "${YELLOW}💡 This is why device is not showing in portal!${NC}"
-        echo "   The sync check marked it inactive because peer wasn't found in OPNsense"
-        echo ""
-        echo "${BLUE}🔧 To fix:${NC}"
-        echo "   1. Check if peer exists in OPNsense: VPN → WireGuard → Clients"
-        echo "   2. If peer exists, check API logs for sync errors"
-        echo "   3. If peer doesn't exist, remove device using option 4"
-        echo ""
-        printf "${YELLOW}Press Enter to continue...${NC}"
-        read_input > /dev/null
-        return 0
-    fi
+    echo "${GREEN}✅ Device found in database (will be queried by API)${NC}"
     echo ""
     
     # Step 3: Test API endpoint

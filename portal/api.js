@@ -49,7 +49,7 @@ export const api = {
   },
   devices: {
     getAll() {
-      return request('/devices');
+      return request(`/devices?_=${new Date().getTime()}`);
     },
     create(deviceName, serverId) {
       return request('/devices', {

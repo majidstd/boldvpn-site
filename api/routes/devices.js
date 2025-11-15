@@ -154,7 +154,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Check if device name already exists for this user
     const existingDevice = await pool.query(
-      'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2 AND is_active = true',
+      'SELECT id FROM user_devices WHERE username = $1 AND device_name = $2',
       [username, deviceName]
     );
 
@@ -171,7 +171,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const deviceLimit = limitResult.rows.length > 0 ? parseInt(limitResult.rows[0].value) : 2;
 
     const deviceCount = await pool.query(
-      'SELECT COUNT(*) FROM user_devices WHERE username = $1 AND is_active = true',
+      'SELECT COUNT(*) FROM user_devices WHERE username = $1',
       [username]
     );
 
@@ -309,11 +309,10 @@ router.get('/:deviceId/config', authenticateToken, async (req, res) => {
     const { deviceId } = req.params;
 
     const query = `
-      SELECT d.*, s.*
-      FROM user_devices d
-      JOIN vpn_servers s ON d.server_id = s.id
-      WHERE d.id = $1 AND d.username = $2 AND d.is_active = true
-    `;
+                SELECT d.*, s.*
+                FROM user_devices d
+                JOIN vpn_servers s ON d.server_id = s.id
+                WHERE d.id = $1 AND d.username = $2    `;
 
     const result = await pool.query(query, [deviceId, username]);
 
@@ -356,7 +355,7 @@ router.get('/:deviceId/config/json', authenticateToken, async (req, res) => {
       SELECT d.*, s.name as server_name, s.country, s.flag_emoji, s.city
       FROM user_devices d
       JOIN vpn_servers s ON d.server_id = s.id
-      WHERE d.id = $1 AND d.username = $2 AND d.is_active = true
+      WHERE d.id = $1 AND d.username = $2
     `;
 
     const result = await pool.query(query, [deviceId, username]);
@@ -425,10 +424,9 @@ router.delete('/:deviceId', authenticateToken, async (req, res) => {
       }
     }
 
-    // Soft delete (mark as inactive)
+    // Hard delete (remove row permanently)
     const query = `
-      UPDATE user_devices
-      SET is_active = false
+      DELETE FROM user_devices
       WHERE id = $1 AND username = $2
       RETURNING *
     `;

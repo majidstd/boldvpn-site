@@ -157,14 +157,12 @@ class BoldVPNPortal {
 
             // Setup device action event listener on the container
             const devicesContainer = document.getElementById('devices-container');
-            if (devicesContainer && !this._deviceActionListenerAttached) {
+            if (devicesContainer) {
                 this._deviceActionListener = (e) => {
-                    console.log('Device action clicked:', e.target);
                     const target = e.target.closest('button[data-action]');
                     if (!target) return;
-                    console.log('Target button found:', target);
+
                     const { deviceId, deviceName, action } = target.dataset;
-                    console.log('Button data:', { deviceId, deviceName, action });
                     if (!deviceId || !action) return;
 
                     if (action === 'config') {
@@ -172,12 +170,10 @@ class BoldVPNPortal {
                     } else if (action === 'qr') {
                         this.downloadQRCode(deviceId);
                     } else if (action === 'remove') {
-                        console.log('Calling removeDevice');
                         this.removeDevice(deviceId, deviceName);
                     }
                 };
                 devicesContainer.addEventListener('click', this._deviceActionListener);
-                this._deviceActionListenerAttached = true;
             }
 
             this.loadDevices();
