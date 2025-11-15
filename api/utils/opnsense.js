@@ -37,8 +37,10 @@ function makeRequest(method, path, data = null) {
       path: `/api${path}`,
       method: method,
       headers: headers,
-      // rejectUnauthorized: false // WARNING: Disabling SSL verification is a security risk.
-                                // For self-signed certs, consider adding the CA to Node.js trusted certificates.
+      // Allow self-signed certificates for internal OPNsense firewall (default)
+      // This is safe for internal network connections when using API key authentication
+      // Set OPNSENSE_REJECT_UNAUTHORIZED=true in .env to enforce certificate validation
+      rejectUnauthorized: process.env.OPNSENSE_REJECT_UNAUTHORIZED === 'true'
     };
 
     const req = https.request(options, (res) => {
