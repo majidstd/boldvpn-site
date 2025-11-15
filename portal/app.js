@@ -155,8 +155,26 @@ class BoldVPNPortal {
                 addBtn.addEventListener('click', () => this.addDevice());
             }
 
-            // Reset listener flag since container is recreated
-            this._deviceActionListenerAttached = false;
+            // Setup device action event listener on the container
+            const devicesContainer = document.getElementById('devices-container');
+            if (devicesContainer && !this._deviceActionListenerAttached) {
+                this._deviceActionListener = (e) => {
+                    const target = e.target.closest('button[data-action]');
+                    if (!target) return;
+                    const { deviceId, deviceName, action } = target.dataset;
+                    if (!deviceId || !action) return;
+
+                    if (action === 'config') {
+                        this.downloadConfig(deviceId);
+                    } else if (action === 'qr') {
+                        this.downloadQRCode(deviceId);
+                    } else if (action === 'remove') {
+                        this.removeDevice(deviceId, deviceName);
+                    }
+                };
+                devicesContainer.addEventListener('click', this._deviceActionListener);
+                this._deviceActionListenerAttached = true;
+            }
 
             this.loadDevices();
         } else {
@@ -234,26 +252,6 @@ class BoldVPNPortal {
     async loadDevices() {
         const container = document.getElementById('devices-container');
         if (!container) return;
-
-        // Setup event listener on container if not already set up
-        if (!this._deviceActionListenerAttached) {
-            this._deviceActionListener = (e) => {
-                const target = e.target.closest('button[data-action]');
-                if (!target) return;
-                const { deviceId, deviceName, action } = target.dataset;
-                if (!deviceId || !action) return;
-
-                if (action === 'config') {
-                    this.downloadConfig(deviceId);
-                } else if (action === 'qr') {
-                    this.downloadQRCode(deviceId);
-                } else if (action === 'remove') {
-                    this.removeDevice(deviceId, deviceName);
-                }
-            };
-            container.addEventListener('click', this._deviceActionListener);
-            this._deviceActionListenerAttached = true;
-        }
 
         try {
             const devices = await api.devices.getAll();
@@ -511,6 +509,8 @@ class BoldVPNPortal {
 }
 
 new BoldVPNPortal();
+
+
 
 
 
