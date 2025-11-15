@@ -319,6 +319,7 @@ class BoldVPNPortal {
             } else {
                 errorMessage += error.message || 'Please try again.';
             }
+            console.log('Type of this.escapeHtml:', typeof this.escapeHtml); // Debug line
             container.innerHTML = `<p style="text-align: center; color: var(--error-color); padding: 40px;">${this.escapeHtml(errorMessage)}</p>`;
         }
     }
