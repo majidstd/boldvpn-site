@@ -9,6 +9,9 @@ class BoldVPNPortal {
         this.currentSection = 'overview';
         this._navHistory = [];
 
+        this._lastActionTime = {};
+        this._actionDebounceMs = 500; // 500ms debounce
+
         this.init();
     }
 
@@ -165,10 +168,15 @@ class BoldVPNPortal {
                 this._deviceActionListener = (e) => {
                     const target = e.target.closest('button[data-action]');
                     if (!target) return;
-
                     const { deviceId, deviceName, action } = target.dataset;
                     if (!deviceId || !action) return;
-
+                    // Debounce rapid clicks
+                    const actionKey = `${deviceId}-${action}`;
+                    const now = Date.now();
+                    if (this._lastActionTime[actionKey] && (now - this._lastActionTime[actionKey]) < this._actionDebounceMs) {
+                        return; // Ignore rapid clicks
+                    }
+                    this._lastActionTime[actionKey] = now;
                     if (action === 'config') {
                         this.downloadConfig(deviceId);
                     } else if (action === 'qr') {
@@ -286,6 +294,12 @@ class BoldVPNPortal {
                     `).join('')}
                 </div>
             `;
+
+            // Re-attach listener after innerHTML update
+            if (this._deviceActionListener) {
+                container.removeEventListener('click', this._deviceActionListener);
+                container.addEventListener('click', this._deviceActionListener);
+            }
         } catch (error) {
             let errorMessage = 'Failed to load devices. ';
             if (error.message.includes('Network')) {
