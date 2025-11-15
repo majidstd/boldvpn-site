@@ -4,19 +4,15 @@ const API_BASE_URL = (typeof Config !== 'undefined' && Config.API_URL)
   ? Config.API_URL
   : 'http://localhost:3000/api';
 
-// Log API URL on load for debugging (only in development)
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-  console.log('[API] Using API URL:', API_BASE_URL);
-}
+// Log API URL on load for debugging
+console.log('[API] Using API URL:', API_BASE_URL);
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = localStorage.getItem('boldvpn_token') || sessionStorage.getItem('boldvpn_token');
   
-  // Debug logging (only in development)
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    console.log(`[API] ${options.method || 'GET'} ${url}`);
-  }
+  // Debug logging
+  console.log(`[API] ${options.method || 'GET'} ${url}`);
 
   const headers = {
     'Content-Type': 'application/json',
